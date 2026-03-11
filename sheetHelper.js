@@ -2,13 +2,20 @@
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 const { JWT } = require('google-auth-library');
 
-// โหลดไฟล์กุญแจ (เวลาขึ้นระบบจริง Render จะดึงจาก Secret Files มาให้ครับ)
-const creds = require('./google-credentials.json'); 
+// โหลดไฟล์กุญแจ (ฉบับอัปเกรด: รองรับทั้งการรันในคอมตัวเอง และรันบนระบบ Render)
+let creds;
+try {
+    // ลองหาไฟล์ในโฟลเดอร์เดียวกันก่อน (กรณีทดสอบในคอมตัวเอง)
+    creds = require('./google-credentials.json'); 
+} catch (error) {
+    // ถ้าไม่เจอ ให้ไปหาในโฟลเดอร์ Secret ของ Render
+    creds = require('/etc/secrets/google-credentials.json'); 
+}
 
 // =====================================
 // 1. ตั้งค่าพื้นฐาน
 // =====================================
-// ⚠️ อย่าลืมแก้ตรงนี้: นำ Sheet ID ของคุณมาใส่ (ก๊อปปี้จาก URL ของ Google Sheets)
+// ⚠️ อย่าลืมแก้ตรงนี้: นำ Sheet ID ของคุณมาใส่เหมือนเดิมนะครับ (ก๊อปปี้จาก URL ของ Google Sheets)
 const SHEET_ID = '190jkS-78iiOg9UjYjpmlLnC90FdmiMi4lV4Wb-h2LS4';
 
 // ตั้งชื่อคอลัมน์ให้ตรงกับหัวตารางใน Google Sheets ของคุณ
