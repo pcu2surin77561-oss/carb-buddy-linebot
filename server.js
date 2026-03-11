@@ -1,12 +1,13 @@
 // --- ไฟล์ server.js ---
-// ระบบ Webhook สำหรับ LINE OA เพื่อรับรูปภาพและให้ Gemini AI วิเคราะห์ผลสุขภาพและอาหาร (สำหรับนักเรียนโรงเรียนเบาหวาน - รองรับการนับคาร์บ)
+// ระบบ Webhook สำหรับ LINE OA: วิเคราะห์ผลสุขภาพ + สแกนอาหาร AI + แสดงหน้าเว็บลงทะเบียน (index.html)
+// สำหรับนักเรียนโรงเรียนเบาหวาน - รองรับการนับคาร์บ (15g = 1 คาร์บ)
 
 const express = require('express');
 const { middleware, Client } = require('@line/bot-sdk');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const path = require('path'); // 🔥 เพิ่มเพื่อจัดการเส้นทางไฟล์หน้าเว็บ
 
 // นำเข้าฟังก์ชันดึงข้อมูลจากไฟล์ sheetHelper.js
-// 🔥 เพิ่มฟังก์ชัน getRegisteredUser และ registerNewUser เข้ามาด้วย
 const { getPatientHealthReport, getRegisteredUser, registerNewUser } = require('./sheetHelper');
 
 // =====================================
@@ -23,7 +24,7 @@ const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const app = express();
 
 // =====================================
-// 2. Thai Food Nutrition Database
+// 2. Thai Food Nutrition Database (รักษาไว้ครบถ้วน)
 // =====================================
 const thaiFoodDB = {
   "ผัดกะเพรา": {kcal:580, carb:65, sugar:7, fat:24, sodium:1400},
@@ -142,7 +143,14 @@ function detectThaiFoods(text) {
 }
 
 // =====================================
-// 4. สร้าง Endpoint /webhook
+// 🔥 4. Route สำหรับแสดงหน้าเว็บลงทะเบียน (index.html)
+// =====================================
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// =====================================
+// 5. Endpoint /webhook สำหรับ LINE
 // =====================================
 app.post('/webhook', middleware(config), (req, res) => {
   Promise
@@ -155,19 +163,19 @@ app.post('/webhook', middleware(config), (req, res) => {
 });
 
 // =====================================
-// 5. ฟังก์ชันจัดการ Event
+// 6. ฟังก์ชันจัดการ Event ของ LINE
 // =====================================
 async function handleEvent(event) {
   if (event.type !== 'message') return Promise.resolve(null);
   const userId = event.source.userId;
 
   // -----------------------------------------
-  // 5.1 จัดการข้อความ (Text)
+  // 6.1 จัดการข้อความ (Text)
   // -----------------------------------------
   if (event.message.type === 'text') {
     const text = event.message.text;
 
-    // 🔥 ระบบลงทะเบียน (เพิ่มใหม่)
+    // 🔥 ระบบลงทะเบียน (Registration)
     if (text.startsWith('ลงทะเบียน ')) {
         const parts = text.split(' ');
         if (parts.length < 3) {
@@ -211,9 +219,8 @@ async function handleEvent(event) {
         });
     }
 
-    // 🔥 ระบบสมุดพก (อัปเดตให้รองรับการดึงข้อมูลอัตโนมัติ)
+    // 🔥 ระบบสมุดพก (Health Report)
     if (text === 'ดูสมุดพก') {
-        // เช็คก่อนว่าลงทะเบียนหรือยัง
         const userInfo = await getRegisteredUser(userId);
 
         if (!userInfo) {
@@ -223,7 +230,6 @@ async function handleEvent(event) {
             });
         }
 
-        // ถ้าลงทะเบียนแล้ว ดึงข้อมูลด้วย CID และวันเกิดที่ผูกไว้
         await lineClient.replyMessage(event.replyToken, {
             type: 'text',
             text: '⏳ ระบบกำลังตรวจสอบข้อมูลและวิเคราะห์ผลของคุณ กรุณารอสักครู่นะครับ...'
@@ -307,7 +313,7 @@ async function handleEvent(event) {
   }
 
   // -----------------------------------------
-  // 5.2 จัดการรูปภาพ (Image)
+  // 6.2 จัดการรูปภาพ (Image Analysis)
   // -----------------------------------------
   if (event.message.type === 'image') {
     try {
@@ -392,6 +398,9 @@ async function handleEvent(event) {
   return Promise.resolve(null);
 }
 
+// =====================================
+// 7. สตาร์ทเซิร์ฟเวอร์
+// =====================================
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log(`Webhook server listening on port ${port}`);
