@@ -6,7 +6,8 @@ const { middleware, Client } = require('@line/bot-sdk');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 // นำเข้าฟังก์ชันดึงข้อมูลจากไฟล์ sheetHelper.js
-const { getPatientHealthReport } = require('./sheetHelper');
+// 🔥 เพิ่มฟังก์ชัน getRegisteredUser และ registerNewUser เข้ามาด้วย
+const { getPatientHealthReport, getRegisteredUser, registerNewUser } = require('./sheetHelper');
 
 // =====================================
 // 1. ตั้งค่า Keys และ Tokens
@@ -22,7 +23,7 @@ const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const app = express();
 
 // =====================================
-// 2. Thai Food Nutrition Database (เพิ่มฟิลด์ carb เป็นหน่วยกรัม)
+// 2. Thai Food Nutrition Database
 // =====================================
 const thaiFoodDB = {
   "ผัดกะเพรา": {kcal:580, carb:65, sugar:7, fat:24, sodium:1400},
@@ -158,8 +159,6 @@ app.post('/webhook', middleware(config), (req, res) => {
 // =====================================
 async function handleEvent(event) {
   if (event.type !== 'message') return Promise.resolve(null);
-  
-  // เก็บ userId ไว้ใช้สำหรับฟังก์ชัน Push Message
   const userId = event.source.userId;
 
   // -----------------------------------------
@@ -167,6 +166,36 @@ async function handleEvent(event) {
   // -----------------------------------------
   if (event.message.type === 'text') {
     const text = event.message.text;
+
+    // 🔥 ระบบลงทะเบียน (เพิ่มใหม่)
+    if (text.startsWith('ลงทะเบียน ')) {
+        const parts = text.split(' ');
+        if (parts.length < 3) {
+            return lineClient.replyMessage(event.replyToken, {
+                type: 'text',
+                text: '⚠️ รูปแบบผิดครับ: ลงทะเบียน [เลขบัตรประชาชน] [วันเกิด]\nตัวอย่าง: ลงทะเบียน 1234567890123 01/01/2500'
+            });
+        }
+        
+        const result = await registerNewUser(userId, parts[1].trim(), parts[2].trim());
+        
+        if (result === "success") {
+            return lineClient.replyMessage(event.replyToken, {
+                type: 'text',
+                text: '✅ ลงทะเบียนสำเร็จ! ต่อไปเพียงพิมพ์ "ดูสมุดพก" ก็ดูผลได้ทันทีครับ'
+            });
+        } else if (result === "duplicate") {
+            return lineClient.replyMessage(event.replyToken, {
+                type: 'text',
+                text: '❌ คุณเคยลงทะเบียนไว้แล้วครับ'
+            });
+        } else {
+            return lineClient.replyMessage(event.replyToken, {
+                type: 'text',
+                text: '🛠️ เกิดข้อผิดพลาด กรุณาลองใหม่ภายหลัง'
+            });
+        }
+    }
 
     if (text === 'อ่านผลสุขภาพ / ผลแลป') {
         return lineClient.replyMessage(event.replyToken, {
@@ -182,48 +211,34 @@ async function handleEvent(event) {
         });
     }
 
-    // 🔥 1. ถ้านักเรียนพิมพ์มาแค่คำว่า "ดูสมุดพก" (ไม่มีเลขต่อท้าย) บอทจะสอนวิธีใช้งาน
+    // 🔥 ระบบสมุดพก (อัปเดตให้รองรับการดึงข้อมูลอัตโนมัติ)
     if (text === 'ดูสมุดพก') {
-        return lineClient.replyMessage(event.replyToken, {
-            type: 'text',
-            text: 'กรุณาพิมพ์คำสั่งตามรูปแบบนี้นะครับ เพื่อความปลอดภัยของข้อมูล:\n\nพิมพ์คำว่า ดูสมุดพก ตามด้วยเลขบัตรประชาชน และวันเดือนปีเกิด (เว้นวรรคด้วยนะครับ)\n\n📌 ตัวอย่าง:\nดูสมุดพก 1234567890123 01/01/2500'
-        });
-    }
+        // เช็คก่อนว่าลงทะเบียนหรือยัง
+        const userInfo = await getRegisteredUser(userId);
 
-    // 🔥 2. ถ้านักเรียนพิมพ์ครบ "ดูสมุดพก 123... 01/01/2500"
-    if (text.startsWith('ดูสมุดพก ')) {
-        // แยกข้อความด้วยการเว้นวรรค
-        const parts = text.split(' ');
-        
-        // เช็คว่าพิมพ์มาครบ 3 ส่วนไหม (1.คำสั่ง 2.CID 3.วันเกิด)
-        if (parts.length < 3) {
+        if (!userInfo) {
             return lineClient.replyMessage(event.replyToken, {
                 type: 'text',
-                text: '⚠️ รูปแบบไม่ถูกต้องครับ กรุณาพิมพ์ใหม่ตามตัวอย่างนี้นะครับ\n\nดูสมุดพก 1234567890123 01/01/2500'
+                text: '🔒 คุณยังไม่ได้ลงทะเบียนครับ เพื่อความปลอดภัยกรุณาพิมพ์:\nลงทะเบียน [เลขบัตรประชาชน] [วันเกิด]\n\nตัวอย่าง: ลงทะเบียน 1234567890123 01/01/2500'
             });
         }
 
-        const userCid = parts[1].trim();
-        const userBirthday = parts[2].trim();
-
-        // ตอบกลับทันทีด้วย Reply Token เพื่อไม่ให้ผู้ใช้รอนาน
+        // ถ้าลงทะเบียนแล้ว ดึงข้อมูลด้วย CID และวันเกิดที่ผูกไว้
         await lineClient.replyMessage(event.replyToken, {
             type: 'text',
-            text: '⏳ ระบบกำลังตรวจสอบข้อมูลและวิเคราะห์ผล กรุณารอสักครู่นะครับ...'
+            text: '⏳ ระบบกำลังตรวจสอบข้อมูลและวิเคราะห์ผลของคุณ กรุณารอสักครู่นะครับ...'
         });
 
         try {
-            // ดึงข้อมูลจาก Google Sheets (ส่ง CID และ วันเกิดไปค้นหา)
-            const healthData = await getPatientHealthReport(userCid, userBirthday);
+            const healthData = await getPatientHealthReport(userInfo.cid, userInfo.birthday);
 
             if (!healthData) {
                 return lineClient.pushMessage(userId, { 
                     type: 'text', 
-                    text: '❌ ไม่พบข้อมูล หรือ รหัสบัตรประชาชน/วันเกิดไม่ถูกต้องครับ โปรดตรวจสอบอีกครั้ง' 
+                    text: '❌ ไม่พบข้อมูลในระบบ หรือข้อมูลในชีตไม่ถูกต้องครับ' 
                 });
             }
 
-            // ส่งข้อมูลให้ Gemini ช่วยแปลผล
             const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
             const prompt = `
               คุณคือ "ผู้ช่วย AI โรงเรียนเบาหวาน" ผู้เชี่ยวชาญด้านเบาหวาน
@@ -244,7 +259,6 @@ async function handleEvent(event) {
             const result = await model.generateContent(prompt);
             const aiAnalysis = result.response.text();
 
-            // สร้างการ์ด Flex Message (สมุดพก)
             const flexMessage = {
               type: "flex",
               altText: "สมุดพกสุขภาพของคุณมาแล้ว!",
@@ -255,10 +269,7 @@ async function handleEvent(event) {
                   "type": "box",
                   "layout": "vertical",
                   "contents": [
-                    {
-                      "type": "text", "text": "📘 สมุดพกสุขภาพนักเรียน",
-                      "weight": "bold", "color": "#ffffff", "size": "xl"
-                    }
+                    { "type": "text", "text": "📘 สมุดพกสุขภาพนักเรียน", "weight": "bold", "color": "#ffffff", "size": "xl" }
                   ],
                   "backgroundColor": "#00897B",
                   "paddingAll": "20px"
@@ -268,7 +279,7 @@ async function handleEvent(event) {
                   "layout": "vertical",
                   "contents": [
                     { "type": "text", "text": `ข้อมูลประจำตัว: ${healthData.patientInfo.name}`, "weight": "bold", "size": "md" },
-                    { "type": "text", "text": `วันที่อัปเดตล่าสุด: ${healthData.patientInfo.date}`, "size": "xs", "color": "#aaaaaa" },
+                    { "type": "text", "text": `อัปเดตล่าสุด: ${healthData.patientInfo.date}`, "size": "xs", "color": "#aaaaaa" },
                     { "type": "separator", "margin": "md" },
                     {
                       "type": "box", "layout": "vertical", "margin": "md",
@@ -284,15 +295,11 @@ async function handleEvent(event) {
               }
             };
 
-            // ส่งข้อมูลกลับไปให้ผู้ใช้ด้วยวิธี Push Message
             return lineClient.pushMessage(userId, flexMessage);
 
         } catch (error) {
-            console.error("Error in ดูสมุดพก:", error);
-            return lineClient.pushMessage(userId, { 
-                type: 'text', 
-                text: 'ขออภัยครับ เกิดข้อผิดพลาดในการดึงข้อมูลสมุดพก 🙏' 
-            });
+            console.error(error);
+            return lineClient.pushMessage(userId, { type: 'text', text: 'ขออภัยครับ เกิดข้อผิดพลาดในการดึงข้อมูลสมุดพก 🙏' });
         }
     }
 
@@ -385,9 +392,6 @@ async function handleEvent(event) {
   return Promise.resolve(null);
 }
 
-// =====================================
-// 6. สตาร์ทเซิร์ฟเวอร์
-// =====================================
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log(`Webhook server listening on port ${port}`);
