@@ -5,6 +5,9 @@ const express = require('express');
 const { middleware, Client } = require('@line/bot-sdk');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
+// นำเข้าฟังก์ชันดึงข้อมูลจากไฟล์ sheetHelper.js
+const { getPatientHealthReport } = require('./sheetHelper');
+
 // =====================================
 // 1. ตั้งค่า Keys และ Tokens
 // =====================================
@@ -155,25 +158,129 @@ app.post('/webhook', middleware(config), (req, res) => {
 // =====================================
 async function handleEvent(event) {
   if (event.type !== 'message') return Promise.resolve(null);
+  
+  // เก็บ userId ไว้ใช้สำหรับฟังก์ชัน Push Message
+  const userId = event.source.userId;
 
+  // -----------------------------------------
   // 5.1 จัดการข้อความ (Text)
+  // -----------------------------------------
   if (event.message.type === 'text') {
-    if (event.message.text === 'อ่านผลสุขภาพ / ผลแลป') {
+    const text = event.message.text;
+
+    if (text === 'อ่านผลสุขภาพ / ผลแลป') {
         return lineClient.replyMessage(event.replyToken, {
             type: 'text',
-            text: '📄 โปรดถ่ายรูปใบรายงานผลตรวจเลือด (เช่น ค่า HbA1c, น้ำตาลสะสม) ส่งมาที่นี่ได้เลยครับ/ค่ะ ผู้ช่วย AI จะช่วยแปลผลให้เข้าใจง่ายๆ ครับ 🩺'
+            text: '📄 โปรดถ่ายรูปใบรายงานผลตรวจเลือด ส่งมาที่นี่ได้เลยครับ/ค่ะ ผู้ช่วย AI จะช่วยแปลผลให้เข้าใจง่ายๆ ครับ 🩺'
         });
     }
-    if (event.message.text === 'สแกนอาหารด้วย AI') {
+
+    if (text === 'สแกนอาหารด้วย AI') {
         return lineClient.replyMessage(event.replyToken, {
             type: 'text',
             text: '📸 กรุณาส่งรูปภาพมื้ออาหารที่ชัดเจนมาได้เลยครับ/ค่ะ AI จะช่วยประเมินการนับคาร์บ (Carb Counting) และผลกระทบต่อน้ำตาลในเลือดให้ครับ 🍲'
         });
     }
+
+    // 🔥 ฟีเจอร์ใหม่: สมุดพกสุขภาพนักเรียน
+    if (text === 'ดูสมุดพก') {
+        // ตอบกลับทันทีด้วย Reply Token เพื่อไม่ให้ผู้ใช้รอนาน
+        await lineClient.replyMessage(event.replyToken, {
+            type: 'text',
+            text: '⏳ ระบบกำลังดึงผลตรวจสุขภาพและให้ AI วิเคราะห์ข้อมูล กรุณารอสักครู่นะครับ...'
+        });
+
+        try {
+            // ดึงข้อมูลจาก Google Sheets (ใช้เลขจำลองที่คุยกันไว้)
+            const mockUserCid = "32161000039"; 
+            const healthData = await getPatientHealthReport(mockUserCid);
+
+            if (!healthData) {
+                return lineClient.pushMessage(userId, { 
+                    type: 'text', 
+                    text: '❌ ไม่พบประวัติผลตรวจสุขภาพในระบบครับ โปรดตรวจสอบข้อมูลอีกครั้ง' 
+                });
+            }
+
+            // ส่งข้อมูลให้ Gemini ช่วยแปลผล
+            const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+            const prompt = `
+              คุณคือ "ผู้ช่วย AI โรงเรียนเบาหวาน" ผู้เชี่ยวชาญด้านเบาหวาน
+              นี่คือผลตรวจสุขภาพล่าสุดของนักเรียน:
+              ชื่อ: ${healthData.patientInfo.name} (อายุ ${healthData.patientInfo.age} ปี)
+              วันที่ตรวจ: ${healthData.patientInfo.date}
+              
+              ผลการตรวจ:
+              ${healthData.labTextSummary}
+              
+              คำสั่ง:
+              1. ช่วยอธิบายผลตรวจที่สำคัญ (เช่น ค่าไต, น้ำตาล, ไขมัน ฯลฯ) เป็นภาษาที่คนทั่วไปเข้าใจง่าย
+              2. บอกว่าค่าไหนปกติ หรือค่าไหนต้องระวังเป็นพิเศษ
+              3. ให้คำแนะนำสั้นๆ ในการดูแลตัวเอง หรือการเลือกทานอาหาร
+              ตอบให้กระชับ เป็นมิตร ให้กำลังใจแบบหมอคุยกับคนไข้
+            `;
+
+            const result = await model.generateContent(prompt);
+            const aiAnalysis = result.response.text();
+
+            // สร้างการ์ด Flex Message (สมุดพก)
+            const flexMessage = {
+              type: "flex",
+              altText: "สมุดพกสุขภาพของคุณมาแล้ว!",
+              contents: {
+                "type": "bubble",
+                "size": "giga",
+                "header": {
+                  "type": "box",
+                  "layout": "vertical",
+                  "contents": [
+                    {
+                      "type": "text", "text": "📘 สมุดพกสุขภาพนักเรียน",
+                      "weight": "bold", "color": "#ffffff", "size": "xl"
+                    }
+                  ],
+                  "backgroundColor": "#00897B",
+                  "paddingAll": "20px"
+                },
+                "body": {
+                  "type": "box",
+                  "layout": "vertical",
+                  "contents": [
+                    { "type": "text", "text": `ข้อมูลประจำตัว: ${healthData.patientInfo.name}`, "weight": "bold", "size": "md" },
+                    { "type": "text", "text": `วันที่อัปเดต: ${healthData.patientInfo.date}`, "size": "xs", "color": "#aaaaaa" },
+                    { "type": "separator", "margin": "md" },
+                    {
+                      "type": "box", "layout": "vertical", "margin": "md",
+                      "contents": [
+                        { "type": "text", "text": "💡 สรุปผลจากผู้ช่วย AI:", "weight": "bold", "color": "#00897B", "size": "sm" },
+                        { "type": "text", "text": aiAnalysis, "wrap": true, "size": "sm", "margin": "sm" }
+                      ],
+                      "backgroundColor": "#f4fcf8", "paddingAll": "15px", "cornerRadius": "10px"
+                    }
+                  ],
+                  "paddingAll": "20px"
+                }
+              }
+            };
+
+            // ส่งข้อมูลกลับไปให้ผู้ใช้ด้วยวิธี Push Message
+            return lineClient.pushMessage(userId, flexMessage);
+
+        } catch (error) {
+            console.error("Error in ดูสมุดพก:", error);
+            return lineClient.pushMessage(userId, { 
+                type: 'text', 
+                text: 'ขออภัยครับ เกิดข้อผิดพลาดในการดึงข้อมูลสมุดพก 🙏' 
+            });
+        }
+    }
+
     return Promise.resolve(null);
   }
 
+  // -----------------------------------------
   // 5.2 จัดการรูปภาพ (Image)
+  // -----------------------------------------
   if (event.message.type === 'image') {
     try {
       const stream = await lineClient.getMessageContent(event.message.id);
@@ -186,7 +293,6 @@ async function handleEvent(event) {
 
       const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" }); 
       
-      // Prompt อัปเกรดให้รองรับ Carb Counting โดยเฉพาะ
       const prompt = `
         คุณคือ "ผู้ช่วย AI โรงเรียนเบาหวาน" ผู้เชี่ยวชาญด้านโภชนาการและการจัดการระดับน้ำตาลในเลือด
         
@@ -218,9 +324,6 @@ async function handleEvent(event) {
       const response = await result.response;
       const text = response.text();
 
-      // =====================================
-      // 5.3 ประมวลผลและดึงข้อมูลจาก Database
-      // =====================================
       let finalText = text;
       const detectedFoods = detectThaiFoods(text);
 
@@ -230,7 +333,6 @@ async function handleEvent(event) {
         detectedFoods.forEach(food => {
           const data = thaiFoodDB[food];
           
-          // ระบบคำนวณคาร์บ (1 คาร์บ = 15 กรัม)
           const carbGrams = data.carb || 0;
           const carbExchange = carbGrams > 0 ? (carbGrams / 15).toFixed(1) : "0";
 
@@ -262,6 +364,9 @@ async function handleEvent(event) {
   return Promise.resolve(null);
 }
 
+// =====================================
+// 6. สตาร์ทเซิร์ฟเวอร์
+// =====================================
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log(`Webhook server listening on port ${port}`);
