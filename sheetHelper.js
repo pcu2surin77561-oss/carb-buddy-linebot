@@ -15,13 +15,12 @@ try {
 // =====================================
 // 1. ตั้งค่าพื้นฐาน
 // =====================================
-// ⚠️ อย่าลืมแก้ตรงนี้: นำ Sheet ID ของคุณมาใส่เหมือนเดิมนะครับ (ก๊อปปี้จาก URL ของ Google Sheets)
 const SHEET_ID = '190jkS-78iiOg9UjYjpmlLnC90FdmiMi4lV4Wb-h2LS4';
 
 // ตั้งชื่อคอลัมน์ให้ตรงกับหัวตารางใน Google Sheets ของคุณ
 const COL = {
     CID: 'cid',
-    HN: 'HN',
+    HN: 'hn', 
     FNAME: 'fname',
     LNAME: 'lname',
     BIRTHDAY: 'birthday1',
@@ -33,9 +32,9 @@ const COL = {
 };
 
 // =====================================
-// 2. ฟังก์ชันดึงข้อมูลและจัดกลุ่มผลแล็บ
+// 2. ฟังก์ชันดึงข้อมูลและจัดกลุ่มผลแล็บ (อัปเกรด: ใช้ CID + วันเกิด, ดึงค่าล่าสุด, ใส่วันที่)
 // =====================================
-async function getPatientHealthReport(targetCid) {
+async function getPatientHealthReport(targetCid, targetBirthday) {
     try {
         // ยืนยันตัวตนกับ Google ด้วย Service Account
         const serviceAccountAuth = new JWT({
@@ -52,42 +51,53 @@ async function getPatientHealthReport(targetCid) {
 
         // ตัวแปรสำหรับเก็บข้อมูลที่จะส่งให้ AI
         let patientInfo = null;
-        let labResultsList = [];
+        let labResultsMap = {}; // ใช้ Object แทน Array เพื่อกรองค่าซ้ำ
 
-        // วนลูปหาข้อมูลของนักเรียนที่รหัส CID ตรงกัน
+        // วนลูปหาข้อมูลของนักเรียนที่รหัส CID และวันเกิดตรงกัน
         for (const row of rows) {
-            // เช็คว่า CID ในแถวนี้ ตรงกับคนที่กำลังค้นหาหรือไม่
-            if (row.get(COL.CID) === targetCid) {
+            // 🔥 ตรวจสอบความปลอดภัย: CID และ วันเกิด ต้องตรงกันทั้งคู่
+            if (row.get(COL.CID) === targetCid && row.get(COL.BIRTHDAY) === targetBirthday) {
                 
-                // เก็บข้อมูลส่วนตัว (เก็บแค่ครั้งเดียวจากแถวแรกที่เจอ)
-                if (!patientInfo) {
-                    patientInfo = {
-                        name: `${row.get(COL.FNAME)} ${row.get(COL.LNAME)}`,
-                        age: row.get(COL.AGE),
-                        date: row.get(COL.LAB_DATE)
-                    };
-                }
+                // อัปเดตข้อมูลส่วนตัว (จะยึดตามบรรทัดล่างสุด/ล่าสุดเสมอ)
+                patientInfo = {
+                    name: `${row.get(COL.FNAME)} ${row.get(COL.LNAME)}`,
+                    age: row.get(COL.AGE),
+                    date: row.get(COL.LAB_DATE) // เก็บวันที่ตรวจล่าสุดของคนไข้
+                };
 
-                // ดึงรายการผลแล็บของแถวนั้นๆ มาจัดเรียง
+                // ดึงข้อมูลแล็บและวันที่ของแถวนั้นๆ
+                const labDate = row.get(COL.LAB_DATE);
                 const labName = row.get(COL.LAB_NAME);
                 const labResult = row.get(COL.LAB_RESULT);
                 const normalVal = row.get(COL.NORMAL_VAL);
 
                 if (labName && labResult) {
-                    labResultsList.push(`- ${labName}: ${labResult} (ค่าปกติ: ${normalVal || 'ไม่ระบุ'})`);
+                    // เก็บค่าเข้ากล่อง โดยพ่วงวันที่เข้าไปด้วย
+                    // ถ้าเจอชื่อแล็บซ้ำ มันจะเอาค่าใหม่และวันที่ใหม่มาทับค่าเก่าทันที
+                    labResultsMap[labName] = {
+                        result: labResult,
+                        normal: normalVal || 'ไม่ระบุ',
+                        date: labDate 
+                    };
                 }
             }
         }
 
-        // ถ้าไม่พบข้อมูลของ CID นี้เลย
+        // ถ้าไม่พบข้อมูลของ CID และวันเกิดนี้เลย
         if (!patientInfo) {
             return null;
+        }
+
+        // นำข้อมูลจาก Object มาเรียงร้อยเป็นข้อความ โดยใส่วันที่กำกับไว้ด้านหลัง
+        let finalLabList = [];
+        for (const [name, data] of Object.entries(labResultsMap)) {
+            finalLabList.push(`- ${name}: ${data.result} (ค่าปกติ: ${data.normal}) [ตรวจเมื่อ: ${data.date}]`);
         }
 
         // ส่งข้อมูลที่จัดกลุ่มแล้วกลับไปให้ server.js
         return {
             patientInfo: patientInfo,
-            labTextSummary: labResultsList.join('\n')
+            labTextSummary: finalLabList.join('\n')
         };
 
     } catch (error) {
