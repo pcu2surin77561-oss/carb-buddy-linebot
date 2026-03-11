@@ -1,7 +1,7 @@
 {
   "name": "carb-buddy-linebot",
   "version": "1.0.0",
-  "description": "LINE Bot สำหรับนักเรียนโรงเรียนเบาหวาน ช่วยสแกนอาหารและนับคาร์บด้วย Gemini AI",
+  "description": "LINE Bot สำหรับนักเรียนโรงเรียนเบาหวาน ช่วยสแกนอาหาร นับคาร์บด้วย Gemini AI และดึงผลแล็บเป็นสมุดพกสุขภาพ",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -11,13 +11,16 @@
     "gemini",
     "ai",
     "diabetes",
-    "carb-counting"
+    "carb-counting",
+    "google-sheets"
   ],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
     "@line/bot-sdk": "^9.0.0",
-    "express": "^4.21.1"
+    "express": "^4.21.1",
+    "google-auth-library": "^9.6.3",
+    "google-spreadsheet": "^4.1.1"
   }
 }
