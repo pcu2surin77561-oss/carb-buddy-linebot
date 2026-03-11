@@ -182,23 +182,44 @@ async function handleEvent(event) {
         });
     }
 
-    // 🔥 ฟีเจอร์ใหม่: สมุดพกสุขภาพนักเรียน
+    // 🔥 1. ถ้านักเรียนพิมพ์มาแค่คำว่า "ดูสมุดพก" (ไม่มีเลขต่อท้าย) บอทจะสอนวิธีใช้งาน
     if (text === 'ดูสมุดพก') {
+        return lineClient.replyMessage(event.replyToken, {
+            type: 'text',
+            text: 'กรุณาพิมพ์คำสั่งตามรูปแบบนี้นะครับ เพื่อความปลอดภัยของข้อมูล:\n\nพิมพ์คำว่า ดูสมุดพก ตามด้วยเลขบัตรประชาชน และวันเดือนปีเกิด (เว้นวรรคด้วยนะครับ)\n\n📌 ตัวอย่าง:\nดูสมุดพก 1234567890123 01/01/2500'
+        });
+    }
+
+    // 🔥 2. ถ้านักเรียนพิมพ์ครบ "ดูสมุดพก 123... 01/01/2500"
+    if (text.startsWith('ดูสมุดพก ')) {
+        // แยกข้อความด้วยการเว้นวรรค
+        const parts = text.split(' ');
+        
+        // เช็คว่าพิมพ์มาครบ 3 ส่วนไหม (1.คำสั่ง 2.CID 3.วันเกิด)
+        if (parts.length < 3) {
+            return lineClient.replyMessage(event.replyToken, {
+                type: 'text',
+                text: '⚠️ รูปแบบไม่ถูกต้องครับ กรุณาพิมพ์ใหม่ตามตัวอย่างนี้นะครับ\n\nดูสมุดพก 1234567890123 01/01/2500'
+            });
+        }
+
+        const userCid = parts[1].trim();
+        const userBirthday = parts[2].trim();
+
         // ตอบกลับทันทีด้วย Reply Token เพื่อไม่ให้ผู้ใช้รอนาน
         await lineClient.replyMessage(event.replyToken, {
             type: 'text',
-            text: '⏳ ระบบกำลังดึงผลตรวจสุขภาพและให้ AI วิเคราะห์ข้อมูล กรุณารอสักครู่นะครับ...'
+            text: '⏳ ระบบกำลังตรวจสอบข้อมูลและวิเคราะห์ผล กรุณารอสักครู่นะครับ...'
         });
 
         try {
-            // ดึงข้อมูลจาก Google Sheets (ใช้เลขจำลองที่คุยกันไว้)
-            const mockUserCid = "32161000039"; 
-            const healthData = await getPatientHealthReport(mockUserCid);
+            // ดึงข้อมูลจาก Google Sheets (ส่ง CID และ วันเกิดไปค้นหา)
+            const healthData = await getPatientHealthReport(userCid, userBirthday);
 
             if (!healthData) {
                 return lineClient.pushMessage(userId, { 
                     type: 'text', 
-                    text: '❌ ไม่พบประวัติผลตรวจสุขภาพในระบบครับ โปรดตรวจสอบข้อมูลอีกครั้ง' 
+                    text: '❌ ไม่พบข้อมูล หรือ รหัสบัตรประชาชน/วันเกิดไม่ถูกต้องครับ โปรดตรวจสอบอีกครั้ง' 
                 });
             }
 
@@ -247,7 +268,7 @@ async function handleEvent(event) {
                   "layout": "vertical",
                   "contents": [
                     { "type": "text", "text": `ข้อมูลประจำตัว: ${healthData.patientInfo.name}`, "weight": "bold", "size": "md" },
-                    { "type": "text", "text": `วันที่อัปเดต: ${healthData.patientInfo.date}`, "size": "xs", "color": "#aaaaaa" },
+                    { "type": "text", "text": `วันที่อัปเดตล่าสุด: ${healthData.patientInfo.date}`, "size": "xs", "color": "#aaaaaa" },
                     { "type": "separator", "margin": "md" },
                     {
                       "type": "box", "layout": "vertical", "margin": "md",
