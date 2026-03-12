@@ -112,13 +112,15 @@ async function getRegisteredUser(userId) {
         
         const userRow = rows.find(row => row.get(COL_USER.LINE_ID) === userId);
         
-        // ถ้าเจอข้อมูล ให้ดึงข้อมูลโควตาคาร์บออกไปด้วย เพื่อให้ AI ใช้ประเมิน
+        // 🌟 แก้ไข: ดึงข้อมูล activity และ dietType ให้ครบถ้วน เพื่อให้ server.js นำไปคำนวณ TDEE ได้
         return userRow ? { 
             cid: userRow.get(COL_USER.CID), 
             birthday: userRow.get(COL_USER.BIRTHDAY),
             gender: userRow.get(COL_USER.GENDER),
             weight: userRow.get(COL_USER.WEIGHT),
             height: userRow.get(COL_USER.HEIGHT),
+            activity: userRow.get(COL_USER.ACTIVITY),
+            dietType: userRow.get(COL_USER.DIET_TYPE),
             carbPerMeal: userRow.get(COL_USER.CARB_PER_MEAL)
         } : null;
     } catch (e) { 
