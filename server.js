@@ -1,6 +1,6 @@
 // --- ไฟล์ server.js ---
-// ระบบ Webhook สำหรับ LINE OA: วิเคราะห์ผลสุขภาพ + สแกนอาหาร AI + แสดงหน้าเว็บลงทะเบียน (index.html) + คลังความรู้เบาหวาน
-// สำหรับนักเรียนโรงเรียนเบาหวาน - รองรับการนับคาร์บ (15g = 1 คาร์บ)
+// ระบบ Webhook สำหรับ LINE OA: โรงเรียนเบาหวาน
+// วิเคราะห์ผลสุขภาพ + สแกนอาหาร AI + แสดงหน้าเว็บลงทะเบียน + คลังความรู้เบาหวาน
 
 const express = require('express');
 const { middleware, Client } = require('@line/bot-sdk');
@@ -128,9 +128,6 @@ const thaiFoodDB = {
     "ปลากะพงนึ่งซีอิ๊ว": {kcal:320, carb:5, sugar:3, fat:12, sodium:900}
 };
 
-// =====================================
-// 3. ฟังก์ชันตรวจจับชื่ออาหาร
-// =====================================
 function detectThaiFoods(text) {
     let foundFoods = [];
     for (const food in thaiFoodDB) {
@@ -270,207 +267,129 @@ async function handleEvent(event) {
         if (text === 'คลังความรู้เบาหวาน') {
             const lessonFlex = {
               type: "flex",
-              altText: "คลังความรู้โรคเบาหวาน 6 บทเรียน ส่งตรงจากคลินิก",
+              altText: "คลังความรู้โรคเบาหวาน 6 บทเรียน",
               contents: {
                 "type": "carousel",
                 "contents": [
-                  // ... (โค้ด Flex บทเรียน 1-6 เหมือนเดิม) ...
                   {
-                    "type": "bubble",
-                    "size": "mega",
-                    "header": {
-                      "type": "box", "layout": "vertical", "backgroundColor": "#E04855", "paddingAll": "lg",
-                      "contents": [
-                        { "type": "text", "text": "บทเรียนที่ 1", "color": "#ffffff", "size": "sm", "weight": "bold" },
-                        { "type": "text", "text": "🩸 เบาหวานคืออะไร?", "color": "#ffffff", "size": "xl", "weight": "bold", "margin": "sm" }
-                      ]
-                    },
-                    "body": {
-                      "type": "box", "layout": "vertical", "paddingAll": "lg",
-                      "contents": [
-                        { "type": "text", "text": "ภาวะที่ร่างกายมี \"น้ำตาลในเลือดสูง\" เพราะผลิตอินซูลินไม่พอ หรือดื้ออินซูลิน ทำให้น้ำตาลตกค้าง", "wrap": true, "size": "sm", "color": "#333333" },
-                        { "type": "separator", "margin": "md" },
-                        { "type": "text", "text": "🚨 3 สัญญาณเตือน", "weight": "bold", "size": "md", "margin": "md", "color": "#E04855" },
-                        { "type": "text", "text": "1. ปัสสาวะบ่อย หิวน้ำบ่อย\n2. อ่อนเพลีย น้ำหนักลด\n3. แผลหายช้า ชาปลายมือเท้า", "size": "sm", "wrap": true, "margin": "sm" },
-                        { "type": "separator", "margin": "md" },
-                        { "type": "text", "text": "📊 เกณฑ์การวินิจฉัย", "weight": "bold", "size": "md", "margin": "md", "color": "#007BFF" },
-                        { "type": "text", "text": "• น้ำตาลอดอาหาร (FBS) ≥ 126\n• น้ำตาลสะสม (HbA1c) ≥ 6.5%", "wrap": true, "size": "sm", "margin": "sm" }
-                      ]
-                    }
+                    "type": "bubble", "size": "mega",
+                    "header": { "type": "box", "layout": "vertical", "backgroundColor": "#E04855", "paddingAll": "lg", "contents": [{ "type": "text", "text": "บทเรียนที่ 1", "color": "#ffffff", "size": "sm", "weight": "bold" }, { "type": "text", "text": "🩸 เบาหวานคืออะไร?", "color": "#ffffff", "size": "xl", "weight": "bold", "margin": "sm" }] },
+                    "body": { "type": "box", "layout": "vertical", "paddingAll": "lg", "contents": [{ "type": "text", "text": "ภาวะที่ร่างกายมี \"น้ำตาลในเลือดสูง\" เพราะผลิตอินซูลินไม่พอ หรือดื้ออินซูลิน ทำให้น้ำตาลตกค้าง", "wrap": true, "size": "sm", "color": "#333333" }, { "type": "separator", "margin": "md" }, { "type": "text", "text": "🚨 3 สัญญาณเตือน", "weight": "bold", "size": "md", "margin": "md", "color": "#E04855" }, { "type": "text", "text": "1. ปัสสาวะบ่อย หิวน้ำบ่อย\n2. อ่อนเพลีย น้ำหนักลด\n3. แผลหายช้า ชาปลายมือเท้า", "size": "sm", "wrap": true, "margin": "sm" }, { "type": "separator", "margin": "md" }, { "type": "text", "text": "📊 เกณฑ์การวินิจฉัย", "weight": "bold", "size": "md", "margin": "md", "color": "#007BFF" }, { "type": "text", "text": "• น้ำตาลอดอาหาร (FBS) ≥ 126\n• น้ำตาลสะสม (HbA1c) ≥ 6.5%", "wrap": true, "size": "sm", "margin": "sm" }] }
                   },
                   {
-                    "type": "bubble",
-                    "size": "mega",
-                    "header": {
-                      "type": "box", "layout": "vertical", "backgroundColor": "#28A745", "paddingAll": "lg",
-                      "contents": [
-                        { "type": "text", "text": "บทเรียนที่ 2", "color": "#ffffff", "size": "sm", "weight": "bold" },
-                        { "type": "text", "text": "🍚 การนับคาร์บ", "color": "#ffffff", "size": "xl", "weight": "bold", "margin": "sm" }
-                      ]
-                    },
-                    "body": {
-                      "type": "box", "layout": "vertical", "paddingAll": "lg",
-                      "contents": [
-                        { "type": "text", "text": "\"คาร์บ\" คือหมวด ข้าว แป้ง น้ำตาล ผลไม้ ที่กินแล้วเปลี่ยนเป็นน้ำตาล", "wrap": true, "size": "sm", "color": "#333333" },
-                        { "type": "separator", "margin": "md" },
-                        { "type": "text", "text": "💡 1 คาร์บ = 15 กรัม", "weight": "bold", "size": "md", "margin": "md", "color": "#28A745" },
-                        { "type": "text", "text": "• หญิง: 3-4 คาร์บ / มื้อ\n• ชาย: 4-5 คาร์บ / มื้อ", "size": "sm", "wrap": true, "margin": "sm" },
-                        { "type": "separator", "margin": "md" },
-                        { "type": "text", "text": "🍱 เทียบปริมาณ \"1 คาร์บ\"", "weight": "bold", "size": "md", "margin": "md", "color": "#E67E22" },
-                        { "type": "text", "text": "✅ ข้าวสวย 1 ทัพพี\n✅ ข้าวเหนียว ครึ่ง ทัพพี\n✅ ขนมปัง 1 แผ่น\n✅ กล้วยน้ำว้า 1 ผล", "wrap": true, "size": "sm", "margin": "sm" },
-                        { "type": "text", "text": "*แนะนำทานข้าวกล้อง กากใยสูง ช่วยชะลอน้ำตาลได้ดีกว่า*", "wrap": true, "size": "xs", "color": "#888888", "margin": "md" }
-                      ]
-                    }
+                    "type": "bubble", "size": "mega",
+                    "header": { "type": "box", "layout": "vertical", "backgroundColor": "#28A745", "paddingAll": "lg", "contents": [{ "type": "text", "text": "บทเรียนที่ 2", "color": "#ffffff", "size": "sm", "weight": "bold" }, { "type": "text", "text": "🍚 การนับคาร์บ", "color": "#ffffff", "size": "xl", "weight": "bold", "margin": "sm" }] },
+                    "body": { "type": "box", "layout": "vertical", "paddingAll": "lg", "contents": [{ "type": "text", "text": "\"คาร์บ\" คือหมวด ข้าว แป้ง น้ำตาล ผลไม้ ที่กินแล้วเปลี่ยนเป็นน้ำตาล", "wrap": true, "size": "sm", "color": "#333333" }, { "type": "separator", "margin": "md" }, { "type": "text", "text": "💡 1 คาร์บ = 15 กรัม", "weight": "bold", "size": "md", "margin": "md", "color": "#28A745" }, { "type": "text", "text": "• หญิง: 3-4 คาร์บ / มื้อ\n• ชาย: 4-5 คาร์บ / มื้อ", "size": "sm", "wrap": true, "margin": "sm" }, { "type": "separator", "margin": "md" }, { "type": "text", "text": "🍱 เทียบปริมาณ \"1 คาร์บ\"", "weight": "bold", "size": "md", "margin": "md", "color": "#E67E22" }, { "type": "text", "text": "✅ ข้าวสวย 1 ทัพพี\n✅ ข้าวเหนียว ครึ่ง ทัพพี\n✅ ขนมปัง 1 แผ่น\n✅ กล้วยน้ำว้า 1 ผล", "wrap": true, "size": "sm", "margin": "sm" }, { "type": "text", "text": "*แนะนำทานข้าวกล้อง กากใยสูง ช่วยชะลอน้ำตาลได้ดีกว่า*", "wrap": true, "size": "xs", "color": "#888888", "margin": "md" }] }
                   },
                   {
-                    "type": "bubble",
-                    "size": "mega",
-                    "header": {
-                      "type": "box", "layout": "vertical", "backgroundColor": "#FD7E14", "paddingAll": "lg",
-                      "contents": [
-                        { "type": "text", "text": "บทเรียนที่ 3", "color": "#ffffff", "size": "sm", "weight": "bold" },
-                        { "type": "text", "text": "🏃‍♂️ ขยับกายสลายน้ำตาล", "color": "#ffffff", "size": "xl", "weight": "bold", "margin": "sm" }
-                      ]
-                    },
-                    "body": {
-                      "type": "box", "layout": "vertical", "paddingAll": "lg",
-                      "contents": [
-                        { "type": "text", "text": "การออกกำลังกายช่วยลดภาวะดื้ออินซูลิน ทำให้ร่างกายดึงน้ำตาลไปใช้ได้ดีขึ้น", "wrap": true, "size": "sm", "color": "#333333" },
-                        { "type": "separator", "margin": "md" },
-                        { "type": "text", "text": "⏱️ คำแนะนำ", "weight": "bold", "size": "md", "margin": "md", "color": "#FD7E14" },
-                        { "type": "text", "text": "ออกกำลังกายระดับปานกลาง อย่างน้อย 150 นาที/สัปดาห์ (วันละ 30 นาที 5 วัน/สัปดาห์)", "wrap": true, "size": "sm", "margin": "sm" },
-                        { "type": "separator", "margin": "md" },
-                        { "type": "text", "text": "⚠️ ข้อควรระวัง", "weight": "bold", "size": "md", "margin": "md", "color": "#E04855" },
-                        { "type": "text", "text": "• สวมรองเท้าหุ้มส้นเสมอ\n• พกลูกอมติดตัวเผื่อน้ำตาลตก\n• งดออกกำลังกายหากมีแผลที่เท้า", "wrap": true, "size": "sm", "margin": "sm" }
-                      ]
-                    }
+                    "type": "bubble", "size": "mega",
+                    "header": { "type": "box", "layout": "vertical", "backgroundColor": "#FD7E14", "paddingAll": "lg", "contents": [{ "type": "text", "text": "บทเรียนที่ 3", "color": "#ffffff", "size": "sm", "weight": "bold" }, { "type": "text", "text": "🏃‍♂️ ขยับกายสลายน้ำตาล", "color": "#ffffff", "size": "xl", "weight": "bold", "margin": "sm" }] },
+                    "body": { "type": "box", "layout": "vertical", "paddingAll": "lg", "contents": [{ "type": "text", "text": "การออกกำลังกายช่วยลดภาวะดื้ออินซูลิน ทำให้ร่างกายดึงน้ำตาลไปใช้ได้ดีขึ้น", "wrap": true, "size": "sm", "color": "#333333" }, { "type": "separator", "margin": "md" }, { "type": "text", "text": "⏱️ คำแนะนำ", "weight": "bold", "size": "md", "margin": "md", "color": "#FD7E14" }, { "type": "text", "text": "ออกกำลังกายระดับปานกลาง อย่างน้อย 150 นาที/สัปดาห์ (วันละ 30 นาที 5 วัน/สัปดาห์)", "wrap": true, "size": "sm", "margin": "sm" }, { "type": "separator", "margin": "md" }, { "type": "text", "text": "⚠️ ข้อควรระวัง", "weight": "bold", "size": "md", "margin": "md", "color": "#E04855" }, { "type": "text", "text": "• สวมรองเท้าหุ้มส้นเสมอ\n• พกลูกอมติดตัวเผื่อน้ำตาลตก\n• งดออกกำลังกายหากมีแผลที่เท้า", "wrap": true, "size": "sm", "margin": "sm" }] }
                   },
                   {
-                    "type": "bubble",
-                    "size": "mega",
-                    "header": {
-                      "type": "box", "layout": "vertical", "backgroundColor": "#17A2B8", "paddingAll": "lg",
-                      "contents": [
-                        { "type": "text", "text": "บทเรียนที่ 4", "color": "#ffffff", "size": "sm", "weight": "bold" },
-                        { "type": "text", "text": "🦶 การดูแลเท้า", "color": "#ffffff", "size": "xl", "weight": "bold", "margin": "sm" }
-                      ]
-                    },
-                    "body": {
-                      "type": "box", "layout": "vertical", "paddingAll": "lg",
-                      "contents": [
-                        { "type": "text", "text": "ผู้ป่วยเบาหวานมักมีอาการชาปลายเท้า ทำให้เกิดแผลได้ง่ายโดยไม่รู้ตัว", "wrap": true, "size": "sm", "color": "#333333" },
-                        { "type": "separator", "margin": "md" },
-                        { "type": "text", "text": "✨ วิธีดูแลเท้าทุกวัน", "weight": "bold", "size": "sm", "margin": "md", "color": "#17A2B8" },
-                        { "type": "text", "text": "1. สำรวจรอยแตก บวม แดง\n2. ล้างเท้าด้วยสบู่อ่อน เช็ดให้แห้ง\n3. ทาโลชั่น (เว้นซอกนิ้ว)\n4. ตัดเล็บตรง ไม่สั้นเกินไป", "wrap": true, "size": "sm" },
-                        { "type": "separator", "margin": "md" },
-                        { "type": "text", "text": "👟 การเลือกรองเท้า", "weight": "bold", "size": "sm", "margin": "md", "color": "#17A2B8" },
-                        { "type": "text", "text": "ใส่รองเท้าหุ้มส้นที่พอดี สวมถุงเท้า ห้ามเดินเท้าเปล่าเด็ดขาด", "wrap": true, "size": "sm" }
-                      ]
-                    }
+                    "type": "bubble", "size": "mega",
+                    "header": { "type": "box", "layout": "vertical", "backgroundColor": "#17A2B8", "paddingAll": "lg", "contents": [{ "type": "text", "text": "บทเรียนที่ 4", "color": "#ffffff", "size": "sm", "weight": "bold" }, { "type": "text", "text": "🦶 การดูแลเท้า", "color": "#ffffff", "size": "xl", "weight": "bold", "margin": "sm" }] },
+                    "body": { "type": "box", "layout": "vertical", "paddingAll": "lg", "contents": [{ "type": "text", "text": "ผู้ป่วยเบาหวานมักมีอาการชาปลายเท้า ทำให้เกิดแผลได้ง่ายโดยไม่รู้ตัว", "wrap": true, "size": "sm", "color": "#333333" }, { "type": "separator", "margin": "md" }, { "type": "text", "text": "✨ วิธีดูแลเท้าทุกวัน", "weight": "bold", "size": "sm", "margin": "md", "color": "#17A2B8" }, { "type": "text", "text": "1. สำรวจรอยแตก บวม แดง\n2. ล้างเท้าด้วยสบู่อ่อน เช็ดให้แห้ง\n3. ทาโลชั่น (เว้นซอกนิ้ว)\n4. ตัดเล็บตรง ไม่สั้นเกินไป", "wrap": true, "size": "sm" }, { "type": "separator", "margin": "md" }, { "type": "text", "text": "👟 การเลือกรองเท้า", "weight": "bold", "size": "sm", "margin": "md", "color": "#17A2B8" }, { "type": "text", "text": "ใส่รองเท้าหุ้มส้นที่พอดี สวมถุงเท้า ห้ามเดินเท้าเปล่าเด็ดขาด", "wrap": true, "size": "sm" }] }
                   },
                   {
-                    "type": "bubble",
-                    "size": "mega",
-                    "header": {
-                      "type": "box", "layout": "vertical", "backgroundColor": "#6610F2", "paddingAll": "lg",
-                      "contents": [
-                        { "type": "text", "text": "บทเรียนที่ 5", "color": "#ffffff", "size": "sm", "weight": "bold" },
-                        { "type": "text", "text": "💊 ยาและน้ำตาลตก", "color": "#ffffff", "size": "xl", "weight": "bold", "margin": "sm" }
-                      ]
-                    },
-                    "body": {
-                      "type": "box", "layout": "vertical", "paddingAll": "lg",
-                      "contents": [
-                        { "type": "text", "text": "กินยาและฉีดยาตามแพทย์สั่ง ห้ามปรับยาหรือหยุดยาเอง", "wrap": true, "size": "sm", "color": "#333333" },
-                        { "type": "separator", "margin": "md" },
-                        { "type": "text", "text": "😨 ภาวะน้ำตาลต่ำ", "weight": "bold", "size": "sm", "margin": "md", "color": "#6610F2" },
-                        { "type": "text", "text": "อาการ: ใจสั่น เหงื่อออก หน้ามืด หิวจัด มือสั่น กระวนกระวาย", "wrap": true, "size": "sm" },
-                        { "type": "separator", "margin": "md" },
-                        { "type": "text", "text": "🍬 กฎ 15-15 แก้น้ำตาลตก", "weight": "bold", "size": "sm", "margin": "md", "color": "#E67E22" },
-                        { "type": "text", "text": "1. กินคาร์บ 15g (ลูกอม 3 เม็ด หรือน้ำหวานครึ่งแก้ว)\n2. รอ 15 นาที อาการควรดีขึ้น\n3. ถ้าไม่ดีขึ้นให้ทำซ้ำข้อ 1 แล้วไปหาหมอ", "wrap": true, "size": "sm" }
-                      ]
-                    }
+                    "type": "bubble", "size": "mega",
+                    "header": { "type": "box", "layout": "vertical", "backgroundColor": "#6610F2", "paddingAll": "lg", "contents": [{ "type": "text", "text": "บทเรียนที่ 5", "color": "#ffffff", "size": "sm", "weight": "bold" }, { "type": "text", "text": "💊 ยาและน้ำตาลตก", "color": "#ffffff", "size": "xl", "weight": "bold", "margin": "sm" }] },
+                    "body": { "type": "box", "layout": "vertical", "paddingAll": "lg", "contents": [{ "type": "text", "text": "กินยาและฉีดยาตามแพทย์สั่ง ห้ามปรับยาหรือหยุดยาเอง", "wrap": true, "size": "sm", "color": "#333333" }, { "type": "separator", "margin": "md" }, { "type": "text", "text": "😨 ภาวะน้ำตาลต่ำ", "weight": "bold", "size": "sm", "margin": "md", "color": "#6610F2" }, { "type": "text", "text": "อาการ: ใจสั่น เหงื่อออก หน้ามืด หิวจัด มือสั่น กระวนกระวาย", "wrap": true, "size": "sm" }, { "type": "separator", "margin": "md" }, { "type": "text", "text": "🍬 กฎ 15-15 แก้น้ำตาลตก", "weight": "bold", "size": "sm", "margin": "md", "color": "#E67E22" }, { "type": "text", "text": "1. กินคาร์บ 15g (ลูกอม 3 เม็ด หรือน้ำหวานครึ่งแก้ว)\n2. รอ 15 นาที อาการควรดีขึ้น\n3. ถ้าไม่ดีขึ้นให้ทำซ้ำข้อ 1 แล้วไปหาหมอ", "wrap": true, "size": "sm" }] }
                   },
                   {
-                    "type": "bubble",
-                    "size": "mega",
-                    "header": {
-                      "type": "box", "layout": "vertical", "backgroundColor": "#6C757D", "paddingAll": "lg",
-                      "contents": [
-                        { "type": "text", "text": "บทเรียนที่ 6", "color": "#ffffff", "size": "sm", "weight": "bold" },
-                        { "type": "text", "text": "🛡️ ป้องกันไตเสื่อม", "color": "#ffffff", "size": "xl", "weight": "bold", "margin": "sm" }
-                      ]
-                    },
-                    "body": {
-                      "type": "box", "layout": "vertical", "paddingAll": "lg",
-                      "contents": [
-                        { "type": "text", "text": "เบาหวานลงไต ป้องกันได้! ยืดอายุการทำงานของไตง่ายๆ", "wrap": true, "size": "sm", "color": "#333333" },
-                        { "type": "separator", "margin": "md" },
-                        { "type": "text", "text": "1️⃣ คุมคู่อันตราย", "weight": "bold", "size": "sm", "margin": "md", "color": "#6C757D" },
-                        { "type": "text", "text": "น้ำตาลสะสม (HbA1c < 7%) และความดัน (< 130/80)", "wrap": true, "size": "sm" },
-                        { "type": "text", "text": "2️⃣ ลดเค็ม ยืดอายุไต", "weight": "bold", "size": "sm", "margin": "md", "color": "#6C757D" },
-                        { "type": "text", "text": "โซเดียมไม่เกิน 2,000 มก./วัน งดซดน้ำซุป", "wrap": true, "size": "sm" },
-                        { "type": "text", "text": "3️⃣ ระวังการใช้ยา", "weight": "bold", "size": "sm", "margin": "md", "color": "#6C757D" },
-                        { "type": "text", "text": "เลี่ยงยาแก้ปวดกระดูก (NSAIDs) และยาสมุนไพร", "wrap": true, "size": "sm" },
-                        { "type": "text", "text": "4️⃣ ตรวจเช็กค่าไต (eGFR)", "weight": "bold", "size": "sm", "margin": "md", "color": "#6C757D" },
-                        { "type": "text", "text": "ตรวจเลือดและปัสสาวะอย่างสม่ำเสมอ", "wrap": true, "size": "sm" }
-                      ]
-                    }
+                    "type": "bubble", "size": "mega",
+                    "header": { "type": "box", "layout": "vertical", "backgroundColor": "#6C757D", "paddingAll": "lg", "contents": [{ "type": "text", "text": "บทเรียนที่ 6", "color": "#ffffff", "size": "sm", "weight": "bold" }, { "type": "text", "text": "🛡️ ป้องกันไตเสื่อม", "color": "#ffffff", "size": "xl", "weight": "bold", "margin": "sm" }] },
+                    "body": { "type": "box", "layout": "vertical", "paddingAll": "lg", "contents": [{ "type": "text", "text": "เบาหวานลงไต ป้องกันได้! ยืดอายุการทำงานของไตง่ายๆ", "wrap": true, "size": "sm", "color": "#333333" }, { "type": "separator", "margin": "md" }, { "type": "text", "text": "1️⃣ คุมคู่อันตราย", "weight": "bold", "size": "sm", "margin": "md", "color": "#6C757D" }, { "type": "text", "text": "น้ำตาลสะสม (HbA1c < 7%) และความดัน (< 130/80)", "wrap": true, "size": "sm" }, { "type": "text", "text": "2️⃣ ลดเค็ม ยืดอายุไต", "weight": "bold", "size": "sm", "margin": "md", "color": "#6C757D" }, { "type": "text", "text": "โซเดียมไม่เกิน 2,000 มก./วัน งดซดน้ำซุป", "wrap": true, "size": "sm" }, { "type": "text", "text": "3️⃣ ระวังการใช้ยา", "weight": "bold", "size": "sm", "margin": "md", "color": "#6C757D" }, { "type": "text", "text": "เลี่ยงยาแก้ปวดกระดูก (NSAIDs) และยาสมุนไพร", "wrap": true, "size": "sm" }, { "type": "text", "text": "4️⃣ ตรวจเช็กค่าไต (eGFR)", "weight": "bold", "size": "sm", "margin": "md", "color": "#6C757D" }, { "type": "text", "text": "ตรวจเลือดและปัสสาวะอย่างสม่ำเสมอ", "wrap": true, "size": "sm" }] }
                   }
                 ]
               }
             };
-
             return lineClient.pushMessage(userId, lessonFlex);
         }
 
-        // 🔥 ระบบสมุดพก (Health Report) ที่มีการสรุปโควตาคาร์บ
+        // 🔥 ระบบสมุดพก (Health Report & Nutrition Summary)
         if (text === 'ดูสมุดพก') {
             const userInfo = await getRegisteredUser(userId);
 
             if (!userInfo) {
-                return lineClient.pushMessage(userId, {
-                    type: 'text',
-                    text: '🔒 คุณยังไม่ได้ลงทะเบียนครับ กรุณากดปุ่ม "ลงทะเบียน" จากเมนูด้านล่างก่อนนะครับ'
-                });
+                return lineClient.pushMessage(userId, { type: 'text', text: '🔒 คุณยังไม่ได้ลงทะเบียนครับ กรุณากดปุ่ม "ลงทะเบียน" จากเมนูด้านล่างก่อนนะครับ' });
             }
 
-            await lineClient.pushMessage(userId, {
-                type: 'text',
-                text: '⏳ ระบบกำลังตรวจสอบข้อมูลผลแล็บ และวิเคราะห์โควตาอาหารของคุณ กรุณารอสักครู่นะครับ...'
-            });
+            await lineClient.pushMessage(userId, { type: 'text', text: '⏳ ระบบกำลังตรวจสอบข้อมูลผลแล็บ และวิเคราะห์โควตาอาหารของคุณ กรุณารอสักครู่นะครับ...' });
 
             try {
                 const healthData = await getPatientHealthReport(userInfo.cid, userInfo.birthday);
 
-                if (!healthData) {
-                    return lineClient.pushMessage(userId, { 
-                        type: 'text', 
-                        text: '❌ ระบบยังไม่พบผลตรวจเลือดของคุณในฐานข้อมูลครับ (อาจจะยังไม่ได้ตรวจ หรือเจ้าหน้าที่ยังไม่ได้นำข้อมูลเข้าระบบ)' 
-                    });
+                // ==========================================
+                // 💡 การคำนวณโภชนาการสำหรับแสดงผลใน Flex Message
+                // ==========================================
+                let age = 0;
+                let birthYearMatch = userInfo.birthday.match(/\d{4}/);
+                if (birthYearMatch) {
+                    let birthYear = parseInt(birthYearMatch[0]);
+                    if (birthYear > 2400) birthYear -= 543;
+                    age = new Date().getFullYear() - birthYear;
                 }
 
-                const userCarb = userInfo.carbPerMeal || '-';
+                const w = parseFloat(userInfo.weight) || 60;
+                const h = parseFloat(userInfo.height) || 160;
+                const act = parseFloat(userInfo.activity) || 1.2;
+                const diet = parseFloat(userInfo.dietType) || 0.5;
 
-                // 🌟 ปรับแก้ Prompt เพื่อบังคับให้ AI สรุปแยก 2 ส่วนชัดเจน (ผลแล็บ & การปฏิบัติตัว)
+                // 1. หา BMR
+                let bmr = (userInfo.gender === 'ชาย') 
+                    ? 66 + (13.7 * w) + (5 * h) - (6.8 * age) 
+                    : 665 + (9.6 * w) + (1.8 * h) - (4.7 * age);
+                
+                // 2. หา TDEE
+                let tdee = bmr * act;
+                
+                // 3. หาเป้าหมายพลังงาน (Target Kcal)
+                let targetKcal = tdee;
+                let deficitText = "รักษาระดับพลังงานเพื่อสุขภาพที่สมดุล";
+                let showDeficit = false;
+                
+                // ถ้าเป็นโหมด Low Carb (ลดน้ำหนัก/คุมเบาหวาน)
+                if (diet <= 0.2) { 
+                    targetKcal = tdee - 500;
+                    if (targetKcal < 1200) targetKcal = 1200; // ขั้นต่ำสุดเพื่อความปลอดภัย
+                    deficitText = "ลดพลังงานลง 500 กิโลแคลอรี เพื่อช่วยลดน้ำหนัก";
+                    showDeficit = true;
+                }
+
+                // 4. หาคาร์บต่อวัน
+                let dailyCarbGrams = (targetKcal * diet) / 4;
+                let dailyCarbExchange = dailyCarbGrams / 15;
+                
+                // 5. คาร์บต่อมื้อ
+                let carbPerMeal = Math.round(dailyCarbExchange / 3);
+                if (carbPerMeal < 1) carbPerMeal = 1;
+
+                const labSummary = healthData ? healthData.labTextSummary : "ไม่มีข้อมูลผลแล็บในระบบ\n(อาจยังไม่ได้ตรวจ หรือเจ้าหน้าที่ยังไม่ได้บันทึกข้อมูล)";
+                const patientName = healthData ? healthData.patientInfo.name : "นักเรียน (ไม่ระบุชื่อ)";
+                const patientDate = healthData ? healthData.patientInfo.date : "-";
+
+                // ให้ AI ช่วยวิเคราะห์
                 const prompt = `
                   คุณคือ "หมอ/ผู้ช่วย AI โรงเรียนเบาหวาน" ผู้เชี่ยวชาญด้านเบาหวานและโภชนาการ
-                  ชื่อคนไข้: ${healthData.patientInfo.name} (อายุ ${healthData.patientInfo.age} ปี)
+                  ชื่อคนไข้: ${patientName}
                   
-                  เป้าหมายโภชนาการที่ระบบคำนวณไว้: ต้องทานคาร์บไม่เกินมื้อละ ${userCarb} คาร์บ (1 คาร์บ = ข้าว 1 ทัพพี)
+                  เป้าหมายโภชนาการที่ระบบคำนวณไว้: ทานคาร์บไม่เกินมื้อละ ${carbPerMeal} คาร์บ (1 คาร์บ = ข้าว 1 ทัพพี)
                   
-                  ผลการตรวจเลือดล่าสุด (${healthData.patientInfo.date}):
-                  ${healthData.labTextSummary}
+                  ผลการตรวจเลือดล่าสุด:
+                  ${labSummary}
                   
-                  คำสั่ง: กรุณาสรุปข้อมูลและแบ่งเป็น 2 ส่วนให้ชัดเจน
-                  1. 🩺 สรุปผลสุขภาพ: อธิบายค่าผลแล็บที่สำคัญแบบเข้าใจง่าย ค่าไหนดี ค่าไหนต้องระวัง
-                  2. 💡 คำแนะนำโภชนาการและการปฏิบัติตัว: แนะนำวิธีกินให้ตรงกับเป้าหมาย "ทานมื้อละ ${userCarb} คาร์บ" ให้เป็นรูปธรรม (เช่น ควรกินข้าวแค่ไหน, เลี่ยงอาหารแบบไหน)
-                  
+                  คำสั่ง: กรุณาสรุปข้อมูลและแบ่งเป็น 2 ส่วน
+                  1. 🩺 สรุปผลสุขภาพ: อธิบายค่าผลแล็บที่สำคัญแบบเข้าใจง่าย ค่าไหนดี ค่าไหนต้องระวัง (ถ้าไม่มีผลแล็บ ให้ข้ามส่วนนี้ไป)
+                  2. 💡 คำแนะนำโภชนาการ: แนะนำวิธีกินให้ตรงกับเป้าหมาย "ทานมื้อละ ${carbPerMeal} คาร์บ" ให้เป็นรูปธรรม
                   ตอบให้กระชับ เป็นมิตร ให้กำลังใจ และใช้ Emoji ประกอบให้อ่านง่าย
                 `;
 
                 const aiAnalysis = await callGeminiWithFallback(prompt);
 
+                // ==========================================
+                // 📦 สร้าง Flex Message ตามรูปแบบที่ต้องการ
+                // ==========================================
                 const flexMessage = {
                   type: "flex",
                   altText: "สมุดพกสุขภาพและเป้าหมายอาหารของคุณ",
@@ -478,50 +397,72 @@ async function handleEvent(event) {
                     "type": "bubble",
                     "size": "giga",
                     "header": {
-                      "type": "box",
-                      "layout": "vertical",
+                      "type": "box", "layout": "vertical", "backgroundColor": "#00897B", "paddingAll": "20px",
                       "contents": [
-                        { "type": "text", "text": "📘 สมุดพกสุขภาพนักเรียน", "weight": "bold", "color": "#ffffff", "size": "xl" }
-                      ],
-                      "backgroundColor": "#00897B",
-                      "paddingAll": "20px"
+                        { "type": "text", "text": "📘 สมุดพกและเป้าหมายสุขภาพ", "weight": "bold", "color": "#ffffff", "size": "xl" },
+                        { "type": "text", "text": `ชื่อ: ${patientName}`, "color": "#e0f2f1", "size": "sm", "margin": "md" }
+                      ]
                     },
                     "body": {
-                      "type": "box",
-                      "layout": "vertical",
+                      "type": "box", "layout": "vertical", "paddingAll": "20px",
                       "contents": [
-                        { "type": "text", "text": `ข้อมูลประจำตัว: ${healthData.patientInfo.name}`, "weight": "bold", "size": "md" },
-                        { "type": "text", "text": `อัปเดตล่าสุด: ${healthData.patientInfo.date}`, "size": "xs", "color": "#aaaaaa" },
                         
-                        // 🌟 ส่วนที่เพิ่มใหม่: กล่องเป้าหมายโควตาอาหาร (แสดงเด่นๆ ด้านบนผลแล็บ)
+                        // 1. กล่องสรุป BMR / TDEE (เทาอ่อน)
                         {
-                          "type": "box",
-                          "layout": "vertical",
-                          "margin": "lg",
-                          "spacing": "sm",
+                          "type": "box", "layout": "vertical", "margin": "md",
                           "contents": [
-                            { "type": "text", "text": "🎯 เป้าหมายโควตาอาหารของคุณ", "weight": "bold", "color": "#D35400", "size": "sm" },
-                            { "type": "text", "text": `ทานได้ไม่เกิน: ${userCarb} คาร์บ / มื้อ`, "size": "lg", "weight": "bold", "color": "#333333" },
-                            { "type": "text", "text": `(เทียบเท่า ข้าวสวย/แป้ง มื้อละ ${userCarb} ทัพพี)`, "size": "xs", "color": "#666666", "wrap": true }
+                            { "type": "box", "layout": "baseline", "contents": [
+                                { "type": "text", "text": "BMR (kcal):", "color": "#17202A", "size": "sm", "flex": 2 },
+                                { "type": "text", "text": `${Math.round(bmr).toLocaleString()}`, "color": "#D35400", "size": "sm", "weight": "bold", "flex": 1 }
+                            ]},
+                            { "type": "box", "layout": "baseline", "margin": "md", "contents": [
+                                { "type": "text", "text": "พลังงานที่ใช้/วัน (TDEE):", "color": "#17202A", "size": "sm", "flex": 2 },
+                                { "type": "text", "text": `${Math.round(tdee).toLocaleString()}`, "color": "#D35400", "size": "sm", "weight": "bold", "flex": 1 }
+                            ]}
                           ],
-                          "backgroundColor": "#FDEBD0",
-                          "paddingAll": "15px",
-                          "cornerRadius": "10px"
+                          "backgroundColor": "#F4F6F6", "paddingAll": "15px", "cornerRadius": "8px"
                         },
 
-                        { "type": "separator", "margin": "lg" },
+                        // 2. ข้อมูลเป้าหมายและคาร์บรายวัน (ตัวอักษรน้ำเงิน/แดง ตามตัวอย่าง)
+                        {
+                          "type": "box", "layout": "vertical", "margin": "lg",
+                          "contents": [
+                            { "type": "text", "text": `พลังงานที่ควรได้รับ(กิโลแคลอรี/วัน): ${Math.round(targetKcal).toLocaleString()}`, "color": "#0000FF", "size": "md", "weight": "bold" },
+                            { "type": "text", "text": showDeficit ? deficitText : " ", "color": "#FF0000", "size": "xs", "margin": "sm", "wrap": true },
+                            
+                            { "type": "separator", "margin": "md", "color": "#0000FF" },
+                            
+                            { "type": "text", "text": `ปริมาณคาร์บที่แนะนำต่อวัน: ${dailyCarbExchange.toFixed(1)}`, "color": "#0000FF", "size": "md", "weight": "bold", "margin": "md" },
+                            { "type": "text", "text": "รวมคาร์บจากทุกประเภท ทั้งกลุ่มข้าวแป้ง ผัก ผลไม้ และนม", "color": "#FF0000", "size": "xs", "margin": "sm", "wrap": true },
+
+                            { "type": "separator", "margin": "md", "color": "#FF0000" }
+                          ]
+                        },
+
+                        // 3. กล่อง Highlight เป้าหมายต่อมื้อ (สีส้มอ่อน)
+                        {
+                          "type": "box", "layout": "vertical", "margin": "lg",
+                          "contents": [
+                            { "type": "text", "text": "🎯 เป้าหมายโควตาอาหารของคุณ", "weight": "bold", "color": "#D35400", "size": "sm" },
+                            { "type": "text", "text": `ทานได้ไม่เกิน: ${carbPerMeal} คาร์บ / มื้อ`, "size": "xl", "weight": "bold", "color": "#333333", "margin": "md" },
+                            { "type": "text", "text": `(เทียบเท่า ข้าวสวย/แป้ง มื้อละ ${carbPerMeal} ทัพพี)`, "size": "sm", "color": "#666666", "wrap": true, "margin": "sm" }
+                          ],
+                          "backgroundColor": "#FDEBD0", "paddingAll": "20px", "cornerRadius": "10px"
+                        },
                         
-                        // 🌟 ส่วนคำแนะนำจาก AI
+                        { "type": "separator", "margin": "xl" },
+
+                        // 4. ส่วนผลแล็บและคำแนะนำจาก AI
                         {
                           "type": "box", "layout": "vertical", "margin": "lg",
                           "contents": [
                             { "type": "text", "text": "💡 วิเคราะห์ผลและคำแนะนำจาก AI:", "weight": "bold", "color": "#00897B", "size": "sm" },
-                            { "type": "text", "text": aiAnalysis, "wrap": true, "size": "sm", "margin": "sm" }
+                            { "type": "text", "text": `อัปเดตแล็บล่าสุด: ${patientDate}`, "size": "xxs", "color": "#aaaaaa", "margin": "sm" },
+                            { "type": "text", "text": aiAnalysis, "wrap": true, "size": "sm", "margin": "md" }
                           ],
                           "backgroundColor": "#f4fcf8", "paddingAll": "15px", "cornerRadius": "10px"
                         }
-                      ],
-                      "paddingAll": "20px"
+                      ]
                     }
                   }
                 };
@@ -542,20 +483,14 @@ async function handleEvent(event) {
     // -----------------------------------------
     if (event.message.type === 'image') {
         try {
-            await lineClient.pushMessage(userId, {
-                type: 'text',
-                text: '⏳ ได้รับรูปภาพแล้วครับ กำลังให้ AI ช่วยวิเคราะห์ข้อมูลให้ กรุณารอสักครู่นะครับ...'
-            });
+            await lineClient.pushMessage(userId, { type: 'text', text: '⏳ ได้รับรูปภาพแล้วครับ กำลังให้ AI ช่วยวิเคราะห์ข้อมูลให้ กรุณารอสักครู่นะครับ...' });
 
             const stream = await lineClient.getMessageContent(event.message.id);
             const chunks = [];
-            for await (const chunk of stream) {
-                chunks.push(chunk);
-            }
+            for await (const chunk of stream) { chunks.push(chunk); }
             const buffer = Buffer.concat(chunks);
             const base64Image = buffer.toString('base64');
             
-            // เพิ่มการดึงข้อมูล Carb มาเป็นบริบทให้ตอนตรวจภาพอาหารด้วย (ถ้าคนไข้เคยลงทะเบียน)
             const userInfo = await getRegisteredUser(userId);
             let userCarbContext = "";
             if (userInfo && userInfo.carbPerMeal) {
@@ -563,33 +498,20 @@ async function handleEvent(event) {
             }
 
             const prompt = `
-                คุณคือ "ผู้ช่วย AI โรงเรียนเบาหวาน" ผู้เชี่ยวชาญด้านโภชนาการและการจัดการระดับน้ำตาลในเลือด
-                
-                กรุณาดูภาพนี้ หากเป็นภาพผลตรวจสุขภาพ:
-                1. สรุปค่าที่สำคัญ โดยเฉพาะค่าที่เกี่ยวกับเบาหวาน (เช่น FBS, HbA1c, Lipid profile)
-                2. บอกว่าค่าไหนอยู่ในเกณฑ์ปกติ หรือผิดปกติ
-                3. ให้คำแนะนำเบื้องต้น
-
-                หากเป็นภาพอาหาร (วิเคราะห์อย่างละเอียดเรื่องคาร์บ):
-                1. ระบุชื่ออาหารที่เป็นไปได้ให้ครบถ้วน
-                2. ประเมินปริมาณอาหารโดยคร่าว (เช่น ข้าวสวยกี่ทัพพี, เส้นกี่ทัพพี)
-                3. ประเมิน "จำนวนคาร์บ (Carb Exchange)" จากภาพ โดยใช้หลักการสาธารณสุขไทย คือ คาร์โบไฮเดรต 15 กรัม = 1 คาร์บ (เช่น ข้าว 1 ทัพพี = 1 คาร์บ) แยกระบุให้ชัดเจนว่ามาจากส่วนไหนบ้าง
-                4. ประเมินผลกระทบต่อน้ำตาลในเลือด
+                คุณคือ "ผู้ช่วย AI โรงเรียนเบาหวาน" ผู้เชี่ยวชาญด้านโภชนาการ
+                หากเป็นภาพผลตรวจสุขภาพ: สรุปค่าที่สำคัญ(โดยเฉพาะเบาหวาน), บอกว่าปกติหรือไม่, ให้คำแนะนำ
+                หากเป็นภาพอาหาร: 1. ระบุชื่ออาหาร 2. ประเมินปริมาณ (ทัพพี) 3. ประเมินจำนวนคาร์บ (1 คาร์บ = 15g) แยกเป็นส่วนๆ 4. ประเมินผลต่อน้ำตาลในเลือด
                 ${userCarbContext}
-
                 ตอบให้กระชับ เป็นมิตร ให้กำลังใจ
-                หากเป็นอาหารให้ตอบในรูปแบบ:
+                รูปแบบตอบกลับอาหาร:
                 🍲 เมนูที่พบ:
                 🍚 ปริมาณที่ประเมินได้:
-                🔢 จำนวนคาร์บโดยประมาณ: (เช่น รวม 3 คาร์บ หรือ 45 กรัม)
+                🔢 จำนวนคาร์บโดยประมาณ:
                 📈 ผลกระทบต่อน้ำตาลในเลือด:
                 💡 คำแนะนำสำหรับนักเรียนเบาหวาน:
             `;
 
-            const imageParts = [{
-                inlineData: { data: base64Image, mimeType: "image/jpeg" }
-            }];
-
+            const imageParts = [{ inlineData: { data: base64Image, mimeType: "image/jpeg" } }];
             const text = await callGeminiWithFallback(prompt, imageParts);
 
             let finalText = text;
@@ -597,15 +519,13 @@ async function handleEvent(event) {
 
             if (detectedFoods.length > 0) {
                 finalText += `\n\n📊 ข้อมูลโภชนาการมาตรฐาน (ต่อ 1 เสิร์ฟปกติ):`;
-                
                 detectedFoods.forEach(food => {
                     const data = thaiFoodDB[food];
                     const carbGrams = data.carb || 0;
                     const carbExchange = carbGrams > 0 ? (carbGrams / 15).toFixed(1) : "0";
-
                     finalText += `\n\n🍲 ${food}\nพลังงาน: ~${data.kcal} kcal\nคาร์โบไฮเดรต: ~${carbGrams} กรัม (คิดเป็น ${carbExchange} คาร์บ)\nน้ำตาล: ~${data.sugar} g\nไขมัน: ~${data.fat} g\nโซเดียม: ~${data.sodium} mg`;
                 });
-
+                
                 finalText += `\n\n📌 หมายเหตุ: 1 คาร์บ = คาร์โบไฮเดรต 15 กรัม (เทียบเท่าข้าวสวย 1 ทัพพี)`;
             }
 
@@ -615,7 +535,7 @@ async function handleEvent(event) {
             });
 
         } catch (error) {
-            console.error("Error processing image with Gemini:", error);
+            console.error("Error processing image:", error);
             return lineClient.pushMessage(userId, {
                 type: 'text',
                 text: 'ขออภัยครับ/ค่ะ ระบบวิเคราะห์ภาพมีปัญหาชั่วคราว กรุณาลองส่งรูปใหม่อีกครั้งในภายหลังนะคะ 🛠️'
@@ -626,9 +546,6 @@ async function handleEvent(event) {
     return Promise.resolve(null);
 }
 
-// =====================================
-// 8. สตาร์ทเซิร์ฟเวอร์
-// =====================================
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
     console.log(`Webhook server listening on port ${port}`);
