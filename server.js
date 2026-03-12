@@ -120,7 +120,7 @@ const thaiFoodDB = {
     "หอยทอด": {kcal:600, carb:55, sugar:3, fat:38, sodium:950},
     "ออส่วน": {kcal:520, carb:45, sugar:2, fat:32, sodium:900},
     "ปูผัดผงกะหรี่": {kcal:520, carb:25, sugar:6, fat:28, sodium:900},
-    "กุ้งผัดพริเกลือ": {kcal:420, carb:10, sugar:3, fat:22, sodium:800},
+    "กุ้งผัดพริกเกลือ": {kcal:420, carb:10, sugar:3, fat:22, sodium:800},
     "กุ้งอบวุ้นเส้น": {kcal:450, carb:50, sugar:5, fat:18, sodium:900},
     "หมึกผัดไข่เค็ม": {kcal:420, carb:15, sugar:3, fat:20, sodium:950},
     "ปลาหมึกผัดพริกเผา": {kcal:400, carb:20, sugar:7, fat:16, sodium:900},
@@ -215,8 +215,6 @@ async function handleEvent(event) {
         if (text.startsWith('ลงทะเบียน ')) {
             const parts = text.split(' ');
             
-            // เช็กข้อมูลที่ส่งมาจาก LIFF ต้องมีครบ 9 ตำแหน่ง
-            // รูปแบบ: ลงทะเบียน [CID] [วันเกิด] [เพศ] [น้ำหนัก] [ส่วนสูง] [ระดับกิจกรรม] [สัดส่วนคาร์บ] [คาร์บ/มื้อ]
             if (parts.length < 9) {
                 return lineClient.pushMessage(userId, {
                     type: 'text',
@@ -268,7 +266,7 @@ async function handleEvent(event) {
             });
         }
 
-        // 🔥 ระบบคลังความรู้เบาหวาน (Flex Message 6 บทเรียน)
+        // 🔥 ระบบคลังความรู้เบาหวาน
         if (text === 'คลังความรู้เบาหวาน') {
             const lessonFlex = {
               type: "flex",
@@ -276,6 +274,7 @@ async function handleEvent(event) {
               contents: {
                 "type": "carousel",
                 "contents": [
+                  // ... (โค้ด Flex บทเรียน 1-6 เหมือนเดิม) ...
                   {
                     "type": "bubble",
                     "size": "mega",
@@ -425,7 +424,7 @@ async function handleEvent(event) {
             return lineClient.pushMessage(userId, lessonFlex);
         }
 
-        // 🔥 ระบบสมุดพก (Health Report)
+        // 🔥 ระบบสมุดพก (Health Report) ที่มีการสรุปโควตาคาร์บ
         if (text === 'ดูสมุดพก') {
             const userInfo = await getRegisteredUser(userId);
 
@@ -451,31 +450,30 @@ async function handleEvent(event) {
                     });
                 }
 
-                // 🌟 เพิ่มข้อมูลส่วนตัวที่ลงทะเบียนไว้เข้าไปให้ AI ช่วยวิเคราะห์
+                const userCarb = userInfo.carbPerMeal || '-';
+
+                // 🌟 ปรับแก้ Prompt เพื่อบังคับให้ AI สรุปแยก 2 ส่วนชัดเจน (ผลแล็บ & การปฏิบัติตัว)
                 const prompt = `
-                  คุณคือ "ผู้ช่วย AI โรงเรียนเบาหวาน" ผู้เชี่ยวชาญด้านเบาหวานและโภชนาการ
-                  นี่คือผลตรวจสุขภาพล่าสุดของนักเรียน:
-                  ชื่อ: ${healthData.patientInfo.name} (อายุ ${healthData.patientInfo.age} ปี)
-                  วันที่ตรวจ: ${healthData.patientInfo.date}
+                  คุณคือ "หมอ/ผู้ช่วย AI โรงเรียนเบาหวาน" ผู้เชี่ยวชาญด้านเบาหวานและโภชนาการ
+                  ชื่อคนไข้: ${healthData.patientInfo.name} (อายุ ${healthData.patientInfo.age} ปี)
                   
-                  ข้อมูลสุขภาพจากการประเมิน:
-                  - โควตาคาร์บที่ระบบคำนวณให้: ทานได้มื้อละ ${userInfo.carbPerMeal || 'ไม่ระบุ'} คาร์บ (1 คาร์บ = 15g หรือข้าวสวย 1 ทัพพี)
+                  เป้าหมายโภชนาการที่ระบบคำนวณไว้: ต้องทานคาร์บไม่เกินมื้อละ ${userCarb} คาร์บ (1 คาร์บ = ข้าว 1 ทัพพี)
                   
-                  ผลการตรวจเลือด:
+                  ผลการตรวจเลือดล่าสุด (${healthData.patientInfo.date}):
                   ${healthData.labTextSummary}
                   
-                  คำสั่ง:
-                  1. ช่วยอธิบายผลตรวจที่สำคัญ (เช่น ค่าไต, น้ำตาล, ไขมัน ฯลฯ) เป็นภาษาที่คนทั่วไปเข้าใจง่าย
-                  2. บอกว่าค่าไหนปกติ หรือค่าไหนต้องระวังเป็นพิเศษ
-                  3. ให้คำแนะนำสั้นๆ ในการดูแลตัวเอง โดยเชื่อมโยงกับโควตาคาร์บที่ระบบคำนวณให้ด้วย (ถ้ามี)
-                  ตอบให้กระชับ เป็นมิตร ให้กำลังใจแบบหมอคุยกับคนไข้
+                  คำสั่ง: กรุณาสรุปข้อมูลและแบ่งเป็น 2 ส่วนให้ชัดเจน
+                  1. 🩺 สรุปผลสุขภาพ: อธิบายค่าผลแล็บที่สำคัญแบบเข้าใจง่าย ค่าไหนดี ค่าไหนต้องระวัง
+                  2. 💡 คำแนะนำโภชนาการและการปฏิบัติตัว: แนะนำวิธีกินให้ตรงกับเป้าหมาย "ทานมื้อละ ${userCarb} คาร์บ" ให้เป็นรูปธรรม (เช่น ควรกินข้าวแค่ไหน, เลี่ยงอาหารแบบไหน)
+                  
+                  ตอบให้กระชับ เป็นมิตร ให้กำลังใจ และใช้ Emoji ประกอบให้อ่านง่าย
                 `;
 
                 const aiAnalysis = await callGeminiWithFallback(prompt);
 
                 const flexMessage = {
                   type: "flex",
-                  altText: "สมุดพกสุขภาพของคุณมาแล้ว!",
+                  altText: "สมุดพกสุขภาพและเป้าหมายอาหารของคุณ",
                   contents: {
                     "type": "bubble",
                     "size": "giga",
@@ -494,11 +492,30 @@ async function handleEvent(event) {
                       "contents": [
                         { "type": "text", "text": `ข้อมูลประจำตัว: ${healthData.patientInfo.name}`, "weight": "bold", "size": "md" },
                         { "type": "text", "text": `อัปเดตล่าสุด: ${healthData.patientInfo.date}`, "size": "xs", "color": "#aaaaaa" },
-                        { "type": "separator", "margin": "md" },
+                        
+                        // 🌟 ส่วนที่เพิ่มใหม่: กล่องเป้าหมายโควตาอาหาร (แสดงเด่นๆ ด้านบนผลแล็บ)
                         {
-                          "type": "box", "layout": "vertical", "margin": "md",
+                          "type": "box",
+                          "layout": "vertical",
+                          "margin": "lg",
+                          "spacing": "sm",
                           "contents": [
-                            { "type": "text", "text": "💡 สรุปผลจากผู้ช่วย AI:", "weight": "bold", "color": "#00897B", "size": "sm" },
+                            { "type": "text", "text": "🎯 เป้าหมายโควตาอาหารของคุณ", "weight": "bold", "color": "#D35400", "size": "sm" },
+                            { "type": "text", "text": `ทานได้ไม่เกิน: ${userCarb} คาร์บ / มื้อ`, "size": "lg", "weight": "bold", "color": "#333333" },
+                            { "type": "text", "text": `(เทียบเท่า ข้าวสวย/แป้ง มื้อละ ${userCarb} ทัพพี)`, "size": "xs", "color": "#666666", "wrap": true }
+                          ],
+                          "backgroundColor": "#FDEBD0",
+                          "paddingAll": "15px",
+                          "cornerRadius": "10px"
+                        },
+
+                        { "type": "separator", "margin": "lg" },
+                        
+                        // 🌟 ส่วนคำแนะนำจาก AI
+                        {
+                          "type": "box", "layout": "vertical", "margin": "lg",
+                          "contents": [
+                            { "type": "text", "text": "💡 วิเคราะห์ผลและคำแนะนำจาก AI:", "weight": "bold", "color": "#00897B", "size": "sm" },
                             { "type": "text", "text": aiAnalysis, "wrap": true, "size": "sm", "margin": "sm" }
                           ],
                           "backgroundColor": "#f4fcf8", "paddingAll": "15px", "cornerRadius": "10px"
@@ -538,6 +555,13 @@ async function handleEvent(event) {
             const buffer = Buffer.concat(chunks);
             const base64Image = buffer.toString('base64');
             
+            // เพิ่มการดึงข้อมูล Carb มาเป็นบริบทให้ตอนตรวจภาพอาหารด้วย (ถ้าคนไข้เคยลงทะเบียน)
+            const userInfo = await getRegisteredUser(userId);
+            let userCarbContext = "";
+            if (userInfo && userInfo.carbPerMeal) {
+                userCarbContext = `ข้อมูลเพิ่มเติม: นักเรียนท่านนี้มีโควตาคาร์บจำกัดอยู่ที่ "มื้อละ ${userInfo.carbPerMeal} คาร์บ" โปรดแนะนำเพิ่มเติมว่าอาหารในภาพนี้เกินโควตาหรือไม่`;
+            }
+
             const prompt = `
                 คุณคือ "ผู้ช่วย AI โรงเรียนเบาหวาน" ผู้เชี่ยวชาญด้านโภชนาการและการจัดการระดับน้ำตาลในเลือด
                 
@@ -551,6 +575,7 @@ async function handleEvent(event) {
                 2. ประเมินปริมาณอาหารโดยคร่าว (เช่น ข้าวสวยกี่ทัพพี, เส้นกี่ทัพพี)
                 3. ประเมิน "จำนวนคาร์บ (Carb Exchange)" จากภาพ โดยใช้หลักการสาธารณสุขไทย คือ คาร์โบไฮเดรต 15 กรัม = 1 คาร์บ (เช่น ข้าว 1 ทัพพี = 1 คาร์บ) แยกระบุให้ชัดเจนว่ามาจากส่วนไหนบ้าง
                 4. ประเมินผลกระทบต่อน้ำตาลในเลือด
+                ${userCarbContext}
 
                 ตอบให้กระชับ เป็นมิตร ให้กำลังใจ
                 หากเป็นอาหารให้ตอบในรูปแบบ:
@@ -581,7 +606,7 @@ async function handleEvent(event) {
                     finalText += `\n\n🍲 ${food}\nพลังงาน: ~${data.kcal} kcal\nคาร์โบไฮเดรต: ~${carbGrams} กรัม (คิดเป็น ${carbExchange} คาร์บ)\nน้ำตาล: ~${data.sugar} g\nไขมัน: ~${data.fat} g\nโซเดียม: ~${data.sodium} mg`;
                 });
 
-                finalText += `\n\n📌 หมายเหตุ: 1 คาร์บ = คาร์โบไฮเดรต 15 กรัม (เทียบเท่าข้าวสวย 1 ทัพพี) ควรจำกัดจำนวนคาร์บต่อมื้อตามที่ระบบคำนวณให้นะคะ/ครับ 💙`;
+                finalText += `\n\n📌 หมายเหตุ: 1 คาร์บ = คาร์โบไฮเดรต 15 กรัม (เทียบเท่าข้าวสวย 1 ทัพพี)`;
             }
 
             return lineClient.pushMessage(userId, {
