@@ -4,10 +4,9 @@
 
 const express = require('express');
 const { middleware, Client } = require('@line/bot-sdk');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
-const path = require('path'); // 🔥 เพิ่มเพื่อจัดการเส้นทางไฟล์หน้าเว็บ
+const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require('@google/generative-ai');
+const path = require('path');
 
-// นำเข้าฟังก์ชันดึงข้อมูลจากไฟล์ sheetHelper.js
 const { getPatientHealthReport, getRegisteredUser, registerNewUser } = require('./sheetHelper');
 
 // =====================================
@@ -143,34 +142,76 @@ function detectThaiFoods(text) {
 }
 
 // =====================================
-// 🔥 4. Route สำหรับแสดงหน้าเว็บลงทะเบียน (index.html)
+// 🔥 4. ฟังก์ชัน Auto-Fallback หาโมเดลที่ใช้งานได้
+// =====================================
+async function callGeminiWithFallback(prompt, imageParts = []) {
+  // เรียงลำดับโมเดลที่ต้องการทดสอบใช้งานจากใหม่ไปเก่า
+  const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+  
+  // ตั้งค่าลดการบล็อกเนื้อหา เพื่อให้ AI สามารถตอบเรื่องสุขภาพและการแพทย์ได้
+  const safetySettings = [
+    {
+      category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+      threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+    },
+    {
+      category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+      threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+    }
+  ];
+
+  let lastError;
+
+  for (const modelName of modelsToTry) {
+    try {
+      const model = genAI.getGenerativeModel({ model: modelName, safetySettings });
+      
+      const requestContent = imageParts.length > 0 ? [prompt, ...imageParts] : prompt;
+      const result = await model.generateContent(requestContent);
+      
+      console.log(`✅ ประมวลผลสำเร็จด้วยโมเดล: ${modelName}`);
+      return result.response.text(); // ส่งข้อความกลับเมื่อทำสำเร็จ
+    } catch (error) {
+      console.warn(`⚠️ โมเดล ${modelName} ไม่สามารถใช้งานได้: ${error.message} (กำลังสลับไปโมเดลถัดไป...)`);
+      lastError = error;
+    }
+  }
+
+  // ถ้าพังทุกโมเดล
+  throw new Error(`ไม่สามารถเชื่อมต่อ AI ได้เลย ล่าสุด Error: ${lastError.message}`);
+}
+
+// =====================================
+// 5. Route สำหรับแสดงหน้าเว็บลงทะเบียน (index.html)
 // =====================================
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // =====================================
-// 5. Endpoint /webhook สำหรับ LINE
+// 6. Endpoint /webhook สำหรับ LINE
 // =====================================
 app.post('/webhook', middleware(config), (req, res) => {
+  // 🔥 ตอบกลับ LINE ทันทีด้วย HTTP 200 ป้องกันปัญหา Timeout (รูปส่งแล้วเงียบ)
+  res.status(200).send('OK');
+
+  // ปล่อยให้ระบบประมวลผลข้อความและรูปภาพเป็น Background Process
   Promise
     .all(req.body.events.map(handleEvent))
-    .then((result) => res.json(result))
     .catch((err) => {
-      console.error(err);
-      res.status(500).end();
+      console.error("เกิดข้อผิดพลาดในการรัน Background Event:", err);
     });
 });
 
 // =====================================
-// 6. ฟังก์ชันจัดการ Event ของ LINE
+// 7. ฟังก์ชันจัดการ Event ของ LINE
 // =====================================
 async function handleEvent(event) {
   if (event.type !== 'message') return Promise.resolve(null);
   const userId = event.source.userId;
 
   // -----------------------------------------
-  // 6.1 จัดการข้อความ (Text)
+  // 7.1 จัดการข้อความ (Text)
   // -----------------------------------------
   if (event.message.type === 'text') {
     const text = event.message.text;
@@ -179,7 +220,7 @@ async function handleEvent(event) {
     if (text.startsWith('ลงทะเบียน ')) {
         const parts = text.split(' ');
         if (parts.length < 3) {
-            return lineClient.replyMessage(event.replyToken, {
+            return lineClient.pushMessage(userId, {
                 type: 'text',
                 text: '⚠️ รูปแบบผิดครับ: ลงทะเบียน [เลขบัตรประชาชน] [วันเกิด]\nตัวอย่าง: ลงทะเบียน 1234567890123 01/01/2500'
             });
@@ -188,17 +229,17 @@ async function handleEvent(event) {
         const result = await registerNewUser(userId, parts[1].trim(), parts[2].trim());
         
         if (result === "success") {
-            return lineClient.replyMessage(event.replyToken, {
+            return lineClient.pushMessage(userId, {
                 type: 'text',
                 text: '✅ ลงทะเบียนสำเร็จ! ต่อไปเพียงพิมพ์ "ดูสมุดพก" ก็ดูผลได้ทันทีครับ'
             });
         } else if (result === "duplicate") {
-            return lineClient.replyMessage(event.replyToken, {
+            return lineClient.pushMessage(userId, {
                 type: 'text',
                 text: '❌ คุณเคยลงทะเบียนไว้แล้วครับ'
             });
         } else {
-            return lineClient.replyMessage(event.replyToken, {
+            return lineClient.pushMessage(userId, {
                 type: 'text',
                 text: '🛠️ เกิดข้อผิดพลาด กรุณาลองใหม่ภายหลัง'
             });
@@ -206,14 +247,14 @@ async function handleEvent(event) {
     }
 
     if (text === 'อ่านผลสุขภาพ / ผลแลป') {
-        return lineClient.replyMessage(event.replyToken, {
+        return lineClient.pushMessage(userId, {
             type: 'text',
             text: '📄 โปรดถ่ายรูปใบรายงานผลตรวจเลือด ส่งมาที่นี่ได้เลยครับ/ค่ะ ผู้ช่วย AI จะช่วยแปลผลให้เข้าใจง่ายๆ ครับ 🩺'
         });
     }
 
     if (text === 'สแกนอาหารด้วย AI') {
-        return lineClient.replyMessage(event.replyToken, {
+        return lineClient.pushMessage(userId, {
             type: 'text',
             text: '📸 กรุณาส่งรูปภาพมื้ออาหารที่ชัดเจนมาได้เลยครับ/ค่ะ AI จะช่วยประเมินการนับคาร์บ (Carb Counting) และผลกระทบต่อน้ำตาลในเลือดให้ครับ 🍲'
         });
@@ -224,13 +265,13 @@ async function handleEvent(event) {
         const userInfo = await getRegisteredUser(userId);
 
         if (!userInfo) {
-            return lineClient.replyMessage(event.replyToken, {
+            return lineClient.pushMessage(userId, {
                 type: 'text',
                 text: '🔒 คุณยังไม่ได้ลงทะเบียนครับ เพื่อความปลอดภัยกรุณาพิมพ์:\nลงทะเบียน [เลขบัตรประชาชน] [วันเกิด]\n\nตัวอย่าง: ลงทะเบียน 1234567890123 01/01/2500'
             });
         }
 
-        await lineClient.replyMessage(event.replyToken, {
+        await lineClient.pushMessage(userId, {
             type: 'text',
             text: '⏳ ระบบกำลังตรวจสอบข้อมูลและวิเคราะห์ผลของคุณ กรุณารอสักครู่นะครับ...'
         });
@@ -245,7 +286,6 @@ async function handleEvent(event) {
                 });
             }
 
-            const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
             const prompt = `
               คุณคือ "ผู้ช่วย AI โรงเรียนเบาหวาน" ผู้เชี่ยวชาญด้านเบาหวาน
               นี่คือผลตรวจสุขภาพล่าสุดของนักเรียน:
@@ -262,8 +302,8 @@ async function handleEvent(event) {
               ตอบให้กระชับ เป็นมิตร ให้กำลังใจแบบหมอคุยกับคนไข้
             `;
 
-            const result = await model.generateContent(prompt);
-            const aiAnalysis = result.response.text();
+            // เรียกใช้ฟังก์ชัน Auto-Fallback แทนการระบุโมเดลแบบตายตัว
+            const aiAnalysis = await callGeminiWithFallback(prompt);
 
             const flexMessage = {
               type: "flex",
@@ -313,10 +353,16 @@ async function handleEvent(event) {
   }
 
   // -----------------------------------------
-  // 6.2 จัดการรูปภาพ (Image Analysis)
+  // 7.2 จัดการรูปภาพ (Image Analysis)
   // -----------------------------------------
   if (event.message.type === 'image') {
     try {
+      // ส่งข้อความไปบอกก่อนว่ากำลังวิเคราะห์
+      await lineClient.pushMessage(userId, {
+        type: 'text',
+        text: '⏳ ได้รับรูปภาพแล้วครับ กำลังให้ AI ช่วยวิเคราะห์ข้อมูลให้ กรุณารอสักครู่นะครับ...'
+      });
+
       const stream = await lineClient.getMessageContent(event.message.id);
       const chunks = [];
       for await (const chunk of stream) {
@@ -324,8 +370,6 @@ async function handleEvent(event) {
       }
       const buffer = Buffer.concat(chunks);
       const base64Image = buffer.toString('base64');
-
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" }); 
       
       const prompt = `
         คุณคือ "ผู้ช่วย AI โรงเรียนเบาหวาน" ผู้เชี่ยวชาญด้านโภชนาการและการจัดการระดับน้ำตาลในเลือด
@@ -354,9 +398,8 @@ async function handleEvent(event) {
         inlineData: { data: base64Image, mimeType: "image/jpeg" }
       }];
 
-      const result = await model.generateContent([prompt, ...imageParts]);
-      const response = await result.response;
-      const text = response.text();
+      // เรียกใช้ฟังก์ชัน Auto-Fallback แทนการระบุโมเดลแบบตายตัว
+      const text = await callGeminiWithFallback(prompt, imageParts);
 
       let finalText = text;
       const detectedFoods = detectThaiFoods(text);
@@ -366,29 +409,23 @@ async function handleEvent(event) {
         
         detectedFoods.forEach(food => {
           const data = thaiFoodDB[food];
-          
           const carbGrams = data.carb || 0;
           const carbExchange = carbGrams > 0 ? (carbGrams / 15).toFixed(1) : "0";
 
-          finalText += `\n\n🍲 ${food}
-พลังงาน: ~${data.kcal} kcal
-คาร์โบไฮเดรต: ~${carbGrams} กรัม (คิดเป็น ${carbExchange} คาร์บ)
-น้ำตาล: ~${data.sugar} g
-ไขมัน: ~${data.fat} g
-โซเดียม: ~${data.sodium} mg`;
+          finalText += `\n\n🍲 ${food}\nพลังงาน: ~${data.kcal} kcal\nคาร์โบไฮเดรต: ~${carbGrams} กรัม (คิดเป็น ${carbExchange} คาร์บ)\nน้ำตาล: ~${data.sugar} g\nไขมัน: ~${data.fat} g\nโซเดียม: ~${data.sodium} mg`;
         });
 
         finalText += `\n\n📌 หมายเหตุ: 1 คาร์บ = คาร์โบไฮเดรต 15 กรัม (เทียบเท่าข้าวสวย 1 ทัพพี) ควรจำกัดจำนวนคาร์บต่อมื้อตามที่แพทย์/นักกำหนดอาหารแนะนำนะคะ/ครับ 💙`;
       }
 
-      return lineClient.replyMessage(event.replyToken, {
+      return lineClient.pushMessage(userId, {
         type: 'text',
         text: finalText
       });
 
     } catch (error) {
       console.error("Error processing image with Gemini:", error);
-      return lineClient.replyMessage(event.replyToken, {
+      return lineClient.pushMessage(userId, {
         type: 'text',
         text: 'ขออภัยครับ/ค่ะ ระบบวิเคราะห์ภาพมีปัญหาชั่วคราว กรุณาลองส่งรูปใหม่อีกครั้งในภายหลังนะคะ 🛠️'
       });
@@ -399,7 +436,7 @@ async function handleEvent(event) {
 }
 
 // =====================================
-// 7. สตาร์ทเซิร์ฟเวอร์
+// 8. สตาร์ทเซิร์ฟเวอร์
 // =====================================
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
