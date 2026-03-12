@@ -38,7 +38,7 @@ const thaiFoodDB = {
     "ข้าวขาหมู": {kcal:750, carb:75, sugar:5, fat:40, sodium:1300},
     "ข้าวหมูแดง": {kcal:720, carb:85, sugar:15, fat:30, sodium:1100},
     "ข้าวหน้าเป็ด": {kcal:720, carb:80, sugar:12, fat:34, sodium:1100},
-    "ผัดซีอิ๊ว": {kcal:680, carb:85, sugar:10, fat:24, sodium:1200},
+    "ผัดซีอิ๊ว": {kcal:680, carb:85, margin:10, fat:24, sodium:1200},
     "ราดหน้า": {kcal:620, carb:80, sugar:8, fat:20, sodium:1100},
     "ข้าวผัด": {kcal:600, carb:75, sugar:5, fat:22, sodium:1000},
     "ผัดพริกแกง": {kcal:520, carb:60, sugar:5, fat:28, sodium:900},
@@ -139,7 +139,7 @@ function detectThaiFoods(text) {
 }
 
 // =====================================
-// 🔥 4. ฟังก์ชัน Auto-Fallback หาโมเดลที่ใช้งานได้
+// 3. ฟังก์ชัน Auto-Fallback AI
 // =====================================
 async function callGeminiWithFallback(prompt, imageParts = []) {
     const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
@@ -160,10 +160,8 @@ async function callGeminiWithFallback(prompt, imageParts = []) {
     for (const modelName of modelsToTry) {
         try {
             const model = genAI.getGenerativeModel({ model: modelName, safetySettings });
-            
             const requestContent = imageParts.length > 0 ? [prompt, ...imageParts] : prompt;
             const result = await model.generateContent(requestContent);
-            
             console.log(`✅ ประมวลผลสำเร็จด้วยโมเดล: ${modelName}`);
             return result.response.text(); 
         } catch (error) {
@@ -176,14 +174,15 @@ async function callGeminiWithFallback(prompt, imageParts = []) {
 }
 
 // =====================================
-// 5. Route สำหรับแสดงหน้าเว็บลงทะเบียน (index.html)
+// 4. Route สำหรับแสดงหน้าเว็บลงทะเบียน (index.html)
 // =====================================
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // =====================================
-// 6. Endpoint /webhook สำหรับ LINE
+// 5. Endpoint /webhook สำหรับ LINE
+// ต้องใช้ middleware(config) เป็นตัวตรวจสอบ Signature ของ LINE (ต้องวางก่อน express.json)
 // =====================================
 app.post('/webhook', middleware(config), (req, res) => {
     res.status(200).send('OK');
@@ -196,71 +195,99 @@ app.post('/webhook', middleware(config), (req, res) => {
 });
 
 // =====================================
-// 7. ฟังก์ชันจัดการ Event ของ LINE
+// 6. ตั้งค่า Middleware ให้อ่าน JSON ได้ (สำหรับ API ของ LIFF)
+// วางไว้ใต้ webhook เพื่อไม่ให้กวนการตรวจสอบความปลอดภัยของ LINE
+// =====================================
+app.use(express.json());
+
+// =====================================
+// 7. API สำหรับรับข้อมูลลงทะเบียนจาก LIFF (แบบปลอดภัย ไม่โชว์เลขบัตรในแชท)
+// =====================================
+app.post('/api/register', async (req, res) => {
+    try {
+        const {
+            userId, cid, birthday, gender, weight, height, 
+            activityMultiplier, dietMultiplier, carbPerMeal
+        } = req.body;
+
+        if (!userId || !cid) {
+            return res.status(400).json({ error: "ข้อมูลไม่ครบถ้วน" });
+        }
+
+        // บันทึกลง Google Sheet
+        const result = await registerNewUser(
+            userId, cid, birthday, gender, weight, height, 
+            activityMultiplier, dietMultiplier, carbPerMeal
+        );
+
+        // ส่งข้อความไปหาคนไข้ในแชท
+        if (result === "success") {
+            await lineClient.pushMessage(userId, { type: 'text', text: `✅ ลงทะเบียนสำเร็จ!\n\n📌 แนะนำให้ทานคาร์บมื้อละ: ${carbPerMeal} คาร์บ\n(พิมพ์ "ดูสมุดพก" เพื่อดูผลการวิเคราะห์เต็มรูปแบบครับ)` });
+        } else if (result === "updated") {
+            await lineClient.pushMessage(userId, { type: 'text', text: `🔄 อัปเดตข้อมูลสุขภาพสำเร็จ!\n\n📌 โควตาคาร์บใหม่ของคุณคือ: ${carbPerMeal} คาร์บ/มื้อ\n(คาร์บ 1 ส่วน = ข้าวสวย 1 ทัพพี) 🍚` });
+        }
+
+        res.json({ status: "ok", result: result });
+    } catch (error) {
+        console.error("Register API Error:", error);
+        res.status(500).json({ error: "Server Error" });
+    }
+});
+
+// =====================================
+// 8. API สำหรับดึงข้อมูลเก่าไปโชว์ที่หน้าเว็บ LIFF (index.html)
+// =====================================
+app.get('/api/getUser', async (req, res) => {
+    const userId = req.query.userId;
+    if (!userId) return res.status(400).json({ error: "Missing userId" });
+    
+    const userInfo = await getRegisteredUser(userId);
+    if (userInfo) {
+        res.json(userInfo); 
+    } else {
+        res.status(404).json({ error: "User not found" });
+    }
+});
+
+// =====================================
+// 9. ฟังก์ชันจัดการ Event ของ LINE
 // =====================================
 async function handleEvent(event) {
     if (event.type !== 'message') return Promise.resolve(null);
     const userId = event.source.userId;
 
     // -----------------------------------------
-    // 7.1 จัดการข้อความ (Text)
+    // 9.1 จัดการข้อความ (Text)
     // -----------------------------------------
     if (event.message.type === 'text') {
         const text = event.message.text;
 
-        // 🔥 ระบบลงทะเบียน (Registration)
+        // เผื่อคนไข้พิมพ์เอง (แบบเก่า) ยังสามารถใช้งานได้
         if (text.startsWith('ลงทะเบียน ')) {
             const parts = text.split(' ');
-            
             if (parts.length < 9) {
-                return lineClient.pushMessage(userId, {
-                    type: 'text',
-                    text: '⚠️ ข้อมูลไม่ครบถ้วน กรุณาทำรายการผ่านปุ่มลงทะเบียนใหม่อีกครั้งครับ'
-                });
+                return lineClient.pushMessage(userId, { type: 'text', text: '⚠️ ข้อมูลไม่ครบถ้วน แนะนำให้ทำรายการผ่านเมนูลงทะเบียนครับ' });
             }
-            
             const result = await registerNewUser(
-                userId, 
-                parts[1].trim(), // CID
-                parts[2].trim(), // Birthday
-                parts[3].trim(), // Gender
-                parts[4].trim(), // Weight
-                parts[5].trim(), // Height
-                parts[6].trim(), // Activity
-                parts[7].trim(), // DietType
-                parts[8].trim()  // CarbPerMeal
+                userId, parts[1].trim(), parts[2].trim(), parts[3].trim(), 
+                parts[4].trim(), parts[5].trim(), parts[6].trim(), parts[7].trim(), parts[8].trim()
             );
             
             if (result === "success") {
-                return lineClient.pushMessage(userId, {
-                    type: 'text',
-                    text: `✅ ลงทะเบียนสำเร็จ!\nระบบได้ประเมินสุขภาพและโควตาอาหารให้คุณเรียบร้อยแล้ว\n\n📌 แนะนำให้ทานคาร์บมื้อละ: ${parts[8].trim()} คาร์บ\n(พิมพ์ "ดูสมุดพก" เพื่อดูผลการวิเคราะห์เต็มรูปแบบครับ)`
-                });
+                return lineClient.pushMessage(userId, { type: 'text', text: `✅ ลงทะเบียนสำเร็จ!\nระบบได้ประเมินสุขภาพและโควตาอาหารให้คุณเรียบร้อยแล้ว\n\n📌 แนะนำให้ทานคาร์บมื้อละ: ${parts[8].trim()} คาร์บ\n(พิมพ์ "ดูสมุดพก" เพื่อดูผลการวิเคราะห์เต็มรูปแบบครับ)` });
             } else if (result === "updated") {
-                return lineClient.pushMessage(userId, {
-                    type: 'text',
-                    text: `🔄 อัปเดตข้อมูลสุขภาพสำเร็จ!\n\n📌 โควตาคาร์บใหม่ของคุณคือ: ${parts[8].trim()} คาร์บ/มื้อ\n(คาร์บ 1 ส่วน = ข้าวสวย 1 ทัพพี) 🍚`
-                });
+                return lineClient.pushMessage(userId, { type: 'text', text: `🔄 อัปเดตข้อมูลสุขภาพสำเร็จ!\n\n📌 โควตาคาร์บใหม่ของคุณคือ: ${parts[8].trim()} คาร์บ/มื้อ\n(คาร์บ 1 ส่วน = ข้าวสวย 1 ทัพพี) 🍚` });
             } else {
-                return lineClient.pushMessage(userId, {
-                    type: 'text',
-                    text: '🛠️ เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่ภายหลัง'
-                });
+                return lineClient.pushMessage(userId, { type: 'text', text: '🛠️ เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่ภายหลัง' });
             }
         }
 
         if (text === 'อ่านผลสุขภาพ / ผลแลป') {
-            return lineClient.pushMessage(userId, {
-                type: 'text',
-                text: '📄 โปรดถ่ายรูปใบรายงานผลตรวจเลือด ส่งมาที่นี่ได้เลยครับ/ค่ะ ผู้ช่วย AI จะช่วยแปลผลให้เข้าใจง่ายๆ ครับ 🩺'
-            });
+            return lineClient.pushMessage(userId, { type: 'text', text: '📄 โปรดถ่ายรูปใบรายงานผลตรวจเลือด ส่งมาที่นี่ได้เลยครับ/ค่ะ ผู้ช่วย AI จะช่วยแปลผลให้เข้าใจง่ายๆ ครับ 🩺' });
         }
 
         if (text === 'สแกนอาหารด้วย AI') {
-            return lineClient.pushMessage(userId, {
-                type: 'text',
-                text: '📸 กรุณาส่งรูปภาพมื้ออาหารที่ชัดเจนมาได้เลยครับ/ค่ะ AI จะช่วยประเมินการนับคาร์บ (Carb Counting) และผลกระทบต่อน้ำตาลในเลือดให้ครับ 🍲'
-            });
+            return lineClient.pushMessage(userId, { type: 'text', text: '📸 กรุณาส่งรูปภาพมื้ออาหารที่ชัดเจนมาได้เลยครับ/ค่ะ AI จะช่วยประเมินการนับคาร์บ (Carb Counting) และผลกระทบต่อน้ำตาลในเลือดให้ครับ 🍲' });
         }
 
         // 🔥 ระบบคลังความรู้เบาหวาน
@@ -479,7 +506,7 @@ async function handleEvent(event) {
     }
 
     // -----------------------------------------
-    // 7.2 จัดการรูปภาพ (Image Analysis)
+    // 9.2 จัดการรูปภาพ (Image Analysis)
     // -----------------------------------------
     if (event.message.type === 'image') {
         try {
@@ -547,20 +574,8 @@ async function handleEvent(event) {
 }
 
 // =====================================
-// 8. API สำหรับดึงข้อมูลเก่าไปโชว์ที่หน้าเว็บ LIFF (index.html)
+// 10. สตาร์ทเซิร์ฟเวอร์
 // =====================================
-app.get('/api/getUser', async (req, res) => {
-    const userId = req.query.userId;
-    if (!userId) return res.status(400).json({ error: "Missing userId" });
-    
-    const userInfo = await getRegisteredUser(userId);
-    if (userInfo) {
-        res.json(userInfo); 
-    } else {
-        res.status(404).json({ error: "User not found" });
-    }
-});
-
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
     console.log(`Webhook server listening on port ${port}`);
