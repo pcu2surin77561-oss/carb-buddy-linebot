@@ -13,8 +13,8 @@ const { getPatientHealthReport, getRegisteredUser, registerNewUser } = require('
 // 1. ตั้งค่า Keys และ Tokens
 // =====================================
 const config = {
-  channelAccessToken: process.env.LINE_ACCESS_TOKEN,
-  channelSecret: process.env.LINE_CHANNEL_SECRET
+    channelAccessToken: process.env.LINE_ACCESS_TOKEN,
+    channelSecret: process.env.LINE_CHANNEL_SECRET
 };
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
@@ -23,565 +23,582 @@ const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const app = express();
 
 // =====================================
-// 2. Thai Food Nutrition Database (รักษาไว้ครบถ้วน)
+// 2. Thai Food Nutrition Database
 // =====================================
 const thaiFoodDB = {
-  "ผัดกะเพรา": {kcal:580, carb:65, sugar:7, fat:24, sodium:1400},
-  "ข้าวมันไก่": {kcal:700, carb:80, sugar:4, fat:28, sodium:1200},
-  "ผัดไทย": {kcal:650, carb:85, sugar:18, fat:22, sodium:1100},
-  "ส้มตำ": {kcal:120, carb:20, sugar:10, fat:2, sodium:900},
-  "ต้มยำ": {kcal:90, carb:5, sugar:3, fat:4, sodium:700},
-  "แกงเขียวหวาน": {kcal:450, carb:15, sugar:6, fat:32, sodium:950},
-  "แกงแดง": {kcal:420, carb:12, sugar:6, fat:28, sodium:900},
-  "ไข่เจียว": {kcal:300, carb:2, sugar:1, fat:25, sodium:500},
-  "หมูทอด": {kcal:400, carb:5, sugar:2, fat:30, sodium:800},
-  "ข้าวขาหมู": {kcal:750, carb:75, sugar:5, fat:40, sodium:1300},
-  "ข้าวหมูแดง": {kcal:720, carb:85, sugar:15, fat:30, sodium:1100},
-  "ข้าวหน้าเป็ด": {kcal:720, carb:80, sugar:12, fat:34, sodium:1100},
-  "ผัดซีอิ๊ว": {kcal:680, carb:85, sugar:10, fat:24, sodium:1200},
-  "ราดหน้า": {kcal:620, carb:80, sugar:8, fat:20, sodium:1100},
-  "ข้าวผัด": {kcal:600, carb:75, sugar:5, fat:22, sodium:1000},
-  "ผัดพริกแกง": {kcal:520, carb:60, sugar:5, fat:28, sodium:900},
-  "ผัดผักรวม": {kcal:220, carb:15, sugar:4, fat:10, sodium:500},
-  "ผัดคะน้าหมูกรอบ": {kcal:540, carb:20, sugar:4, fat:32, sodium:900},
-  "ผัดถั่วงอก": {kcal:200, carb:10, sugar:3, fat:8, sodium:450},
-  "ผัดวุ้นเส้น": {kcal:420, carb:55, sugar:6, fat:14, sodium:850},
-  "ลาบหมู": {kcal:250, carb:10, sugar:2, fat:12, sodium:800},
-  "น้ำตกหมู": {kcal:300, carb:12, sugar:2, fat:16, sodium:850},
-  "ยำวุ้นเส้น": {kcal:350, carb:45, sugar:6, fat:12, sodium:900},
-  "ยำมาม่า": {kcal:420, carb:55, sugar:7, fat:16, sodium:1100},
-  "ยำหมูยอ": {kcal:280, carb:15, sugar:3, fat:12, sodium:800},
-  "ยำทะเล": {kcal:300, carb:10, sugar:4, fat:10, sodium:900},
-  "ยำไข่ดาว": {kcal:420, carb:10, sugar:4, fat:28, sodium:900},
-  "ยำปลาดุกฟู": {kcal:480, carb:35, sugar:6, fat:26, sodium:950},
-  "ยำถั่วพลู": {kcal:420, carb:25, sugar:5, fat:24, sodium:850},
-  "พล่ากุ้ง": {kcal:300, carb:15, sugar:4, fat:12, sodium:850},
-  "แกงจืดเต้าหู้": {kcal:120, carb:8, sugar:2, fat:4, sodium:600},
-  "แกงจืดสาหร่าย": {kcal:100, carb:6, sugar:1, fat:3, sodium:550},
-  "แกงเลียง": {kcal:150, carb:15, sugar:3, fat:4, sodium:600},
-  "แกงส้ม": {kcal:200, carb:20, sugar:6, fat:5, sodium:850},
-  "แกงป่า": {kcal:220, carb:12, sugar:3, fat:8, sodium:800},
-  "แกงมัสมั่น": {kcal:600, carb:35, sugar:10, fat:38, sodium:900},
-  "แกงพะแนง": {kcal:520, carb:20, sugar:8, fat:34, sodium:950},
-  "แกงไตปลา": {kcal:300, carb:15, sugar:4, fat:12, sodium:1200},
-  "แกงเห็ด": {kcal:150, carb:10, sugar:3, fat:5, sodium:600},
-  "แกงหน่อไม้": {kcal:180, carb:15, sugar:3, fat:6, sodium:700},
-  "ต้มจืดหมูสับ": {kcal:150, carb:5, sugar:2, fat:7, sodium:700},
-  "ต้มโคล้ง": {kcal:180, carb:8, sugar:2, fat:8, sodium:850},
-  "ต้มข่าไก่": {kcal:350, carb:15, sugar:4, fat:22, sodium:900},
-  "ต้มเลือดหมู": {kcal:220, carb:5, sugar:2, fat:10, sodium:900},
-  "ต้มจับฉ่าย": {kcal:200, carb:15, sugar:4, fat:8, sodium:900},
-  "ต้มแซ่บ": {kcal:250, carb:10, sugar:3, fat:10, sodium:950},
-  "ต้มยำกุ้ง": {kcal:200, carb:10, sugar:4, fat:6, sodium:900},
-  "ต้มยำปลา": {kcal:180, carb:8, sugar:3, fat:5, sodium:850},
-  "ต้มยำทะเล": {kcal:220, carb:10, sugar:4, fat:7, sodium:950},
-  "ต้มจืดไข่น้ำ": {kcal:180, carb:5, sugar:2, fat:10, sodium:700},
-  "ไก่ทอด": {kcal:480, carb:15, sugar:2, fat:32, sodium:900},
-  "หมูแดดเดียว": {kcal:420, carb:10, sugar:3, fat:28, sodium:900},
-  "เนื้อแดดเดียว": {kcal:430, carb:8, sugar:2, fat:26, sodium:850},
-  "ไก่ย่าง": {kcal:400, carb:5, sugar:2, fat:24, sodium:850},
-  "หมูย่าง": {kcal:420, carb:8, sugar:3, fat:26, sodium:850},
-  "ปลาย่าง": {kcal:300, carb:0, sugar:1, fat:12, sodium:600},
-  "ปลาทอด": {kcal:420, carb:10, sugar:1, fat:28, sodium:700},
-  "ปลานึ่งมะนาว": {kcal:260, carb:5, sugar:3, fat:10, sodium:850},
-  "ปลาราดพริก": {kcal:380, carb:25, sugar:12, fat:20, sodium:900},
-  "ปลาสามรส": {kcal:450, carb:35, sugar:18, fat:24, sodium:950},
-  "ข้าวหมูทอด": {kcal:650, carb:70, sugar:3, fat:32, sodium:950},
-  "ข้าวไก่ทอด": {kcal:680, carb:75, sugar:3, fat:34, sodium:1000},
-  "ข้าวไข่เจียว": {kcal:550, carb:65, sugar:2, fat:26, sodium:800},
-  "ข้าวผัดกุ้ง": {kcal:620, carb:75, sugar:5, fat:20, sodium:1000},
-  "ข้าวผัดปู": {kcal:620, carb:75, sugar:4, fat:20, sodium:1000},
-  "ข้าวผัดหมู": {kcal:650, carb:75, sugar:5, fat:22, sodium:1000},
-  "ข้าวคลุกกะปิ": {kcal:650, carb:80, sugar:12, fat:20, sodium:1200},
-  "ข้าวยำ": {kcal:350, carb:60, sugar:8, fat:10, sodium:700},
-  "ข้าวต้มหมู": {kcal:250, carb:35, sugar:2, fat:6, sodium:700},
-  "โจ๊กหมู": {kcal:300, carb:40, sugar:2, fat:8, sodium:700},
-  "ก๋วยเตี๋ยวหมู": {kcal:350, carb:45, sugar:4, fat:10, sodium:900},
-  "ก๋วยเตี๋ยวเนื้อ": {kcal:400, carb:45, sugar:4, fat:14, sodium:950},
-  "ก๋วยเตี๋ยวไก่": {kcal:380, carb:45, sugar:4, fat:12, sodium:900},
-  "ก๋วยเตี๋ยวเรือ": {kcal:450, carb:50, sugar:5, fat:16, sodium:1100},
-  "ก๋วยเตี๋ยวต้มยำ": {kcal:420, carb:50, sugar:6, fat:14, sodium:1100},
-  "ก๋วยเตี๋ยวเย็นตาโฟ": {kcal:420, carb:55, sugar:7, fat:14, sodium:1100},
-  "บะหมี่หมูแดง": {kcal:450, carb:55, sugar:10, fat:16, sodium:1000},
-  "บะหมี่เกี๊ยว": {kcal:420, carb:50, sugar:8, fat:14, sodium:950},
-  "เส้นใหญ่ผัดซีอิ๊ว": {kcal:700, carb:85, sugar:10, fat:26, sodium:1200},
-  "เส้นหมี่ผัด": {kcal:480, carb:65, sugar:7, fat:16, sodium:950},
-  "ขนมจีนน้ำยา": {kcal:500, carb:65, sugar:5, fat:18, sodium:1000},
-  "ขนมจีนน้ำเงี้ยว": {kcal:450, carb:60, sugar:6, fat:16, sodium:950},
-  "ขนมจีนน้ำพริก": {kcal:420, carb:70, sugar:12, fat:14, sodium:900},
-  "ขนมจีนน้ำยาใต้": {kcal:520, carb:65, sugar:5, fat:20, sodium:1100},
-  "ขนมจีนน้ำยาป่า": {kcal:480, carb:60, sugar:4, fat:16, sodium:1000},
-  "ขนมจีนน้ำยากะทิ": {kcal:550, carb:65, sugar:6, fat:24, sodium:1000},
-  "ข้าวซอยไก่": {kcal:650, carb:70, sugar:7, fat:34, sodium:1100},
-  "ข้าวซอยเนื้อ": {kcal:700, carb:70, sugar:7, fat:36, sodium:1100},
-  "ข้าวซอยหมู": {kcal:680, carb:70, sugar:7, fat:35, sodium:1100},
-  "ข้าวซอยทะเล": {kcal:620, carb:65, sugar:6, fat:30, sodium:1000},
-  "ผัดหอยลาย": {kcal:300, carb:15, sugar:4, fat:12, sodium:900},
-  "หอยทอด": {kcal:600, carb:55, sugar:3, fat:38, sodium:950},
-  "ออส่วน": {kcal:520, carb:45, sugar:2, fat:32, sodium:900},
-  "ปูผัดผงกะหรี่": {kcal:520, carb:25, sugar:6, fat:28, sodium:900},
-  "กุ้งผัดพริกเกลือ": {kcal:420, carb:10, sugar:3, fat:22, sodium:800},
-  "กุ้งอบวุ้นเส้น": {kcal:450, carb:50, sugar:5, fat:18, sodium:900},
-  "หมึกผัดไข่เค็ม": {kcal:420, carb:15, sugar:3, fat:20, sodium:950},
-  "ปลาหมึกผัดพริกเผา": {kcal:400, carb:20, sugar:7, fat:16, sodium:900},
-  "ปลากะพงทอดน้ำปลา": {kcal:480, carb:10, sugar:2, fat:28, sodium:1000},
-  "ปลากะพงนึ่งซีอิ๊ว": {kcal:320, carb:5, sugar:3, fat:12, sodium:900}
+    "ผัดกะเพรา": {kcal:580, carb:65, sugar:7, fat:24, sodium:1400},
+    "ข้าวมันไก่": {kcal:700, carb:80, sugar:4, fat:28, sodium:1200},
+    "ผัดไทย": {kcal:650, carb:85, sugar:18, fat:22, sodium:1100},
+    "ส้มตำ": {kcal:120, carb:20, sugar:10, fat:2, sodium:900},
+    "ต้มยำ": {kcal:90, carb:5, sugar:3, fat:4, sodium:700},
+    "แกงเขียวหวาน": {kcal:450, carb:15, sugar:6, fat:32, sodium:950},
+    "แกงแดง": {kcal:420, carb:12, sugar:6, fat:28, sodium:900},
+    "ไข่เจียว": {kcal:300, carb:2, sugar:1, fat:25, sodium:500},
+    "หมูทอด": {kcal:400, carb:5, sugar:2, fat:30, sodium:800},
+    "ข้าวขาหมู": {kcal:750, carb:75, sugar:5, fat:40, sodium:1300},
+    "ข้าวหมูแดง": {kcal:720, carb:85, sugar:15, fat:30, sodium:1100},
+    "ข้าวหน้าเป็ด": {kcal:720, carb:80, sugar:12, fat:34, sodium:1100},
+    "ผัดซีอิ๊ว": {kcal:680, carb:85, sugar:10, fat:24, sodium:1200},
+    "ราดหน้า": {kcal:620, carb:80, sugar:8, fat:20, sodium:1100},
+    "ข้าวผัด": {kcal:600, carb:75, sugar:5, fat:22, sodium:1000},
+    "ผัดพริกแกง": {kcal:520, carb:60, sugar:5, fat:28, sodium:900},
+    "ผัดผักรวม": {kcal:220, carb:15, sugar:4, fat:10, sodium:500},
+    "ผัดคะน้าหมูกรอบ": {kcal:540, carb:20, sugar:4, fat:32, sodium:900},
+    "ผัดถั่วงอก": {kcal:200, carb:10, sugar:3, fat:8, sodium:450},
+    "ผัดวุ้นเส้น": {kcal:420, carb:55, sugar:6, fat:14, sodium:850},
+    "ลาบหมู": {kcal:250, carb:10, sugar:2, fat:12, sodium:800},
+    "น้ำตกหมู": {kcal:300, carb:12, sugar:2, fat:16, sodium:850},
+    "ยำวุ้นเส้น": {kcal:350, carb:45, sugar:6, fat:12, sodium:900},
+    "ยำมาม่า": {kcal:420, carb:55, sugar:7, fat:16, sodium:1100},
+    "ยำหมูยอ": {kcal:280, carb:15, sugar:3, fat:12, sodium:800},
+    "ยำทะเล": {kcal:300, carb:10, sugar:4, fat:10, sodium:900},
+    "ยำไข่ดาว": {kcal:420, carb:10, sugar:4, fat:28, sodium:900},
+    "ยำปลาดุกฟู": {kcal:480, carb:35, sugar:6, fat:26, sodium:950},
+    "ยำถั่วพลู": {kcal:420, carb:25, sugar:5, fat:24, sodium:850},
+    "พล่ากุ้ง": {kcal:300, carb:15, sugar:4, fat:12, sodium:850},
+    "แกงจืดเต้าหู้": {kcal:120, carb:8, sugar:2, fat:4, sodium:600},
+    "แกงจืดสาหร่าย": {kcal:100, carb:6, sugar:1, fat:3, sodium:550},
+    "แกงเลียง": {kcal:150, carb:15, sugar:3, fat:4, sodium:600},
+    "แกงส้ม": {kcal:200, carb:20, sugar:6, fat:5, sodium:850},
+    "แกงป่า": {kcal:220, carb:12, sugar:3, fat:8, sodium:800},
+    "แกงมัสมั่น": {kcal:600, carb:35, sugar:10, fat:38, sodium:900},
+    "แกงพะแนง": {kcal:520, carb:20, sugar:8, fat:34, sodium:950},
+    "แกงไตปลา": {kcal:300, carb:15, sugar:4, fat:12, sodium:1200},
+    "แกงเห็ด": {kcal:150, carb:10, sugar:3, fat:5, sodium:600},
+    "แกงหน่อไม้": {kcal:180, carb:15, sugar:3, fat:6, sodium:700},
+    "ต้มจืดหมูสับ": {kcal:150, carb:5, sugar:2, fat:7, sodium:700},
+    "ต้มโคล้ง": {kcal:180, carb:8, sugar:2, fat:8, sodium:850},
+    "ต้มข่าไก่": {kcal:350, carb:15, sugar:4, fat:22, sodium:900},
+    "ต้มเลือดหมู": {kcal:220, carb:5, sugar:2, fat:10, sodium:900},
+    "ต้มจับฉ่าย": {kcal:200, carb:15, sugar:4, fat:8, sodium:900},
+    "ต้มแซ่บ": {kcal:250, carb:10, sugar:3, fat:10, sodium:950},
+    "ต้มยำกุ้ง": {kcal:200, carb:10, sugar:4, fat:6, sodium:900},
+    "ต้มยำปลา": {kcal:180, carb:8, sugar:3, fat:5, sodium:850},
+    "ต้มยำทะเล": {kcal:220, carb:10, sugar:4, fat:7, sodium:950},
+    "ต้มจืดไข่น้ำ": {kcal:180, carb:5, sugar:2, fat:10, sodium:700},
+    "ไก่ทอด": {kcal:480, carb:15, sugar:2, fat:32, sodium:900},
+    "หมูแดดเดียว": {kcal:420, carb:10, sugar:3, fat:28, sodium:900},
+    "เนื้อแดดเดียว": {kcal:430, carb:8, sugar:2, fat:26, sodium:850},
+    "ไก่ย่าง": {kcal:400, carb:5, sugar:2, fat:24, sodium:850},
+    "หมูย่าง": {kcal:420, carb:8, sugar:3, fat:26, sodium:850},
+    "ปลาย่าง": {kcal:300, carb:0, sugar:1, fat:12, sodium:600},
+    "ปลาทอด": {kcal:420, carb:10, sugar:1, fat:28, sodium:700},
+    "ปลานึ่งมะนาว": {kcal:260, carb:5, sugar:3, fat:10, sodium:850},
+    "ปลาราดพริก": {kcal:380, carb:25, sugar:12, fat:20, sodium:900},
+    "ปลาสามรส": {kcal:450, carb:35, sugar:18, fat:24, sodium:950},
+    "ข้าวหมูทอด": {kcal:650, carb:70, sugar:3, fat:32, sodium:950},
+    "ข้าวไก่ทอด": {kcal:680, carb:75, sugar:3, fat:34, sodium:1000},
+    "ข้าวไข่เจียว": {kcal:550, carb:65, sugar:2, fat:26, sodium:800},
+    "ข้าวผัดกุ้ง": {kcal:620, carb:75, sugar:5, fat:20, sodium:1000},
+    "ข้าวผัดปู": {kcal:620, carb:75, sugar:4, fat:20, sodium:1000},
+    "ข้าวผัดหมู": {kcal:650, carb:75, sugar:5, fat:22, sodium:1000},
+    "ข้าวคลุกกะปิ": {kcal:650, carb:80, sugar:12, fat:20, sodium:1200},
+    "ข้าวยำ": {kcal:350, carb:60, sugar:8, fat:10, sodium:700},
+    "ข้าวต้มหมู": {kcal:250, carb:35, sugar:2, fat:6, sodium:700},
+    "โจ๊กหมู": {kcal:300, carb:40, sugar:2, fat:8, sodium:700},
+    "ก๋วยเตี๋ยวหมู": {kcal:350, carb:45, sugar:4, fat:10, sodium:900},
+    "ก๋วยเตี๋ยวเนื้อ": {kcal:400, carb:45, sugar:4, fat:14, sodium:950},
+    "ก๋วยเตี๋ยวไก่": {kcal:380, carb:45, sugar:4, fat:12, sodium:900},
+    "ก๋วยเตี๋ยวเรือ": {kcal:450, carb:50, sugar:5, fat:16, sodium:1100},
+    "ก๋วยเตี๋ยวต้มยำ": {kcal:420, carb:50, sugar:6, fat:14, sodium:1100},
+    "ก๋วยเตี๋ยวเย็นตาโฟ": {kcal:420, carb:55, sugar:7, fat:14, sodium:1100},
+    "บะหมี่หมูแดง": {kcal:450, carb:55, sugar:10, fat:16, sodium:1000},
+    "บะหมี่เกี๊ยว": {kcal:420, carb:50, sugar:8, fat:14, sodium:950},
+    "เส้นใหญ่ผัดซีอิ๊ว": {kcal:700, carb:85, sugar:10, fat:26, sodium:1200},
+    "เส้นหมี่ผัด": {kcal:480, carb:65, sugar:7, fat:16, sodium:950},
+    "ขนมจีนน้ำยา": {kcal:500, carb:65, sugar:5, fat:18, sodium:1000},
+    "ขนมจีนน้ำเงี้ยว": {kcal:450, carb:60, sugar:6, fat:16, sodium:950},
+    "ขนมจีนน้ำพริก": {kcal:420, carb:70, sugar:12, fat:14, sodium:900},
+    "ขนมจีนน้ำยาใต้": {kcal:520, carb:65, sugar:5, fat:20, sodium:1100},
+    "ขนมจีนน้ำยาป่า": {kcal:480, carb:60, sugar:4, fat:16, sodium:1000},
+    "ขนมจีนน้ำยากะทิ": {kcal:550, carb:65, sugar:6, fat:24, sodium:1000},
+    "ข้าวซอยไก่": {kcal:650, carb:70, sugar:7, fat:34, sodium:1100},
+    "ข้าวซอยเนื้อ": {kcal:700, carb:70, sugar:7, fat:36, sodium:1100},
+    "ข้าวซอยหมู": {kcal:680, carb:70, sugar:7, fat:35, sodium:1100},
+    "ข้าวซอยทะเล": {kcal:620, carb:65, sugar:6, fat:30, sodium:1000},
+    "ผัดหอยลาย": {kcal:300, carb:15, sugar:4, fat:12, sodium:900},
+    "หอยทอด": {kcal:600, carb:55, sugar:3, fat:38, sodium:950},
+    "ออส่วน": {kcal:520, carb:45, sugar:2, fat:32, sodium:900},
+    "ปูผัดผงกะหรี่": {kcal:520, carb:25, sugar:6, fat:28, sodium:900},
+    "กุ้งผัดพริเกลือ": {kcal:420, carb:10, sugar:3, fat:22, sodium:800},
+    "กุ้งอบวุ้นเส้น": {kcal:450, carb:50, sugar:5, fat:18, sodium:900},
+    "หมึกผัดไข่เค็ม": {kcal:420, carb:15, sugar:3, fat:20, sodium:950},
+    "ปลาหมึกผัดพริกเผา": {kcal:400, carb:20, sugar:7, fat:16, sodium:900},
+    "ปลากะพงทอดน้ำปลา": {kcal:480, carb:10, sugar:2, fat:28, sodium:1000},
+    "ปลากะพงนึ่งซีอิ๊ว": {kcal:320, carb:5, sugar:3, fat:12, sodium:900}
 };
 
 // =====================================
 // 3. ฟังก์ชันตรวจจับชื่ออาหาร
 // =====================================
 function detectThaiFoods(text) {
-  let foundFoods = [];
-  for (const food in thaiFoodDB) {
-    if (text.includes(food)) {
-      foundFoods.push(food);
+    let foundFoods = [];
+    for (const food in thaiFoodDB) {
+        if (text.includes(food)) {
+            foundFoods.push(food);
+        }
     }
-  }
-  return foundFoods;
+    return foundFoods;
 }
 
 // =====================================
 // 🔥 4. ฟังก์ชัน Auto-Fallback หาโมเดลที่ใช้งานได้
 // =====================================
 async function callGeminiWithFallback(prompt, imageParts = []) {
-  const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
-  
-  const safetySettings = [
-    {
-      category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-      threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
-    },
-    {
-      category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-      threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+    const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+    
+    const safetySettings = [
+        {
+            category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+            threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+        },
+        {
+            category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+            threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+        }
+    ];
+
+    let lastError;
+
+    for (const modelName of modelsToTry) {
+        try {
+            const model = genAI.getGenerativeModel({ model: modelName, safetySettings });
+            
+            const requestContent = imageParts.length > 0 ? [prompt, ...imageParts] : prompt;
+            const result = await model.generateContent(requestContent);
+            
+            console.log(`✅ ประมวลผลสำเร็จด้วยโมเดล: ${modelName}`);
+            return result.response.text(); 
+        } catch (error) {
+            console.warn(`⚠️ โมเดล ${modelName} ไม่สามารถใช้งานได้: ${error.message} (กำลังสลับไปโมเดลถัดไป...)`);
+            lastError = error;
+        }
     }
-  ];
 
-  let lastError;
-
-  for (const modelName of modelsToTry) {
-    try {
-      const model = genAI.getGenerativeModel({ model: modelName, safetySettings });
-      
-      const requestContent = imageParts.length > 0 ? [prompt, ...imageParts] : prompt;
-      const result = await model.generateContent(requestContent);
-      
-      console.log(`✅ ประมวลผลสำเร็จด้วยโมเดล: ${modelName}`);
-      return result.response.text(); 
-    } catch (error) {
-      console.warn(`⚠️ โมเดล ${modelName} ไม่สามารถใช้งานได้: ${error.message} (กำลังสลับไปโมเดลถัดไป...)`);
-      lastError = error;
-    }
-  }
-
-  throw new Error(`ไม่สามารถเชื่อมต่อ AI ได้เลย ล่าสุด Error: ${lastError.message}`);
+    throw new Error(`ไม่สามารถเชื่อมต่อ AI ได้เลย ล่าสุด Error: ${lastError.message}`);
 }
 
 // =====================================
 // 5. Route สำหรับแสดงหน้าเว็บลงทะเบียน (index.html)
 // =====================================
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // =====================================
 // 6. Endpoint /webhook สำหรับ LINE
 // =====================================
 app.post('/webhook', middleware(config), (req, res) => {
-  res.status(200).send('OK');
+    res.status(200).send('OK');
 
-  Promise
-    .all(req.body.events.map(handleEvent))
-    .catch((err) => {
-      console.error("เกิดข้อผิดพลาดในการรัน Background Event:", err);
-    });
+    Promise
+        .all(req.body.events.map(handleEvent))
+        .catch((err) => {
+            console.error("เกิดข้อผิดพลาดในการรัน Background Event:", err);
+        });
 });
 
 // =====================================
 // 7. ฟังก์ชันจัดการ Event ของ LINE
 // =====================================
 async function handleEvent(event) {
-  if (event.type !== 'message') return Promise.resolve(null);
-  const userId = event.source.userId;
+    if (event.type !== 'message') return Promise.resolve(null);
+    const userId = event.source.userId;
 
-  // -----------------------------------------
-  // 7.1 จัดการข้อความ (Text)
-  // -----------------------------------------
-  if (event.message.type === 'text') {
-    const text = event.message.text;
+    // -----------------------------------------
+    // 7.1 จัดการข้อความ (Text)
+    // -----------------------------------------
+    if (event.message.type === 'text') {
+        const text = event.message.text;
 
-    // 🔥 ระบบลงทะเบียน (Registration)
-    if (text.startsWith('ลงทะเบียน ')) {
-        const parts = text.split(' ');
-        if (parts.length < 3) {
-            return lineClient.pushMessage(userId, {
-                type: 'text',
-                text: '⚠️ รูปแบบผิดครับ: ลงทะเบียน [เลขบัตรประชาชน] [วันเกิด]\nตัวอย่าง: ลงทะเบียน 1234567890123 01/01/2500'
-            });
-        }
-        
-        const result = await registerNewUser(userId, parts[1].trim(), parts[2].trim());
-        
-        if (result === "success") {
-            return lineClient.pushMessage(userId, {
-                type: 'text',
-                text: '✅ ลงทะเบียนสำเร็จ! ต่อไปเพียงพิมพ์ "ดูสมุดพก" ก็ดูผลได้ทันทีครับ'
-            });
-        } else if (result === "duplicate") {
-            return lineClient.pushMessage(userId, {
-                type: 'text',
-                text: '❌ คุณเคยลงทะเบียนไว้แล้วครับ'
-            });
-        } else {
-            return lineClient.pushMessage(userId, {
-                type: 'text',
-                text: '🛠️ เกิดข้อผิดพลาด กรุณาลองใหม่ภายหลัง'
-            });
-        }
-    }
-
-    if (text === 'อ่านผลสุขภาพ / ผลแลป') {
-        return lineClient.pushMessage(userId, {
-            type: 'text',
-            text: '📄 โปรดถ่ายรูปใบรายงานผลตรวจเลือด ส่งมาที่นี่ได้เลยครับ/ค่ะ ผู้ช่วย AI จะช่วยแปลผลให้เข้าใจง่ายๆ ครับ 🩺'
-        });
-    }
-
-    if (text === 'สแกนอาหารด้วย AI') {
-        return lineClient.pushMessage(userId, {
-            type: 'text',
-            text: '📸 กรุณาส่งรูปภาพมื้ออาหารที่ชัดเจนมาได้เลยครับ/ค่ะ AI จะช่วยประเมินการนับคาร์บ (Carb Counting) และผลกระทบต่อน้ำตาลในเลือดให้ครับ 🍲'
-        });
-    }
-
-    // 🔥 ระบบคลังความรู้เบาหวาน (Flex Message 6 บทเรียน)
-    if (text === 'คลังความรู้เบาหวาน') {
-        const lessonFlex = {
-          type: "flex",
-          altText: "คลังความรู้โรคเบาหวาน 6 บทเรียน ส่งตรงจากคลินิก",
-          contents: {
-            "type": "carousel",
-            "contents": [
-              {
-                "type": "bubble",
-                "size": "mega",
-                "header": {
-                  "type": "box", "layout": "vertical", "backgroundColor": "#E04855", "paddingAll": "lg",
-                  "contents": [
-                    { "type": "text", "text": "บทเรียนที่ 1", "color": "#ffffff", "size": "sm", "weight": "bold" },
-                    { "type": "text", "text": "🩸 เบาหวานคืออะไร?", "color": "#ffffff", "size": "xl", "weight": "bold", "margin": "sm" }
-                  ]
-                },
-                "body": {
-                  "type": "box", "layout": "vertical", "paddingAll": "lg",
-                  "contents": [
-                    { "type": "text", "text": "ภาวะที่ร่างกายมี \"น้ำตาลในเลือดสูง\" เพราะผลิตอินซูลินไม่พอ หรือดื้ออินซูลิน ทำให้น้ำตาลตกค้าง", "wrap": true, "size": "sm", "color": "#333333" },
-                    { "type": "separator", "margin": "md" },
-                    { "type": "text", "text": "🚨 3 สัญญาณเตือน", "weight": "bold", "size": "md", "margin": "md", "color": "#E04855" },
-                    { "type": "text", "text": "1. ปัสสาวะบ่อย หิวน้ำบ่อย\n2. อ่อนเพลีย น้ำหนักลด\n3. แผลหายช้า ชาปลายมือเท้า", "size": "sm", "wrap": true, "margin": "sm" },
-                    { "type": "separator", "margin": "md" },
-                    { "type": "text", "text": "📊 เกณฑ์การวินิจฉัย", "weight": "bold", "size": "md", "margin": "md", "color": "#007BFF" },
-                    { "type": "text", "text": "• น้ำตาลอดอาหาร (FBS) ≥ 126\n• น้ำตาลสะสม (HbA1c) ≥ 6.5%", "wrap": true, "size": "sm", "margin": "sm" }
-                  ]
-                }
-              },
-              {
-                "type": "bubble",
-                "size": "mega",
-                "header": {
-                  "type": "box", "layout": "vertical", "backgroundColor": "#28A745", "paddingAll": "lg",
-                  "contents": [
-                    { "type": "text", "text": "บทเรียนที่ 2", "color": "#ffffff", "size": "sm", "weight": "bold" },
-                    { "type": "text", "text": "🍚 การนับคาร์บ", "color": "#ffffff", "size": "xl", "weight": "bold", "margin": "sm" }
-                  ]
-                },
-                "body": {
-                  "type": "box", "layout": "vertical", "paddingAll": "lg",
-                  "contents": [
-                    { "type": "text", "text": "\"คาร์บ\" คือหมวด ข้าว แป้ง น้ำตาล ผลไม้ ที่กินแล้วเปลี่ยนเป็นน้ำตาล", "wrap": true, "size": "sm", "color": "#333333" },
-                    { "type": "separator", "margin": "md" },
-                    { "type": "text", "text": "💡 1 คาร์บ = 15 กรัม", "weight": "bold", "size": "md", "margin": "md", "color": "#28A745" },
-                    { "type": "text", "text": "• หญิง: 3-4 คาร์บ / มื้อ\n• ชาย: 4-5 คาร์บ / มื้อ", "size": "sm", "wrap": true, "margin": "sm" },
-                    { "type": "separator", "margin": "md" },
-                    { "type": "text", "text": "🍱 เทียบปริมาณ \"1 คาร์บ\"", "weight": "bold", "size": "md", "margin": "md", "color": "#E67E22" },
-                    { "type": "text", "text": "✅ ข้าวสวย 1 ทัพพี\n✅ ข้าวเหนียว ครึ่ง ทัพพี\n✅ ขนมปัง 1 แผ่น\n✅ กล้วยน้ำว้า 1 ผล", "wrap": true, "size": "sm", "margin": "sm" },
-                    { "type": "text", "text": "*แนะนำทานข้าวกล้อง กากใยสูง ช่วยชะลอน้ำตาลได้ดีกว่า*", "wrap": true, "size": "xs", "color": "#888888", "margin": "md" }
-                  ]
-                }
-              },
-              {
-                "type": "bubble",
-                "size": "mega",
-                "header": {
-                  "type": "box", "layout": "vertical", "backgroundColor": "#FD7E14", "paddingAll": "lg",
-                  "contents": [
-                    { "type": "text", "text": "บทเรียนที่ 3", "color": "#ffffff", "size": "sm", "weight": "bold" },
-                    { "type": "text", "text": "🏃‍♂️ ขยับกายสลายน้ำตาล", "color": "#ffffff", "size": "xl", "weight": "bold", "margin": "sm" }
-                  ]
-                },
-                "body": {
-                  "type": "box", "layout": "vertical", "paddingAll": "lg",
-                  "contents": [
-                    { "type": "text", "text": "การออกกำลังกายช่วยลดภาวะดื้ออินซูลิน ทำให้ร่างกายดึงน้ำตาลไปใช้ได้ดีขึ้น", "wrap": true, "size": "sm", "color": "#333333" },
-                    { "type": "separator", "margin": "md" },
-                    { "type": "text", "text": "⏱️ คำแนะนำ", "weight": "bold", "size": "md", "margin": "md", "color": "#FD7E14" },
-                    { "type": "text", "text": "ออกกำลังกายระดับปานกลาง อย่างน้อย 150 นาที/สัปดาห์ (วันละ 30 นาที 5 วัน/สัปดาห์)", "wrap": true, "size": "sm", "margin": "sm" },
-                    { "type": "separator", "margin": "md" },
-                    { "type": "text", "text": "⚠️ ข้อควรระวัง", "weight": "bold", "size": "md", "margin": "md", "color": "#E04855" },
-                    { "type": "text", "text": "• สวมรองเท้าหุ้มส้นเสมอ\n• พกลูกอมติดตัวเผื่อน้ำตาลตก\n• งดออกกำลังกายหากมีแผลที่เท้า", "wrap": true, "size": "sm", "margin": "sm" }
-                  ]
-                }
-              },
-              {
-                "type": "bubble",
-                "size": "mega",
-                "header": {
-                  "type": "box", "layout": "vertical", "backgroundColor": "#17A2B8", "paddingAll": "lg",
-                  "contents": [
-                    { "type": "text", "text": "บทเรียนที่ 4", "color": "#ffffff", "size": "sm", "weight": "bold" },
-                    { "type": "text", "text": "🦶 การดูแลเท้า", "color": "#ffffff", "size": "xl", "weight": "bold", "margin": "sm" }
-                  ]
-                },
-                "body": {
-                  "type": "box", "layout": "vertical", "paddingAll": "lg",
-                  "contents": [
-                    { "type": "text", "text": "ผู้ป่วยเบาหวานมักมีอาการชาปลายเท้า ทำให้เกิดแผลได้ง่ายโดยไม่รู้ตัว", "wrap": true, "size": "sm", "color": "#333333" },
-                    { "type": "separator", "margin": "md" },
-                    { "type": "text", "text": "✨ วิธีดูแลเท้าทุกวัน", "weight": "bold", "size": "sm", "margin": "md", "color": "#17A2B8" },
-                    { "type": "text", "text": "1. สำรวจรอยแตก บวม แดง\n2. ล้างเท้าด้วยสบู่อ่อน เช็ดให้แห้ง\n3. ทาโลชั่น (เว้นซอกนิ้ว)\n4. ตัดเล็บตรง ไม่สั้นเกินไป", "wrap": true, "size": "sm" },
-                    { "type": "separator", "margin": "md" },
-                    { "type": "text", "text": "👟 การเลือกรองเท้า", "weight": "bold", "size": "sm", "margin": "md", "color": "#17A2B8" },
-                    { "type": "text", "text": "ใส่รองเท้าหุ้มส้นที่พอดี สวมถุงเท้า ห้ามเดินเท้าเปล่าเด็ดขาด", "wrap": true, "size": "sm" }
-                  ]
-                }
-              },
-              {
-                "type": "bubble",
-                "size": "mega",
-                "header": {
-                  "type": "box", "layout": "vertical", "backgroundColor": "#6610F2", "paddingAll": "lg",
-                  "contents": [
-                    { "type": "text", "text": "บทเรียนที่ 5", "color": "#ffffff", "size": "sm", "weight": "bold" },
-                    { "type": "text", "text": "💊 ยาและน้ำตาลตก", "color": "#ffffff", "size": "xl", "weight": "bold", "margin": "sm" }
-                  ]
-                },
-                "body": {
-                  "type": "box", "layout": "vertical", "paddingAll": "lg",
-                  "contents": [
-                    { "type": "text", "text": "กินยาและฉีดยาตามแพทย์สั่ง ห้ามปรับยาหรือหยุดยาเอง", "wrap": true, "size": "sm", "color": "#333333" },
-                    { "type": "separator", "margin": "md" },
-                    { "type": "text", "text": "😨 ภาวะน้ำตาลต่ำ", "weight": "bold", "size": "sm", "margin": "md", "color": "#6610F2" },
-                    { "type": "text", "text": "อาการ: ใจสั่น เหงื่อออก หน้ามืด หิวจัด มือสั่น กระวนกระวาย", "wrap": true, "size": "sm" },
-                    { "type": "separator", "margin": "md" },
-                    { "type": "text", "text": "🍬 กฎ 15-15 แก้น้ำตาลตก", "weight": "bold", "size": "sm", "margin": "md", "color": "#E67E22" },
-                    { "type": "text", "text": "1. กินคาร์บ 15g (ลูกอม 3 เม็ด หรือน้ำหวานครึ่งแก้ว)\n2. รอ 15 นาที อาการควรดีขึ้น\n3. ถ้าไม่ดีขึ้นให้ทำซ้ำข้อ 1 แล้วไปหาหมอ", "wrap": true, "size": "sm" }
-                  ]
-                }
-              },
-              {
-                "type": "bubble",
-                "size": "mega",
-                "header": {
-                  "type": "box", "layout": "vertical", "backgroundColor": "#6C757D", "paddingAll": "lg",
-                  "contents": [
-                    { "type": "text", "text": "บทเรียนที่ 6", "color": "#ffffff", "size": "sm", "weight": "bold" },
-                    { "type": "text", "text": "🛡️ ป้องกันไตเสื่อม", "color": "#ffffff", "size": "xl", "weight": "bold", "margin": "sm" }
-                  ]
-                },
-                "body": {
-                  "type": "box", "layout": "vertical", "paddingAll": "lg",
-                  "contents": [
-                    { "type": "text", "text": "เบาหวานลงไต ป้องกันได้! ยืดอายุการทำงานของไตง่ายๆ", "wrap": true, "size": "sm", "color": "#333333" },
-                    { "type": "separator", "margin": "md" },
-                    { "type": "text", "text": "1️⃣ คุมคู่อันตราย", "weight": "bold", "size": "sm", "margin": "md", "color": "#6C757D" },
-                    { "type": "text", "text": "น้ำตาลสะสม (HbA1c < 7%) และความดัน (< 130/80)", "wrap": true, "size": "sm" },
-                    { "type": "text", "text": "2️⃣ ลดเค็ม ยืดอายุไต", "weight": "bold", "size": "sm", "margin": "md", "color": "#6C757D" },
-                    { "type": "text", "text": "โซเดียมไม่เกิน 2,000 มก./วัน งดซดน้ำซุป", "wrap": true, "size": "sm" },
-                    { "type": "text", "text": "3️⃣ ระวังการใช้ยา", "weight": "bold", "size": "sm", "margin": "md", "color": "#6C757D" },
-                    { "type": "text", "text": "เลี่ยงยาแก้ปวดกระดูก (NSAIDs) และยาสมุนไพร", "wrap": true, "size": "sm" },
-                    { "type": "text", "text": "4️⃣ ตรวจเช็กค่าไต (eGFR)", "weight": "bold", "size": "sm", "margin": "md", "color": "#6C757D" },
-                    { "type": "text", "text": "ตรวจเลือดและปัสสาวะอย่างสม่ำเสมอ", "wrap": true, "size": "sm" }
-                  ]
-                }
-              }
-            ]
-          }
-        };
-
-        return lineClient.pushMessage(userId, lessonFlex);
-    }
-
-    // 🔥 ระบบสมุดพก (Health Report)
-    if (text === 'ดูสมุดพก') {
-        const userInfo = await getRegisteredUser(userId);
-
-        if (!userInfo) {
-            return lineClient.pushMessage(userId, {
-                type: 'text',
-                text: '🔒 คุณยังไม่ได้ลงทะเบียนครับ เพื่อความปลอดภัยกรุณาพิมพ์:\nลงทะเบียน [เลขบัตรประชาชน] [วันเกิด]\n\nตัวอย่าง: ลงทะเบียน 1234567890123 01/01/2500'
-            });
-        }
-
-        await lineClient.pushMessage(userId, {
-            type: 'text',
-            text: '⏳ ระบบกำลังตรวจสอบข้อมูลและวิเคราะห์ผลของคุณ กรุณารอสักครู่นะครับ...'
-        });
-
-        try {
-            const healthData = await getPatientHealthReport(userInfo.cid, userInfo.birthday);
-
-            if (!healthData) {
-                return lineClient.pushMessage(userId, { 
-                    type: 'text', 
-                    text: '❌ ไม่พบข้อมูลในระบบ หรือข้อมูลในชีตไม่ถูกต้องครับ' 
+        // 🔥 ระบบลงทะเบียน (Registration)
+        if (text.startsWith('ลงทะเบียน ')) {
+            const parts = text.split(' ');
+            
+            // เช็กข้อมูลที่ส่งมาจาก LIFF ต้องมีครบ 9 ตำแหน่ง
+            // รูปแบบ: ลงทะเบียน [CID] [วันเกิด] [เพศ] [น้ำหนัก] [ส่วนสูง] [ระดับกิจกรรม] [สัดส่วนคาร์บ] [คาร์บ/มื้อ]
+            if (parts.length < 9) {
+                return lineClient.pushMessage(userId, {
+                    type: 'text',
+                    text: '⚠️ ข้อมูลไม่ครบถ้วน กรุณาทำรายการผ่านปุ่มลงทะเบียนใหม่อีกครั้งครับ'
                 });
             }
+            
+            const result = await registerNewUser(
+                userId, 
+                parts[1].trim(), // CID
+                parts[2].trim(), // Birthday
+                parts[3].trim(), // Gender
+                parts[4].trim(), // Weight
+                parts[5].trim(), // Height
+                parts[6].trim(), // Activity
+                parts[7].trim(), // DietType
+                parts[8].trim()  // CarbPerMeal
+            );
+            
+            if (result === "success") {
+                return lineClient.pushMessage(userId, {
+                    type: 'text',
+                    text: `✅ ลงทะเบียนสำเร็จ!\nระบบได้ประเมินสุขภาพและโควตาอาหารให้คุณเรียบร้อยแล้ว\n\n📌 แนะนำให้ทานคาร์บมื้อละ: ${parts[8].trim()} คาร์บ\n(พิมพ์ "ดูสมุดพก" เพื่อดูผลการวิเคราะห์เต็มรูปแบบครับ)`
+                });
+            } else if (result === "updated") {
+                return lineClient.pushMessage(userId, {
+                    type: 'text',
+                    text: `🔄 อัปเดตข้อมูลสุขภาพสำเร็จ!\n\n📌 โควตาคาร์บใหม่ของคุณคือ: ${parts[8].trim()} คาร์บ/มื้อ\n(คาร์บ 1 ส่วน = ข้าวสวย 1 ทัพพี) 🍚`
+                });
+            } else {
+                return lineClient.pushMessage(userId, {
+                    type: 'text',
+                    text: '🛠️ เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่ภายหลัง'
+                });
+            }
+        }
 
-            const prompt = `
-              คุณคือ "ผู้ช่วย AI โรงเรียนเบาหวาน" ผู้เชี่ยวชาญด้านเบาหวาน
-              นี่คือผลตรวจสุขภาพล่าสุดของนักเรียน:
-              ชื่อ: ${healthData.patientInfo.name} (อายุ ${healthData.patientInfo.age} ปี)
-              วันที่ตรวจ: ${healthData.patientInfo.date}
-              
-              ผลการตรวจ:
-              ${healthData.labTextSummary}
-              
-              คำสั่ง:
-              1. ช่วยอธิบายผลตรวจที่สำคัญ (เช่น ค่าไต, น้ำตาล, ไขมัน ฯลฯ) เป็นภาษาที่คนทั่วไปเข้าใจง่าย
-              2. บอกว่าค่าไหนปกติ หรือค่าไหนต้องระวังเป็นพิเศษ
-              3. ให้คำแนะนำสั้นๆ ในการดูแลตัวเอง หรือการเลือกทานอาหาร
-              ตอบให้กระชับ เป็นมิตร ให้กำลังใจแบบหมอคุยกับคนไข้
-            `;
+        if (text === 'อ่านผลสุขภาพ / ผลแลป') {
+            return lineClient.pushMessage(userId, {
+                type: 'text',
+                text: '📄 โปรดถ่ายรูปใบรายงานผลตรวจเลือด ส่งมาที่นี่ได้เลยครับ/ค่ะ ผู้ช่วย AI จะช่วยแปลผลให้เข้าใจง่ายๆ ครับ 🩺'
+            });
+        }
 
-            const aiAnalysis = await callGeminiWithFallback(prompt);
+        if (text === 'สแกนอาหารด้วย AI') {
+            return lineClient.pushMessage(userId, {
+                type: 'text',
+                text: '📸 กรุณาส่งรูปภาพมื้ออาหารที่ชัดเจนมาได้เลยครับ/ค่ะ AI จะช่วยประเมินการนับคาร์บ (Carb Counting) และผลกระทบต่อน้ำตาลในเลือดให้ครับ 🍲'
+            });
+        }
 
-            const flexMessage = {
+        // 🔥 ระบบคลังความรู้เบาหวาน (Flex Message 6 บทเรียน)
+        if (text === 'คลังความรู้เบาหวาน') {
+            const lessonFlex = {
               type: "flex",
-              altText: "สมุดพกสุขภาพของคุณมาแล้ว!",
+              altText: "คลังความรู้โรคเบาหวาน 6 บทเรียน ส่งตรงจากคลินิก",
               contents: {
-                "type": "bubble",
-                "size": "giga",
-                "header": {
-                  "type": "box",
-                  "layout": "vertical",
-                  "contents": [
-                    { "type": "text", "text": "📘 สมุดพกสุขภาพนักเรียน", "weight": "bold", "color": "#ffffff", "size": "xl" }
-                  ],
-                  "backgroundColor": "#00897B",
-                  "paddingAll": "20px"
-                },
-                "body": {
-                  "type": "box",
-                  "layout": "vertical",
-                  "contents": [
-                    { "type": "text", "text": `ข้อมูลประจำตัว: ${healthData.patientInfo.name}`, "weight": "bold", "size": "md" },
-                    { "type": "text", "text": `อัปเดตล่าสุด: ${healthData.patientInfo.date}`, "size": "xs", "color": "#aaaaaa" },
-                    { "type": "separator", "margin": "md" },
-                    {
-                      "type": "box", "layout": "vertical", "margin": "md",
+                "type": "carousel",
+                "contents": [
+                  {
+                    "type": "bubble",
+                    "size": "mega",
+                    "header": {
+                      "type": "box", "layout": "vertical", "backgroundColor": "#E04855", "paddingAll": "lg",
                       "contents": [
-                        { "type": "text", "text": "💡 สรุปผลจากผู้ช่วย AI:", "weight": "bold", "color": "#00897B", "size": "sm" },
-                        { "type": "text", "text": aiAnalysis, "wrap": true, "size": "sm", "margin": "sm" }
-                      ],
-                      "backgroundColor": "#f4fcf8", "paddingAll": "15px", "cornerRadius": "10px"
+                        { "type": "text", "text": "บทเรียนที่ 1", "color": "#ffffff", "size": "sm", "weight": "bold" },
+                        { "type": "text", "text": "🩸 เบาหวานคืออะไร?", "color": "#ffffff", "size": "xl", "weight": "bold", "margin": "sm" }
+                      ]
+                    },
+                    "body": {
+                      "type": "box", "layout": "vertical", "paddingAll": "lg",
+                      "contents": [
+                        { "type": "text", "text": "ภาวะที่ร่างกายมี \"น้ำตาลในเลือดสูง\" เพราะผลิตอินซูลินไม่พอ หรือดื้ออินซูลิน ทำให้น้ำตาลตกค้าง", "wrap": true, "size": "sm", "color": "#333333" },
+                        { "type": "separator", "margin": "md" },
+                        { "type": "text", "text": "🚨 3 สัญญาณเตือน", "weight": "bold", "size": "md", "margin": "md", "color": "#E04855" },
+                        { "type": "text", "text": "1. ปัสสาวะบ่อย หิวน้ำบ่อย\n2. อ่อนเพลีย น้ำหนักลด\n3. แผลหายช้า ชาปลายมือเท้า", "size": "sm", "wrap": true, "margin": "sm" },
+                        { "type": "separator", "margin": "md" },
+                        { "type": "text", "text": "📊 เกณฑ์การวินิจฉัย", "weight": "bold", "size": "md", "margin": "md", "color": "#007BFF" },
+                        { "type": "text", "text": "• น้ำตาลอดอาหาร (FBS) ≥ 126\n• น้ำตาลสะสม (HbA1c) ≥ 6.5%", "wrap": true, "size": "sm", "margin": "sm" }
+                      ]
                     }
-                  ],
-                  "paddingAll": "20px"
-                }
+                  },
+                  {
+                    "type": "bubble",
+                    "size": "mega",
+                    "header": {
+                      "type": "box", "layout": "vertical", "backgroundColor": "#28A745", "paddingAll": "lg",
+                      "contents": [
+                        { "type": "text", "text": "บทเรียนที่ 2", "color": "#ffffff", "size": "sm", "weight": "bold" },
+                        { "type": "text", "text": "🍚 การนับคาร์บ", "color": "#ffffff", "size": "xl", "weight": "bold", "margin": "sm" }
+                      ]
+                    },
+                    "body": {
+                      "type": "box", "layout": "vertical", "paddingAll": "lg",
+                      "contents": [
+                        { "type": "text", "text": "\"คาร์บ\" คือหมวด ข้าว แป้ง น้ำตาล ผลไม้ ที่กินแล้วเปลี่ยนเป็นน้ำตาล", "wrap": true, "size": "sm", "color": "#333333" },
+                        { "type": "separator", "margin": "md" },
+                        { "type": "text", "text": "💡 1 คาร์บ = 15 กรัม", "weight": "bold", "size": "md", "margin": "md", "color": "#28A745" },
+                        { "type": "text", "text": "• หญิง: 3-4 คาร์บ / มื้อ\n• ชาย: 4-5 คาร์บ / มื้อ", "size": "sm", "wrap": true, "margin": "sm" },
+                        { "type": "separator", "margin": "md" },
+                        { "type": "text", "text": "🍱 เทียบปริมาณ \"1 คาร์บ\"", "weight": "bold", "size": "md", "margin": "md", "color": "#E67E22" },
+                        { "type": "text", "text": "✅ ข้าวสวย 1 ทัพพี\n✅ ข้าวเหนียว ครึ่ง ทัพพี\n✅ ขนมปัง 1 แผ่น\n✅ กล้วยน้ำว้า 1 ผล", "wrap": true, "size": "sm", "margin": "sm" },
+                        { "type": "text", "text": "*แนะนำทานข้าวกล้อง กากใยสูง ช่วยชะลอน้ำตาลได้ดีกว่า*", "wrap": true, "size": "xs", "color": "#888888", "margin": "md" }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "bubble",
+                    "size": "mega",
+                    "header": {
+                      "type": "box", "layout": "vertical", "backgroundColor": "#FD7E14", "paddingAll": "lg",
+                      "contents": [
+                        { "type": "text", "text": "บทเรียนที่ 3", "color": "#ffffff", "size": "sm", "weight": "bold" },
+                        { "type": "text", "text": "🏃‍♂️ ขยับกายสลายน้ำตาล", "color": "#ffffff", "size": "xl", "weight": "bold", "margin": "sm" }
+                      ]
+                    },
+                    "body": {
+                      "type": "box", "layout": "vertical", "paddingAll": "lg",
+                      "contents": [
+                        { "type": "text", "text": "การออกกำลังกายช่วยลดภาวะดื้ออินซูลิน ทำให้ร่างกายดึงน้ำตาลไปใช้ได้ดีขึ้น", "wrap": true, "size": "sm", "color": "#333333" },
+                        { "type": "separator", "margin": "md" },
+                        { "type": "text", "text": "⏱️ คำแนะนำ", "weight": "bold", "size": "md", "margin": "md", "color": "#FD7E14" },
+                        { "type": "text", "text": "ออกกำลังกายระดับปานกลาง อย่างน้อย 150 นาที/สัปดาห์ (วันละ 30 นาที 5 วัน/สัปดาห์)", "wrap": true, "size": "sm", "margin": "sm" },
+                        { "type": "separator", "margin": "md" },
+                        { "type": "text", "text": "⚠️ ข้อควรระวัง", "weight": "bold", "size": "md", "margin": "md", "color": "#E04855" },
+                        { "type": "text", "text": "• สวมรองเท้าหุ้มส้นเสมอ\n• พกลูกอมติดตัวเผื่อน้ำตาลตก\n• งดออกกำลังกายหากมีแผลที่เท้า", "wrap": true, "size": "sm", "margin": "sm" }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "bubble",
+                    "size": "mega",
+                    "header": {
+                      "type": "box", "layout": "vertical", "backgroundColor": "#17A2B8", "paddingAll": "lg",
+                      "contents": [
+                        { "type": "text", "text": "บทเรียนที่ 4", "color": "#ffffff", "size": "sm", "weight": "bold" },
+                        { "type": "text", "text": "🦶 การดูแลเท้า", "color": "#ffffff", "size": "xl", "weight": "bold", "margin": "sm" }
+                      ]
+                    },
+                    "body": {
+                      "type": "box", "layout": "vertical", "paddingAll": "lg",
+                      "contents": [
+                        { "type": "text", "text": "ผู้ป่วยเบาหวานมักมีอาการชาปลายเท้า ทำให้เกิดแผลได้ง่ายโดยไม่รู้ตัว", "wrap": true, "size": "sm", "color": "#333333" },
+                        { "type": "separator", "margin": "md" },
+                        { "type": "text", "text": "✨ วิธีดูแลเท้าทุกวัน", "weight": "bold", "size": "sm", "margin": "md", "color": "#17A2B8" },
+                        { "type": "text", "text": "1. สำรวจรอยแตก บวม แดง\n2. ล้างเท้าด้วยสบู่อ่อน เช็ดให้แห้ง\n3. ทาโลชั่น (เว้นซอกนิ้ว)\n4. ตัดเล็บตรง ไม่สั้นเกินไป", "wrap": true, "size": "sm" },
+                        { "type": "separator", "margin": "md" },
+                        { "type": "text", "text": "👟 การเลือกรองเท้า", "weight": "bold", "size": "sm", "margin": "md", "color": "#17A2B8" },
+                        { "type": "text", "text": "ใส่รองเท้าหุ้มส้นที่พอดี สวมถุงเท้า ห้ามเดินเท้าเปล่าเด็ดขาด", "wrap": true, "size": "sm" }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "bubble",
+                    "size": "mega",
+                    "header": {
+                      "type": "box", "layout": "vertical", "backgroundColor": "#6610F2", "paddingAll": "lg",
+                      "contents": [
+                        { "type": "text", "text": "บทเรียนที่ 5", "color": "#ffffff", "size": "sm", "weight": "bold" },
+                        { "type": "text", "text": "💊 ยาและน้ำตาลตก", "color": "#ffffff", "size": "xl", "weight": "bold", "margin": "sm" }
+                      ]
+                    },
+                    "body": {
+                      "type": "box", "layout": "vertical", "paddingAll": "lg",
+                      "contents": [
+                        { "type": "text", "text": "กินยาและฉีดยาตามแพทย์สั่ง ห้ามปรับยาหรือหยุดยาเอง", "wrap": true, "size": "sm", "color": "#333333" },
+                        { "type": "separator", "margin": "md" },
+                        { "type": "text", "text": "😨 ภาวะน้ำตาลต่ำ", "weight": "bold", "size": "sm", "margin": "md", "color": "#6610F2" },
+                        { "type": "text", "text": "อาการ: ใจสั่น เหงื่อออก หน้ามืด หิวจัด มือสั่น กระวนกระวาย", "wrap": true, "size": "sm" },
+                        { "type": "separator", "margin": "md" },
+                        { "type": "text", "text": "🍬 กฎ 15-15 แก้น้ำตาลตก", "weight": "bold", "size": "sm", "margin": "md", "color": "#E67E22" },
+                        { "type": "text", "text": "1. กินคาร์บ 15g (ลูกอม 3 เม็ด หรือน้ำหวานครึ่งแก้ว)\n2. รอ 15 นาที อาการควรดีขึ้น\n3. ถ้าไม่ดีขึ้นให้ทำซ้ำข้อ 1 แล้วไปหาหมอ", "wrap": true, "size": "sm" }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "bubble",
+                    "size": "mega",
+                    "header": {
+                      "type": "box", "layout": "vertical", "backgroundColor": "#6C757D", "paddingAll": "lg",
+                      "contents": [
+                        { "type": "text", "text": "บทเรียนที่ 6", "color": "#ffffff", "size": "sm", "weight": "bold" },
+                        { "type": "text", "text": "🛡️ ป้องกันไตเสื่อม", "color": "#ffffff", "size": "xl", "weight": "bold", "margin": "sm" }
+                      ]
+                    },
+                    "body": {
+                      "type": "box", "layout": "vertical", "paddingAll": "lg",
+                      "contents": [
+                        { "type": "text", "text": "เบาหวานลงไต ป้องกันได้! ยืดอายุการทำงานของไตง่ายๆ", "wrap": true, "size": "sm", "color": "#333333" },
+                        { "type": "separator", "margin": "md" },
+                        { "type": "text", "text": "1️⃣ คุมคู่อันตราย", "weight": "bold", "size": "sm", "margin": "md", "color": "#6C757D" },
+                        { "type": "text", "text": "น้ำตาลสะสม (HbA1c < 7%) และความดัน (< 130/80)", "wrap": true, "size": "sm" },
+                        { "type": "text", "text": "2️⃣ ลดเค็ม ยืดอายุไต", "weight": "bold", "size": "sm", "margin": "md", "color": "#6C757D" },
+                        { "type": "text", "text": "โซเดียมไม่เกิน 2,000 มก./วัน งดซดน้ำซุป", "wrap": true, "size": "sm" },
+                        { "type": "text", "text": "3️⃣ ระวังการใช้ยา", "weight": "bold", "size": "sm", "margin": "md", "color": "#6C757D" },
+                        { "type": "text", "text": "เลี่ยงยาแก้ปวดกระดูก (NSAIDs) และยาสมุนไพร", "wrap": true, "size": "sm" },
+                        { "type": "text", "text": "4️⃣ ตรวจเช็กค่าไต (eGFR)", "weight": "bold", "size": "sm", "margin": "md", "color": "#6C757D" },
+                        { "type": "text", "text": "ตรวจเลือดและปัสสาวะอย่างสม่ำเสมอ", "wrap": true, "size": "sm" }
+                      ]
+                    }
+                  }
+                ]
               }
             };
 
-            return lineClient.pushMessage(userId, flexMessage);
+            return lineClient.pushMessage(userId, lessonFlex);
+        }
+
+        // 🔥 ระบบสมุดพก (Health Report)
+        if (text === 'ดูสมุดพก') {
+            const userInfo = await getRegisteredUser(userId);
+
+            if (!userInfo) {
+                return lineClient.pushMessage(userId, {
+                    type: 'text',
+                    text: '🔒 คุณยังไม่ได้ลงทะเบียนครับ กรุณากดปุ่ม "ลงทะเบียน" จากเมนูด้านล่างก่อนนะครับ'
+                });
+            }
+
+            await lineClient.pushMessage(userId, {
+                type: 'text',
+                text: '⏳ ระบบกำลังตรวจสอบข้อมูลผลแล็บ และวิเคราะห์โควตาอาหารของคุณ กรุณารอสักครู่นะครับ...'
+            });
+
+            try {
+                const healthData = await getPatientHealthReport(userInfo.cid, userInfo.birthday);
+
+                if (!healthData) {
+                    return lineClient.pushMessage(userId, { 
+                        type: 'text', 
+                        text: '❌ ระบบยังไม่พบผลตรวจเลือดของคุณในฐานข้อมูลครับ (อาจจะยังไม่ได้ตรวจ หรือเจ้าหน้าที่ยังไม่ได้นำข้อมูลเข้าระบบ)' 
+                    });
+                }
+
+                // 🌟 เพิ่มข้อมูลส่วนตัวที่ลงทะเบียนไว้เข้าไปให้ AI ช่วยวิเคราะห์
+                const prompt = `
+                  คุณคือ "ผู้ช่วย AI โรงเรียนเบาหวาน" ผู้เชี่ยวชาญด้านเบาหวานและโภชนาการ
+                  นี่คือผลตรวจสุขภาพล่าสุดของนักเรียน:
+                  ชื่อ: ${healthData.patientInfo.name} (อายุ ${healthData.patientInfo.age} ปี)
+                  วันที่ตรวจ: ${healthData.patientInfo.date}
+                  
+                  ข้อมูลสุขภาพจากการประเมิน:
+                  - โควตาคาร์บที่ระบบคำนวณให้: ทานได้มื้อละ ${userInfo.carbPerMeal || 'ไม่ระบุ'} คาร์บ (1 คาร์บ = 15g หรือข้าวสวย 1 ทัพพี)
+                  
+                  ผลการตรวจเลือด:
+                  ${healthData.labTextSummary}
+                  
+                  คำสั่ง:
+                  1. ช่วยอธิบายผลตรวจที่สำคัญ (เช่น ค่าไต, น้ำตาล, ไขมัน ฯลฯ) เป็นภาษาที่คนทั่วไปเข้าใจง่าย
+                  2. บอกว่าค่าไหนปกติ หรือค่าไหนต้องระวังเป็นพิเศษ
+                  3. ให้คำแนะนำสั้นๆ ในการดูแลตัวเอง โดยเชื่อมโยงกับโควตาคาร์บที่ระบบคำนวณให้ด้วย (ถ้ามี)
+                  ตอบให้กระชับ เป็นมิตร ให้กำลังใจแบบหมอคุยกับคนไข้
+                `;
+
+                const aiAnalysis = await callGeminiWithFallback(prompt);
+
+                const flexMessage = {
+                  type: "flex",
+                  altText: "สมุดพกสุขภาพของคุณมาแล้ว!",
+                  contents: {
+                    "type": "bubble",
+                    "size": "giga",
+                    "header": {
+                      "type": "box",
+                      "layout": "vertical",
+                      "contents": [
+                        { "type": "text", "text": "📘 สมุดพกสุขภาพนักเรียน", "weight": "bold", "color": "#ffffff", "size": "xl" }
+                      ],
+                      "backgroundColor": "#00897B",
+                      "paddingAll": "20px"
+                    },
+                    "body": {
+                      "type": "box",
+                      "layout": "vertical",
+                      "contents": [
+                        { "type": "text", "text": `ข้อมูลประจำตัว: ${healthData.patientInfo.name}`, "weight": "bold", "size": "md" },
+                        { "type": "text", "text": `อัปเดตล่าสุด: ${healthData.patientInfo.date}`, "size": "xs", "color": "#aaaaaa" },
+                        { "type": "separator", "margin": "md" },
+                        {
+                          "type": "box", "layout": "vertical", "margin": "md",
+                          "contents": [
+                            { "type": "text", "text": "💡 สรุปผลจากผู้ช่วย AI:", "weight": "bold", "color": "#00897B", "size": "sm" },
+                            { "type": "text", "text": aiAnalysis, "wrap": true, "size": "sm", "margin": "sm" }
+                          ],
+                          "backgroundColor": "#f4fcf8", "paddingAll": "15px", "cornerRadius": "10px"
+                        }
+                      ],
+                      "paddingAll": "20px"
+                    }
+                  }
+                };
+
+                return lineClient.pushMessage(userId, flexMessage);
+
+            } catch (error) {
+                console.error("Error generating health report:", error);
+                return lineClient.pushMessage(userId, { type: 'text', text: 'ขออภัยครับ เกิดข้อผิดพลาดในการดึงข้อมูลสมุดพก 🙏' });
+            }
+        }
+
+        return Promise.resolve(null);
+    }
+
+    // -----------------------------------------
+    // 7.2 จัดการรูปภาพ (Image Analysis)
+    // -----------------------------------------
+    if (event.message.type === 'image') {
+        try {
+            await lineClient.pushMessage(userId, {
+                type: 'text',
+                text: '⏳ ได้รับรูปภาพแล้วครับ กำลังให้ AI ช่วยวิเคราะห์ข้อมูลให้ กรุณารอสักครู่นะครับ...'
+            });
+
+            const stream = await lineClient.getMessageContent(event.message.id);
+            const chunks = [];
+            for await (const chunk of stream) {
+                chunks.push(chunk);
+            }
+            const buffer = Buffer.concat(chunks);
+            const base64Image = buffer.toString('base64');
+            
+            const prompt = `
+                คุณคือ "ผู้ช่วย AI โรงเรียนเบาหวาน" ผู้เชี่ยวชาญด้านโภชนาการและการจัดการระดับน้ำตาลในเลือด
+                
+                กรุณาดูภาพนี้ หากเป็นภาพผลตรวจสุขภาพ:
+                1. สรุปค่าที่สำคัญ โดยเฉพาะค่าที่เกี่ยวกับเบาหวาน (เช่น FBS, HbA1c, Lipid profile)
+                2. บอกว่าค่าไหนอยู่ในเกณฑ์ปกติ หรือผิดปกติ
+                3. ให้คำแนะนำเบื้องต้น
+
+                หากเป็นภาพอาหาร (วิเคราะห์อย่างละเอียดเรื่องคาร์บ):
+                1. ระบุชื่ออาหารที่เป็นไปได้ให้ครบถ้วน
+                2. ประเมินปริมาณอาหารโดยคร่าว (เช่น ข้าวสวยกี่ทัพพี, เส้นกี่ทัพพี)
+                3. ประเมิน "จำนวนคาร์บ (Carb Exchange)" จากภาพ โดยใช้หลักการสาธารณสุขไทย คือ คาร์โบไฮเดรต 15 กรัม = 1 คาร์บ (เช่น ข้าว 1 ทัพพี = 1 คาร์บ) แยกระบุให้ชัดเจนว่ามาจากส่วนไหนบ้าง
+                4. ประเมินผลกระทบต่อน้ำตาลในเลือด
+
+                ตอบให้กระชับ เป็นมิตร ให้กำลังใจ
+                หากเป็นอาหารให้ตอบในรูปแบบ:
+                🍲 เมนูที่พบ:
+                🍚 ปริมาณที่ประเมินได้:
+                🔢 จำนวนคาร์บโดยประมาณ: (เช่น รวม 3 คาร์บ หรือ 45 กรัม)
+                📈 ผลกระทบต่อน้ำตาลในเลือด:
+                💡 คำแนะนำสำหรับนักเรียนเบาหวาน:
+            `;
+
+            const imageParts = [{
+                inlineData: { data: base64Image, mimeType: "image/jpeg" }
+            }];
+
+            const text = await callGeminiWithFallback(prompt, imageParts);
+
+            let finalText = text;
+            const detectedFoods = detectThaiFoods(text);
+
+            if (detectedFoods.length > 0) {
+                finalText += `\n\n📊 ข้อมูลโภชนาการมาตรฐาน (ต่อ 1 เสิร์ฟปกติ):`;
+                
+                detectedFoods.forEach(food => {
+                    const data = thaiFoodDB[food];
+                    const carbGrams = data.carb || 0;
+                    const carbExchange = carbGrams > 0 ? (carbGrams / 15).toFixed(1) : "0";
+
+                    finalText += `\n\n🍲 ${food}\nพลังงาน: ~${data.kcal} kcal\nคาร์โบไฮเดรต: ~${carbGrams} กรัม (คิดเป็น ${carbExchange} คาร์บ)\nน้ำตาล: ~${data.sugar} g\nไขมัน: ~${data.fat} g\nโซเดียม: ~${data.sodium} mg`;
+                });
+
+                finalText += `\n\n📌 หมายเหตุ: 1 คาร์บ = คาร์โบไฮเดรต 15 กรัม (เทียบเท่าข้าวสวย 1 ทัพพี) ควรจำกัดจำนวนคาร์บต่อมื้อตามที่ระบบคำนวณให้นะคะ/ครับ 💙`;
+            }
+
+            return lineClient.pushMessage(userId, {
+                type: 'text',
+                text: finalText
+            });
 
         } catch (error) {
-            console.error(error);
-            return lineClient.pushMessage(userId, { type: 'text', text: 'ขออภัยครับ เกิดข้อผิดพลาดในการดึงข้อมูลสมุดพก 🙏' });
+            console.error("Error processing image with Gemini:", error);
+            return lineClient.pushMessage(userId, {
+                type: 'text',
+                text: 'ขออภัยครับ/ค่ะ ระบบวิเคราะห์ภาพมีปัญหาชั่วคราว กรุณาลองส่งรูปใหม่อีกครั้งในภายหลังนะคะ 🛠️'
+            });
         }
     }
 
     return Promise.resolve(null);
-  }
-
-  // -----------------------------------------
-  // 7.2 จัดการรูปภาพ (Image Analysis)
-  // -----------------------------------------
-  if (event.message.type === 'image') {
-    try {
-      await lineClient.pushMessage(userId, {
-        type: 'text',
-        text: '⏳ ได้รับรูปภาพแล้วครับ กำลังให้ AI ช่วยวิเคราะห์ข้อมูลให้ กรุณารอสักครู่นะครับ...'
-      });
-
-      const stream = await lineClient.getMessageContent(event.message.id);
-      const chunks = [];
-      for await (const chunk of stream) {
-        chunks.push(chunk);
-      }
-      const buffer = Buffer.concat(chunks);
-      const base64Image = buffer.toString('base64');
-      
-      const prompt = `
-        คุณคือ "ผู้ช่วย AI โรงเรียนเบาหวาน" ผู้เชี่ยวชาญด้านโภชนาการและการจัดการระดับน้ำตาลในเลือด
-        
-        กรุณาดูภาพนี้ หากเป็นภาพผลตรวจสุขภาพ:
-        1. สรุปค่าที่สำคัญ โดยเฉพาะค่าที่เกี่ยวกับเบาหวาน (เช่น FBS, HbA1c, Lipid profile)
-        2. บอกว่าค่าไหนอยู่ในเกณฑ์ปกติ หรือผิดปกติ
-        3. ให้คำแนะนำเบื้องต้น
-
-        หากเป็นภาพอาหาร (วิเคราะห์อย่างละเอียดเรื่องคาร์บ):
-        1. ระบุชื่ออาหารที่เป็นไปได้ให้ครบถ้วน
-        2. ประเมินปริมาณอาหารโดยคร่าว (เช่น ข้าวสวยกี่ทัพพี, เส้นกี่ทัพพี)
-        3. ประเมิน "จำนวนคาร์บ (Carb Exchange)" จากภาพ โดยใช้หลักการสาธารณสุขไทย คือ คาร์โบไฮเดรต 15 กรัม = 1 คาร์บ (เช่น ข้าว 1 ทัพพี = 1 คาร์บ) แยกระบุให้ชัดเจนว่ามาจากส่วนไหนบ้าง
-        4. ประเมินผลกระทบต่อน้ำตาลในเลือด
-
-        ตอบให้กระชับ เป็นมิตร ให้กำลังใจ
-        หากเป็นอาหารให้ตอบในรูปแบบ:
-        🍲 เมนูที่พบ:
-        🍚 ปริมาณที่ประเมินได้:
-        🔢 จำนวนคาร์บโดยประมาณ: (เช่น รวม 3 คาร์บ หรือ 45 กรัม)
-        📈 ผลกระทบต่อน้ำตาลในเลือด:
-        💡 คำแนะนำสำหรับนักเรียนเบาหวาน:
-      `;
-
-      const imageParts = [{
-        inlineData: { data: base64Image, mimeType: "image/jpeg" }
-      }];
-
-      const text = await callGeminiWithFallback(prompt, imageParts);
-
-      let finalText = text;
-      const detectedFoods = detectThaiFoods(text);
-
-      if (detectedFoods.length > 0) {
-        finalText += `\n\n📊 ข้อมูลโภชนาการมาตรฐาน (ต่อ 1 เสิร์ฟปกติ):`;
-        
-        detectedFoods.forEach(food => {
-          const data = thaiFoodDB[food];
-          const carbGrams = data.carb || 0;
-          const carbExchange = carbGrams > 0 ? (carbGrams / 15).toFixed(1) : "0";
-
-          finalText += `\n\n🍲 ${food}\nพลังงาน: ~${data.kcal} kcal\nคาร์โบไฮเดรต: ~${carbGrams} กรัม (คิดเป็น ${carbExchange} คาร์บ)\nน้ำตาล: ~${data.sugar} g\nไขมัน: ~${data.fat} g\nโซเดียม: ~${data.sodium} mg`;
-        });
-
-        finalText += `\n\n📌 หมายเหตุ: 1 คาร์บ = คาร์โบไฮเดรต 15 กรัม (เทียบเท่าข้าวสวย 1 ทัพพี) ควรจำกัดจำนวนคาร์บต่อมื้อตามที่แพทย์/นักกำหนดอาหารแนะนำนะคะ/ครับ 💙`;
-      }
-
-      return lineClient.pushMessage(userId, {
-        type: 'text',
-        text: finalText
-      });
-
-    } catch (error) {
-      console.error("Error processing image with Gemini:", error);
-      return lineClient.pushMessage(userId, {
-        type: 'text',
-        text: 'ขออภัยครับ/ค่ะ ระบบวิเคราะห์ภาพมีปัญหาชั่วคราว กรุณาลองส่งรูปใหม่อีกครั้งในภายหลังนะคะ 🛠️'
-      });
-    }
-  }
-
-  return Promise.resolve(null);
 }
 
 // =====================================
@@ -589,5 +606,5 @@ async function handleEvent(event) {
 // =====================================
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
-  console.log(`Webhook server listening on port ${port}`);
+    console.log(`Webhook server listening on port ${port}`);
 });
