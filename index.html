@@ -8,22 +8,34 @@
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Kanit', sans-serif; background-color: #f0f4f3; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; margin: 0; padding-top: 30px; padding-bottom: 30px; }
-        .container { background: white; width: 90%; max-width: 400px; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); overflow: hidden; position: relative; }
-        .header { text-align: center; margin-bottom: 20px; }
+        
+        /* 2️⃣ เพิ่ม Smooth Animation ให้ Container */
+        .container { background: white; width: 90%; max-width: 400px; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); overflow: hidden; position: relative; transition: .35s ease; }
+        
+        .header { text-align: center; margin-bottom: 10px; }
         .header img { width: 80px; margin-bottom: 10px; }
         .header h2 { color: #00897B; margin: 0; font-size: 22px; }
         .header p { color: #777; font-size: 14px; margin-top: 5px; }
+
+        /* 1️⃣ CSS สำหรับ Progress Step Indicator */
+        .step-progress { display: flex; justify-content: center; gap: 10px; margin-top: 10px; margin-bottom: 20px; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; background: #ccc; transition: .3s; }
+        .dot.active { background: #00897B; transform: scale(1.2); }
         
+        /* 3️⃣ CSS สำหรับ Skeleton Loading */
+        .skeleton { height: 45px; background: linear-gradient(90deg, #eee 25%, #f5f5f5 50%, #eee 75%); background-size: 200% 100%; border-radius: 10px; animation: shimmer 1.4s infinite linear; margin-bottom: 20px; }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
         #updateNotice { display: none; background-color: #e3f2fd; color: #00695c; padding: 10px; border-radius: 8px; font-size: 13px; text-align: center; margin-bottom: 20px; border: 1px solid #b2dfdb; }
 
         .form-group { margin-bottom: 20px; }
         label { display: block; margin-bottom: 8px; font-size: 14px; color: #444; font-weight: 600; }
         
-        /* 6️⃣ เพิ่ม Shadow ให้ Input ดูมีมิติเหมือน App */
+        /* Shadow ให้ Input ดูมีมิติเหมือน App */
         input, select { width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 10px; font-size: 15px; box-sizing: border-box; outline: none; transition: 0.3s; font-family: 'Kanit', sans-serif; box-shadow: 0 2px 6px rgba(0,0,0,.04); }
         input:focus, select:focus { border-color: #00897B; box-shadow: 0 0 0 3px rgba(0,137,123,0.1); }
         
-        /* 7️⃣ ปุ่มแบบ Mobile App */
+        /* ปุ่มแบบ Mobile App */
         .btn-primary { width: 100%; padding: 15px; background-color: #00897B; color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: 600; cursor: pointer; transition: 0.3s; margin-top: 10px; box-shadow: 0 6px 14px rgba(0,137,123,.3); }
         .btn-primary:active { transform: scale(0.98); background-color: #00695C; }
         .btn-primary:disabled { background-color: #cccccc; cursor: not-allowed; box-shadow: none; }
@@ -31,9 +43,8 @@
         .btn-secondary { width: 100%; padding: 12px; background-color: #f0f4f3; color: #555; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.3s; margin-top: 10px; }
         
         .footer-text { text-align: center; font-size: 11px; color: #aaa; margin-top: 20px; }
-        #loading { display: none; text-align: center; color: #00897B; font-weight: bold; margin-bottom: 15px; font-size: 14px; }
         
-        /* 3️⃣ Animation SlideIn แบบ App */
+        /* Animation SlideIn แบบ App */
         .step { display: none; animation: slideIn .35s ease; }
         .step.active { display: block; }
         @keyframes slideIn { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
@@ -43,6 +54,10 @@
             background: rgba(255, 255, 255, 0.85); z-index: 9999; justify-content: center;
             align-items: center; flex-direction: column; font-size: 18px; color: #00897B; font-weight: bold;
         }
+
+        /* 6️⃣ CSS สำหรับ Toast Error UI */
+        .toast { position: fixed; bottom: -50px; left: 50%; transform: translateX(-50%); background: rgba(51, 51, 51, 0.95); color: #fff; padding: 12px 24px; border-radius: 30px; font-size: 14px; opacity: 0; transition: 0.3s ease-in-out; z-index: 9999; pointer-events: none; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .toast.show { bottom: 40px; opacity: 1; }
     </style>
 </head>
 <body>
@@ -52,6 +67,8 @@
     กำลังบันทึกข้อมูล...
 </div>
 
+<div id="toast" class="toast"></div>
+
 <div class="container" id="mainContainer">
     <div class="header">
         <img src="https://cdn-icons-png.flaticon.com/512/3063/3063176.png" alt="logo">
@@ -59,7 +76,12 @@
         <p id="subtitle">ส่วนที่ 1: ข้อมูลประจำตัว</p>
     </div>
 
-    <div id="loading">⏳ กำลังเชื่อมต่อระบบ...</div>
+    <div class="step-progress" id="stepIndicator">
+        <div class="dot active" id="dot1"></div>
+        <div class="dot" id="dot2"></div>
+    </div>
+
+    <div id="loading" class="skeleton" style="display:none;"></div>
     <div id="updateNotice">💡 พบข้อมูลเดิมของคุณในระบบ<br>สามารถแก้ไขตัวเลขเพื่ออัปเดตได้เลยครับ</div>
 
     <div id="step1" class="step active">
@@ -143,17 +165,47 @@
 <script>
     const MY_LIFF_ID = '2009419837-irqrUiU1'; 
 
-    // 1️⃣ ฟังก์ชัน Auto Format CID
-    function formatCID(cid) {
-        cid = cid.replace(/\D/g, '').slice(0,13);
-        if (cid.length > 12) return cid.replace(/(\d{1})(\d{4})(\d{5})(\d{2})(\d{1})/, '$1-$2-$3-$4-$5');
-        else if (cid.length > 10) return cid.replace(/(\d{1})(\d{4})(\d{5})(\d{0,2})/, '$1-$2-$3-$4');
-        else if (cid.length > 5) return cid.replace(/(\d{1})(\d{4})(\d+)/, '$1-$2-$3');
-        else if (cid.length > 1) return cid.replace(/(\d{1})(\d+)/, '$1-$2');
-        return cid;
+    // 6️⃣ ฟังก์ชันแสดง Toast
+    let toastTimeout;
+    function showToast(msg) {
+        const t = document.getElementById("toast");
+        t.innerText = msg;
+        t.classList.add("show");
+        clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => {
+            t.classList.remove("show");
+        }, 2500);
     }
 
-    // 2️⃣ ฟังก์ชัน Auto Format วันเกิด
+    // 4️⃣ ปรับ CID Format ให้ถูกต้อง 100%
+    function formatCID(cid) {
+        cid = cid.replace(/\D/g, '').slice(0,13);
+        if(cid.length < 2) return cid;
+        let part1 = cid.slice(0,1);
+        let part2 = cid.slice(1,5);
+        let part3 = cid.slice(5,10);
+        let part4 = cid.slice(10,12);
+        let part5 = cid.slice(12,13);
+        let result = part1;
+        if(part2) result += "-" + part2;
+        if(part3) result += "-" + part3;
+        if(part4) result += "-" + part4;
+        if(part5) result += "-" + part5;
+        return result;
+    }
+
+    // 5️⃣ ฟังก์ชัน Validate CID Checksum
+    function validateCID(cid) {
+        cid = cid.replace(/-/g,'');
+        if(cid.length !== 13) return false;
+        let sum = 0;
+        for(let i=0; i<12; i++){
+            sum += parseInt(cid[i]) * (13-i);
+        }
+        let mod = (11 - (sum % 11)) % 10;
+        return mod === parseInt(cid[12]);
+    }
+
     function formatBirthday(value){
         value = value.replace(/\D/g,'').slice(0,8);
         if(value.length > 4) return value.replace(/(\d{2})(\d{2})(\d+)/,'$1/$2/$3');
@@ -161,7 +213,6 @@
         return value;
     }
 
-    // ย้าย Event Listener เข้าไปใน window.onload เพื่อป้องกัน Error DOM
     window.onload = function () {
         initializeLiff();
 
@@ -205,13 +256,18 @@
 
     async function fetchExistingData(userId) {
         const loading = document.getElementById('loading');
+        // เปิดแสดง Skeleton
         loading.style.display = 'block';
+        document.getElementById('step1').style.display = 'none';
+        document.getElementById('stepIndicator').style.display = 'none';
 
         try {
             const response = await fetch(`/api/getUser?userId=${userId}`);
             
             if (!response.ok && response.status !== 404) {
-                console.warn("ไม่สามารถดึงข้อมูลเก่าได้");
+                showToast("⚠️ ไม่สามารถเชื่อมต่อฐานข้อมูลได้ชั่วคราว");
+                document.getElementById('step1').style.display = 'block';
+                document.getElementById('stepIndicator').style.display = 'flex';
                 return;
             }
 
@@ -229,33 +285,49 @@
                     document.getElementById('updateNotice').style.display = 'block';
                     document.getElementById('submitBtn').innerText = 'อัปเดตข้อมูลและคำนวณคาร์บใหม่';
 
-                    // ข้าม Step 1 ถ้ามีข้อมูลเก่า
+                    // ข้ามไป Step 2 ทันทีถ้ามีข้อมูล
                     document.getElementById('step1').classList.remove('active');
                     document.getElementById('step2').classList.add('active');
                     document.getElementById('subtitle').innerText = 'แก้ไขข้อมูลสุขภาพ';
+                    document.getElementById("dot1").classList.remove("active");
+                    document.getElementById("dot2").classList.add("active");
+                } else {
+                    document.getElementById('step1').style.display = 'block';
                 }
+            } else {
+                document.getElementById('step1').style.display = 'block';
             }
         } catch (error) {
             console.error('Fetch error:', error);
+            document.getElementById('step1').style.display = 'block';
         } finally {
+            // ซ่อน Skeleton และเปิดให้เห็น Indicator ตามปกติ
             loading.style.display = 'none';
+            document.getElementById('stepIndicator').style.display = 'flex';
         }
     }
 
     function nextStep() {
-        // ต้องเอา - ออกก่อนเช็กความยาว
         const rawCid = document.getElementById('cid').value.trim();
         const cleanCid = rawCid.replace(/-/g, '');
         const birthday = document.getElementById('birthday').value.trim();
 
-        if (cleanCid.length !== 13) return alert('กรุณากรอกเลขบัตรประชาชนให้ครบ 13 หลักครับ');
+        if (cleanCid.length !== 13) return showToast('กรุณากรอกเลขบัตรประชาชนให้ครบ 13 หลัก');
+        
+        // 5️⃣ ตรวจสอบ Checksum บัตรประชาชน
+        if(!validateCID(cleanCid)){
+            return showToast("เลขบัตรประชาชนไม่ถูกต้อง กรุณาตรวจสอบ");
+        }
         
         const datePattern = /^[0-9]{2}\/[0-9]{2}\/[0-9]{4}$/;
         if (!datePattern.test(birthday)) {
-            return alert('กรุณากรอกวันเดือนปีเกิดให้ถูกต้องตามรูปแบบ (เช่น 01/01/2500)');
+            return showToast('กรุณากรอกวันเดือนปีเกิดให้ถูกต้อง (เช่น 01/01/2500)');
         }
 
-        // 3️⃣ Animation เลื่อนเปลี่ยนหน้า
+        // 1️⃣ & 2️⃣ อัปเดตจุด Indicator และ Animation เลื่อนหน้า
+        document.getElementById("dot1").classList.remove("active");
+        document.getElementById("dot2").classList.add("active");
+
         const step1 = document.getElementById("step1");
         const step2 = document.getElementById("step2");
         step1.classList.remove("active");
@@ -264,6 +336,10 @@
     }
 
     function prevStep() {
+        // อัปเดตจุด Indicator และ Animation เลื่อนหน้า
+        document.getElementById("dot2").classList.remove("active");
+        document.getElementById("dot1").classList.add("active");
+
         const step1 = document.getElementById("step1");
         const step2 = document.getElementById("step2");
         step2.classList.remove("active");
@@ -273,7 +349,7 @@
 
     async function submitRegistration() {
         const rawCid = document.getElementById('cid').value.trim();
-        const cleanCid = rawCid.replace(/-/g, ''); // ลบ - ออกก่อนส่งเข้า DB
+        const cleanCid = rawCid.replace(/-/g, ''); 
         const birthday = document.getElementById('birthday').value.trim();
         const gender = document.getElementById('gender').value;
         const weight = parseFloat(document.getElementById('weight').value);
@@ -285,18 +361,17 @@
         const submitBtn = document.getElementById('submitBtn');
         const loadingOverlay = document.getElementById('loadingOverlay');
 
-        if (!gender) return alert('กรุณาเลือกเพศครับ');
-        if (!weight || weight <= 0) return alert('กรุณากรอกน้ำหนักให้ถูกต้องครับ');
-        if (!height || height <= 0) return alert('กรุณากรอกส่วนสูงให้ถูกต้องครับ');
-        if (!activityMultiplier) return alert('กรุณาเลือกระดับกิจกรรมครับ');
-        if (!consent) return alert('กรุณากดยินยอมการใช้ข้อมูลส่วนบุคคลก่อนบันทึกข้อมูลครับ');
+        if (!gender) return showToast('กรุณาเลือกเพศครับ');
+        if (!weight || weight <= 0) return showToast('กรุณากรอกน้ำหนักให้ถูกต้องครับ');
+        if (!height || height <= 0) return showToast('กรุณากรอกส่วนสูงให้ถูกต้องครับ');
+        if (!activityMultiplier) return showToast('กรุณาเลือกระดับกิจกรรมครับ');
+        if (!consent) return showToast('กรุณากดยินยอมการใช้ข้อมูลส่วนบุคคลก่อนบันทึกข้อมูลครับ');
 
         submitBtn.disabled = true;
         submitBtn.innerText = 'กำลังประมวลผล...';
         loadingOverlay.style.display = 'flex';
 
         try {
-            // เช็กรูปแบบปีเกิดให้ชัวร์
             let birthYearMatch = birthday.match(/\d{4}/);
             if (!birthYearMatch) throw new Error("รูปแบบวันเกิดไม่ถูกต้อง");
 
@@ -321,7 +396,6 @@
             if (liff.isInClient() || liff.isLoggedIn()) {
                 const profile = await liff.getProfile();
                 
-                // 5️⃣ ส่งข้อมูลผ่าน API (ซ่อนข้อมูล ปลอดภัยกว่าส่งเข้าแชท)
                 const response = await fetch("/api/register", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -339,12 +413,10 @@
                 });
 
                 if (response.ok) {
-                    // 4️⃣ แสดงหน้า Success Page
                     loadingOverlay.style.display = 'none';
                     document.getElementById("mainContainer").style.display = "none";
                     document.getElementById("successPage").style.display = "block";
                     
-                    // ปิดหน้าต่าง LIFF อัตโนมัติหลังผ่านไป 2.5 วินาที
                     setTimeout(() => { liff.closeWindow(); }, 2500);
                 } else {
                     throw new Error("API ตอบกลับผิดพลาด");
@@ -357,7 +429,7 @@
             }
         } catch (error) {
             loadingOverlay.style.display = 'none';
-            alert(error.message || 'เกิดข้อผิดพลาดในการประมวลผล');
+            showToast(error.message || 'เกิดข้อผิดพลาดในการประมวลผล');
             submitBtn.disabled = false;
             submitBtn.innerText = 'ลองใหม่อีกครั้ง';
         }
