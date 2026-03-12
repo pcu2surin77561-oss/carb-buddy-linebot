@@ -7,8 +7,8 @@
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Kanit', sans-serif; background-color: #f0f4f3; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; margin: 0; padding-top: 30px; }
-        .container { background: white; width: 90%; max-width: 400px; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        body { font-family: 'Kanit', sans-serif; background-color: #f0f4f3; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; margin: 0; padding-top: 30px; padding-bottom: 30px; }
+        .container { background: white; width: 90%; max-width: 400px; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); overflow: hidden; }
         .header { text-align: center; margin-bottom: 25px; }
         .header img { width: 80px; margin-bottom: 10px; }
         .header h2 { color: #00897B; margin: 0; font-size: 22px; }
@@ -16,17 +16,22 @@
         
         .form-group { margin-bottom: 20px; }
         label { display: block; margin-bottom: 8px; font-size: 14px; color: #444; font-weight: 600; }
-        input { width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 10px; font-size: 16px; box-sizing: border-box; outline: none; transition: 0.3s; }
-        input:focus { border-color: #00897B; box-shadow: 0 0 0 3px rgba(0,137,123,0.1); }
+        input, select { width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 10px; font-size: 15px; box-sizing: border-box; outline: none; transition: 0.3s; font-family: 'Kanit', sans-serif; }
+        input:focus, select:focus { border-color: #00897B; box-shadow: 0 0 0 3px rgba(0,137,123,0.1); }
         
-        .btn-submit { width: 100%; padding: 15px; background-color: #00897B; color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: 600; cursor: pointer; transition: 0.3s; margin-top: 10px; }
-        .btn-submit:active { transform: scale(0.98); background-color: #00695C; }
-        .btn-submit:disabled { background-color: #cccccc; cursor: not-allowed; }
+        .btn-primary { width: 100%; padding: 15px; background-color: #00897B; color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: 600; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+        .btn-primary:active { transform: scale(0.98); background-color: #00695C; }
+        .btn-primary:disabled { background-color: #cccccc; cursor: not-allowed; }
+        
+        .btn-secondary { width: 100%; padding: 12px; background-color: #f0f4f3; color: #555; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.3s; margin-top: 10px; }
         
         .footer-text { text-align: center; font-size: 11px; color: #aaa; margin-top: 20px; }
-        
-        /* ข้อความแจ้งเตือนตอนกำลังโหลด LIFF */
         #loading { display: none; text-align: center; color: #00897B; font-weight: bold; margin-bottom: 15px; font-size: 14px; }
+        
+        /* สไตล์สำหรับซ่อน/แสดงหน้าของฟอร์ม */
+        .step { display: none; animation: fadeIn 0.4s; }
+        .step.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
@@ -35,97 +40,208 @@
     <div class="header">
         <img src="https://cdn-icons-png.flaticon.com/512/3063/3063176.png" alt="logo">
         <h2>ลงทะเบียนนักเรียน</h2>
-        <p>กรุณากรอกข้อมูลเพื่อเชื่อมต่อสมุดพก</p>
+        <p id="subtitle">ส่วนที่ 1: ข้อมูลประจำตัว</p>
     </div>
 
     <div id="loading">⏳ กำลังเชื่อมต่อระบบ...</div>
 
-    <div class="form-group">
-        <label>เลขบัตรประชาชน (13 หลัก)</label>
-        <input type="number" id="cid" placeholder="ระบุเลขบัตรประชาชน" inputmode="numeric">
+    <div id="step1" class="step active">
+        <div class="form-group">
+            <label>เลขบัตรประชาชน (13 หลัก)</label>
+            <input type="number" id="cid" placeholder="ระบุเลขบัตรประชาชน" inputmode="numeric">
+        </div>
+        <div class="form-group">
+            <label>วันเดือนปีเกิด (โปรดใส่ พ.ศ.)</label>
+            <input type="text" id="birthday" placeholder="ตัวอย่าง: 01/01/2500">
+        </div>
+        <button class="btn-primary" onclick="nextStep()">ถัดไป ➔</button>
     </div>
 
-    <div class="form-group">
-        <label>วันเดือนปีเกิด (ค.ศ.)</label>
-        <input type="text" id="birthday" placeholder="ตัวอย่าง: 01/01/1980">
-    </div>
+    <div id="step2" class="step">
+        <div style="display: flex; gap: 10px;">
+            <div class="form-group" style="flex: 1;">
+                <label>เพศกำเนิด</label>
+                <select id="gender">
+                    <option value="">เลือก</option>
+                    <option value="ชาย">ชาย</option>
+                    <option value="หญิง">หญิง</option>
+                </select>
+            </div>
+            <div class="form-group" style="flex: 1;">
+                <label>น.น. (กก.)</label>
+                <input type="number" id="weight" placeholder="เช่น 65" inputmode="decimal">
+            </div>
+            <div class="form-group" style="flex: 1;">
+                <label>ส่วนสูง (ซม.)</label>
+                <input type="number" id="height" placeholder="เช่น 160" inputmode="numeric">
+            </div>
+        </div>
 
-    <button class="btn-submit" onclick="submitRegistration()" id="submitBtn">บันทึกข้อมูล</button>
+        <div class="form-group">
+            <label>ระดับกิจกรรมในชีวิตประจำวัน</label>
+            <select id="activity">
+                <option value="">-- เลือกระดับกิจกรรม --</option>
+                <option value="1.2">นั่งเป็นส่วนใหญ่ / ไม่ค่อยได้ออกกำลังกาย</option>
+                <option value="1.375">ออกกำลังกายเบาๆ (1-3 วัน/สัปดาห์)</option>
+                <option value="1.55">ออกกำลังกายปานกลาง (3-5 วัน/สัปดาห์)</option>
+                <option value="1.725">ออกกำลังกายอย่างหนัก (6-7 วัน/สัปดาห์)</option>
+                <option value="1.9">ออกกำลังกายเช้า-เย็น / ใช้แรงงานหนัก</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>เป้าหมายการคุมอาหาร (โควตาคาร์บ)</label>
+            <select id="dietType">
+                <option value="0.2">Low Carb 20% (ลดน้ำหนัก / คุมเบาหวาน)</option>
+                <option value="0.5">Balanced Diet 50% (รักษาสุขภาพทั่วไป)</option>
+            </select>
+        </div>
+        
+        <button class="btn-primary" onclick="submitRegistration()" id="submitBtn">บันทึกข้อมูลและคำนวณคาร์บ</button>
+        <button class="btn-secondary" onclick="prevStep()">ย้อนกลับ</button>
+    </div>
     
-    <p class="footer-text">ข้อมูลของคุณจะได้รับการคุ้มครองตามนโยบายความปลอดภัย</p>
+    <p class="footer-text">ข้อมูลของคุณจะได้รับการคุ้มครองตามนโยบายความปลอดภัยของหน่วยงาน</p>
 </div>
 
 <script>
-    // 1. ตั้งค่า LIFF ID 
+    // ตั้งค่า LIFF ID 
     const MY_LIFF_ID = '2009419837-irqrUiU1'; 
 
     async function initializeLiff() {
         const loading = document.getElementById('loading');
-        loading.style.display = 'block'; // แสดงข้อความกำลังโหลด
-
+        loading.style.display = 'block'; 
         try {
             await liff.init({ liffId: MY_LIFF_ID });
-            
-            // เช็กก่อนว่า "ไม่ได้อยู่ในแอป LINE" ค่อยสั่ง Login
-            // ป้องกันปัญหาจอขาวและการลูปใน iOS
+            // รองรับ iOS: เช็กว่าไม่ได้เปิดใน LINE ค่อยพยายาม Login ป้องกันการติด Loop
             if (!liff.isInClient() && !liff.isLoggedIn()) {
                 liff.login();
             }
         } catch (error) {
-            console.error('LIFF Initialization failed', error);
-            alert('ระบบโหลดข้อมูลล้มเหลว กรุณาลองใหม่อีกครั้ง');
+            console.error('LIFF Error:', error);
         } finally {
-            loading.style.display = 'none'; // ปิดข้อความกำลังโหลดเมื่อเสร็จ
+            loading.style.display = 'none'; 
         }
     }
 
-    // รอให้หน้าเว็บโหลดเสร็จก่อนค่อยเรียก LIFF จะเสถียรสุดใน iOS
-    window.onload = function() {
-        initializeLiff();
-    };
+    // เรียก LIFF เมื่อโหลดหน้าเว็บเสร็จสมบูรณ์
+    window.onload = function() { initializeLiff(); };
 
+    // เปลี่ยนไปหน้าที่ 2
+    function nextStep() {
+        const cid = document.getElementById('cid').value.trim();
+        const birthday = document.getElementById('birthday').value.trim();
+
+        if (cid.length !== 13) return alert('กรุณากรอกเลขบัตรประชาชนให้ครบ 13 หลักครับ');
+        if (!birthday) return alert('กรุณากรอกวันเดือนปีเกิด (เช่น 01/01/2500)');
+
+        document.getElementById('step1').classList.remove('active');
+        document.getElementById('step2').classList.add('active');
+        document.getElementById('subtitle').innerText = 'ส่วนที่ 2: ข้อมูลสุขภาพเบื้องต้น';
+    }
+
+    // ย้อนกลับไปหน้าที่ 1
+    function prevStep() {
+        document.getElementById('step2').classList.remove('active');
+        document.getElementById('step1').classList.add('active');
+        document.getElementById('subtitle').innerText = 'ส่วนที่ 1: ข้อมูลประจำตัว';
+    }
+
+    // ฟังก์ชันคำนวณโควตาคาร์บและส่งข้อมูลกลับเข้า LINE Bot
     async function submitRegistration() {
         const cid = document.getElementById('cid').value.trim();
         const birthday = document.getElementById('birthday').value.trim();
+        const gender = document.getElementById('gender').value;
+        const weight = parseFloat(document.getElementById('weight').value);
+        const height = parseFloat(document.getElementById('height').value);
+        const activityMultiplier = parseFloat(document.getElementById('activity').value);
+        const dietMultiplier = parseFloat(document.getElementById('dietType').value);
         const submitBtn = document.getElementById('submitBtn');
 
-        // ตรวจสอบความถูกต้องเบื้องต้น
-        if (cid.length !== 13) {
-            alert('กรุณากรอกเลขบัตรประชาชนให้ครบ 13 หลักครับ');
-            return;
-        }
-        if (!birthday) {
-            alert('กรุณากรอกวันเดือนปีเกิดครับ');
-            return;
-        }
+        // ตรวจสอบความครบถ้วนของข้อมูล
+        if (!gender) return alert('กรุณาเลือกเพศครับ');
+        if (!weight || weight <= 0) return alert('กรุณากรอกน้ำหนักให้ถูกต้องครับ');
+        if (!height || height <= 0) return alert('กรุณากรอกส่วนสูงให้ถูกต้องครับ');
+        if (!activityMultiplier) return alert('กรุณาเลือกระดับกิจกรรมครับ');
 
-        // ปิดปุ่มชั่วคราว ป้องกันการกดเบิ้ล
         submitBtn.disabled = true;
-        submitBtn.innerText = 'กำลังบันทึกข้อมูล...';
+        submitBtn.innerText = 'กำลังประมวลผล...';
 
         try {
-            // เช็กว่าใช้งานผ่านแอป LINE อยู่หรือไม่
-            if (liff.isInClient()) {
-                await liff.sendMessages([
-                    {
-                        type: 'text',
-                        text: `ลงทะเบียน ${cid} ${birthday}`
-                    }
-                ]);
-                // ส่งข้อความเสร็จ ปิดหน้าต่าง LIFF ทันที
-                liff.closeWindow();
-            } else {
-                // ถ้าเปิดผ่านเบราว์เซอร์ปกติ ให้แจ้งเตือน
-                alert('กรุณาทำรายการนี้ผ่านแอปพลิเคชัน LINE เท่านั้นครับ');
+            // ดึงปี พ.ศ. ออกมาคำนวณอายุ โดยใช้ Regular Expression จับตัวเลข 4 หลัก
+            let birthYearMatch = birthday.match(/\d{4}/);
+            if (!birthYearMatch) {
+                alert('กรุณากรอกปีเกิดให้ถูกต้อง (เช่น 01/01/2500)');
                 submitBtn.disabled = false;
-                submitBtn.innerText = 'บันทึกข้อมูล';
+                submitBtn.innerText = 'บันทึกข้อมูลและคำนวณคาร์บ';
+                return;
+            }
+            
+            let birthYear = parseInt(birthYearMatch[0]);
+            if (birthYear > 2400) birthYear -= 543; // แปลง พ.ศ. เป็น ค.ศ.
+            let currentYear = new Date().getFullYear();
+            let age = currentYear - birthYear;
+
+            if (age < 1 || age > 120) {
+                alert('อายุที่คำนวณได้ไม่ถูกต้อง กรุณาตรวจสอบปีเกิดอีกครั้ง');
+                submitBtn.disabled = false;
+                submitBtn.innerText = 'บันทึกข้อมูลและคำนวณคาร์บ';
+                return;
+            }
+
+            // ==========================================
+            // 💡 1. คำนวณพลังงานพื้นฐาน BMR (Harris-Benedict)
+            // ==========================================
+            let bmr = 0;
+            if (gender === 'ชาย') {
+                bmr = 66 + (13.7 * weight) + (5 * height) - (6.8 * age);
+            } else {
+                bmr = 665 + (9.6 * weight) + (1.8 * height) - (4.7 * age);
+            }
+
+            // ==========================================
+            // 💡 2. คำนวณค่าพลังงานทั้งหมดต่อวัน TDEE
+            // ==========================================
+            let tdee = bmr * activityMultiplier;
+
+            // ==========================================
+            // 💡 3. คำนวณเป็นพลังงานจากคาร์บ (ตามเป้าหมาย 20% หรือ 50%)
+            // ==========================================
+            let carbCalories = tdee * dietMultiplier;
+
+            // ==========================================
+            // 💡 4. แปลงพลังงานเป็นกรัม (คาร์บ 1 กรัม = 4 kcal)
+            // ==========================================
+            let carbGrams = carbCalories / 4;
+
+            // ==========================================
+            // 💡 5. แปลงปริมาณกรัมเป็นจำนวน "คาร์บ" (1 คาร์บ = 15 กรัม)
+            // ==========================================
+            let totalCarbExchange = carbGrams / 15;
+            
+            // แบ่งทาน 3 มื้อหลักต่อวัน และปัดเศษให้เข้าใจง่าย
+            let carbPerMeal = Math.round(totalCarbExchange / 3);
+            
+            // ป้องกันกรณีคำนวณได้น้อยเกินไป ให้ทานได้อย่างน้อยมื้อละ 1 คาร์บ
+            if (carbPerMeal < 1) carbPerMeal = 1;
+
+            if (liff.isInClient()) {
+                // ส่ง Payload กลับไปให้ Webhook ของบอท
+                // รูปแบบ: ลงทะเบียน [CID] [วันเกิด] [เพศ] [น้ำหนัก] [ส่วนสูง] [ระดับกิจกรรม] [สัดส่วนคาร์บ] [คาร์บ/มื้อ]
+                let messagePayload = `ลงทะเบียน ${cid} ${birthday} ${gender} ${weight} ${height} ${activityMultiplier} ${dietMultiplier} ${carbPerMeal}`;
+                
+                await liff.sendMessages([{ type: 'text', text: messagePayload }]);
+                liff.closeWindow(); // ปิดหน้าเว็บอัตโนมัติเมื่อส่งข้อมูลเสร็จ
+            } else {
+                // สำหรับกรณีเปิดทดสอบผ่าน Browser บนคอมพิวเตอร์
+                alert(`(โหมดจำลองการทำงาน)\nอายุ: ${age} ปี\nBMR: ${Math.round(bmr)} kcal\nTDEE: ${Math.round(tdee)} kcal\n\n📌 โควตาคาร์บของคุณ:\nทานได้มื้อละ ${carbPerMeal} คาร์บ\n\n* กรุณาทำรายการจริงผ่านแอปพลิเคชัน LINE`);
+                submitBtn.disabled = false;
+                submitBtn.innerText = 'บันทึกข้อมูลและคำนวณคาร์บ';
             }
         } catch (error) {
-            console.error('Send message failed', error);
-            alert('เกิดข้อผิดพลาดในการส่งข้อมูล: ' + error.message);
-            // คืนค่าปุ่มให้กดใหม่ได้ถ้า Error
+            alert('เกิดข้อผิดพลาดในการประมวลผล: ' + error.message);
             submitBtn.disabled = false;
-            submitBtn.innerText = 'บันทึกข้อมูล';
+            submitBtn.innerText = 'บันทึกข้อมูลและคำนวณคาร์บ';
         }
     }
 </script>
