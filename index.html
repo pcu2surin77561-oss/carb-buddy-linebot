@@ -136,18 +136,29 @@
 <script>
     const MY_LIFF_ID = '2009419837-irqrUiU1'; 
 
-    // 6️⃣ Auto format CID กรองเฉพาะตัวเลข และไม่เกิน 13 หลัก
-    document.getElementById("cid").addEventListener("input", function(){
-        this.value = this.value.replace(/[^0-9]/g, '').slice(0, 13);
-    });
+    // 1️⃣ & 2️⃣ ย้าย Event Listener เข้าไปใน window.onload เพื่อความปลอดภัย
+    window.onload = function () {
+        initializeLiff();
+
+        const cidInput = document.getElementById("cid");
+        if (cidInput) {
+            // ป้องกันการพิมพ์ตัวอักษร
+            cidInput.addEventListener("input", function () {
+                this.value = this.value.replace(/[^0-9]/g, '').slice(0, 13);
+            });
+            // ป้องกันการ Paste ตัวอักษร
+            cidInput.addEventListener("paste", function(e) {
+                setTimeout(() => {
+                    this.value = this.value.replace(/[^0-9]/g, '').slice(0, 13);
+                }, 10);
+            });
+        }
+    };
 
     async function initializeLiff() {
-        const loading = document.getElementById('loading');
-        loading.style.display = 'block'; 
         try {
             await liff.init({ liffId: MY_LIFF_ID });
             
-            // 7️⃣ แจ้งเตือนถ้าเปิดนอก LINE
             if (!liff.isInClient()) {
                 alert("⚠️ แนะนำให้เปิดระบบนี้ผ่านแอปพลิเคชัน LINE เพื่อการทำงานที่สมบูรณ์ครับ");
             }
@@ -156,7 +167,6 @@
                 liff.login();
             }
 
-            // ดึงข้อมูลเก่า
             if (liff.isLoggedIn()) {
                 const profile = await liff.getProfile();
                 await fetchExistingData(profile.userId);
@@ -164,18 +174,17 @@
 
         } catch (error) {
             console.error('LIFF Error:', error);
-        } finally {
-            loading.style.display = 'none'; 
         }
     }
 
-    window.onload = function() { initializeLiff(); };
-
     async function fetchExistingData(userId) {
+        // 4️⃣ เพิ่ม Loading ตอนดึงข้อมูลเก่า
+        const loading = document.getElementById('loading');
+        loading.style.display = 'block';
+
         try {
             const response = await fetch(`/api/getUser?userId=${userId}`);
             
-            // 5️⃣ เพิ่ม Error UI ถ้า API พัง (ข้ามเคส 404 เพราะแปลว่าเป็นคนไข้ใหม่)
             if (!response.ok && response.status !== 404) {
                 alert("⚠️ ไม่สามารถเชื่อมต่อฐานข้อมูลได้ชั่วคราว กรุณาลองใหม่อีกครั้งครับ");
                 return;
@@ -194,10 +203,18 @@
 
                     document.getElementById('updateNotice').style.display = 'block';
                     document.getElementById('submitBtn').innerText = 'อัปเดตข้อมูลและคำนวณคาร์บใหม่';
+
+                    // 5️⃣ UX: ข้าม Step 1 อัตโนมัติถ้ามีข้อมูลเก่า
+                    document.getElementById('step1').classList.remove('active');
+                    document.getElementById('step2').classList.add('active');
+                    document.getElementById('subtitle').innerText = 'แก้ไขข้อมูลสุขภาพ';
                 }
             }
         } catch (error) {
             console.error('ไม่สามารถดึงข้อมูลเก่าได้:', error);
+        } finally {
+            // ปิด Loading
+            loading.style.display = 'none';
         }
     }
 
@@ -207,7 +224,6 @@
 
         if (cid.length !== 13) return alert('กรุณากรอกเลขบัตรประชาชนให้ครบ 13 หลักครับ');
         
-        // เช็กรูปแบบวันเกิด (ง่ายๆ เบื้องต้น)
         const datePattern = /^[0-9]{2}\/[0-9]{2}\/[0-9]{4}$/;
         if (!datePattern.test(birthday)) {
             return alert('กรุณากรอกวันเดือนปีเกิดให้ถูกต้องตามรูปแบบ (เช่น 01/01/2500)');
@@ -236,24 +252,29 @@
         const submitBtn = document.getElementById('submitBtn');
         const loadingOverlay = document.getElementById('loadingOverlay');
 
-        // Validation ครบถ้วน
         if (!gender) return alert('กรุณาเลือกเพศครับ');
         if (!weight || weight <= 0) return alert('กรุณากรอกน้ำหนักให้ถูกต้องครับ');
         if (!height || height <= 0) return alert('กรุณากรอกส่วนสูงให้ถูกต้องครับ');
         if (!activityMultiplier) return alert('กรุณาเลือกระดับกิจกรรมครับ');
         
-        // 1️⃣ ตรวจสอบ PDPA Consent
         if (!consent) {
             return alert('กรุณากดยินยอมการใช้ข้อมูลส่วนบุคคลก่อนบันทึกข้อมูลครับ');
         }
 
-        // 4️⃣ ป้องกันการกดซ้ำ + แสดง Overlay (8️⃣)
         submitBtn.disabled = true;
         submitBtn.innerText = 'กำลังประมวลผล...';
         loadingOverlay.style.display = 'flex';
 
         try {
+            // 3️⃣ ตรวจสอบก่อน Parse ป้องกัน Error กรณี Match ไม่เจอ
             let birthYearMatch = birthday.match(/\d{4}/);
+            if (!birthYearMatch) {
+                loadingOverlay.style.display = 'none';
+                submitBtn.disabled = false;
+                submitBtn.innerText = 'บันทึกข้อมูลและคำนวณคาร์บ';
+                return alert("รูปแบบวันเกิดไม่ถูกต้อง กรุณาระบุให้ถูกต้อง (เช่น 01/01/2500)");
+            }
+
             let birthYear = parseInt(birthYearMatch[0]);
             if (birthYear > 2400) birthYear -= 543; 
             let age = new Date().getFullYear() - birthYear;
@@ -278,7 +299,6 @@
             if (carbPerMeal < 1) carbPerMeal = 1;
 
             if (liff.isInClient()) {
-                // 9️⃣ ส่งข้อมูลผ่าน Chat (ตามที่อนุโลมให้ใช้ก่อน)
                 let messagePayload = `ลงทะเบียน ${cid} ${birthday} ${gender} ${weight} ${height} ${activityMultiplier} ${dietMultiplier} ${carbPerMeal}`;
                 await liff.sendMessages([{ type: 'text', text: messagePayload }]);
                 liff.closeWindow(); 
