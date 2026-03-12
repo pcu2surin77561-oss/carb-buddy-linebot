@@ -8,7 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Kanit', sans-serif; background-color: #f0f4f3; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; margin: 0; padding-top: 30px; padding-bottom: 30px; }
-        .container { background: white; width: 90%; max-width: 400px; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); overflow: hidden; }
+        .container { background: white; width: 90%; max-width: 400px; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); overflow: hidden; position: relative; }
         .header { text-align: center; margin-bottom: 20px; }
         .header img { width: 80px; margin-bottom: 10px; }
         .header h2 { color: #00897B; margin: 0; font-size: 22px; }
@@ -31,12 +31,25 @@
         .footer-text { text-align: center; font-size: 11px; color: #aaa; margin-top: 20px; }
         #loading { display: none; text-align: center; color: #00897B; font-weight: bold; margin-bottom: 15px; font-size: 14px; }
         
+        /* สไตล์สำหรับซ่อน/แสดงหน้า */
         .step { display: none; animation: fadeIn 0.4s; }
         .step.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Loading Overlay (เต็มจอ) */
+        #loadingOverlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.85); z-index: 9999; justify-content: center;
+            align-items: center; flex-direction: column; font-size: 18px; color: #00897B; font-weight: bold;
+        }
     </style>
 </head>
 <body>
+
+<div id="loadingOverlay">
+    <span style="font-size: 30px; margin-bottom: 10px;">⏳</span>
+    กำลังบันทึกข้อมูล...
+</div>
 
 <div class="container">
     <div class="header">
@@ -51,11 +64,11 @@
     <div id="step1" class="step active">
         <div class="form-group">
             <label>เลขบัตรประชาชน (13 หลัก)</label>
-            <input type="number" id="cid" placeholder="ระบุเลขบัตรประชาชน" inputmode="numeric">
+            <input type="text" id="cid" maxlength="13" pattern="[0-9]{13}" inputmode="numeric" placeholder="ระบุเลขบัตรประชาชน">
         </div>
         <div class="form-group">
             <label>วันเดือนปีเกิด (โปรดใส่ พ.ศ.)</label>
-            <input type="text" id="birthday" placeholder="ตัวอย่าง: 01/01/2500">
+            <input type="text" id="birthday" placeholder="เช่น 01/01/2500" pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}">
         </div>
         <button class="btn-primary" onclick="nextStep()">ถัดไป ➔</button>
     </div>
@@ -99,16 +112,34 @@
                 <option value="0.5">Balanced Diet 50% (รักษาสุขภาพทั่วไป)</option>
             </select>
         </div>
+
+        <div class="form-group" style="font-size:13px; background:#f9f9f9; padding:15px; border-radius:10px; border: 1px solid #eee;">
+            <label style="display:flex;align-items:flex-start;gap:8px; cursor:pointer; margin:0;">
+                <input type="checkbox" id="pdpaConsent" style="width:20px; height:20px; margin-top:2px;">
+                <span style="color:#555;">
+                    ฉันยินยอมให้ระบบโรงเรียนเบาหวานเก็บและใช้ข้อมูลส่วนบุคคล เพื่อวิเคราะห์สุขภาพและให้คำแนะนำด้านโภชนาการ
+                </span>
+            </label>
+            <div style="font-size:12px;margin-top:6px; text-align:right;">
+                อ่านนโยบาย
+                <a href="#" target="_blank" style="color:#00897B; text-decoration:underline;">คุ้มครองข้อมูลส่วนบุคคล</a>
+            </div>
+        </div>
         
         <button class="btn-primary" onclick="submitRegistration()" id="submitBtn">บันทึกข้อมูลและคำนวณคาร์บ</button>
         <button class="btn-secondary" onclick="prevStep()">ย้อนกลับ</button>
     </div>
     
-    <p class="footer-text">ข้อมูลของคุณจะได้รับการคุ้มครองตามนโยบายความปลอดภัยของหน่วยงาน</p>
+    <p class="footer-text">ข้อมูลของคุณจะได้รับการคุ้มครองตามนโยบายความปลอดภัย</p>
 </div>
 
 <script>
     const MY_LIFF_ID = '2009419837-irqrUiU1'; 
+
+    // 6️⃣ Auto format CID กรองเฉพาะตัวเลข และไม่เกิน 13 หลัก
+    document.getElementById("cid").addEventListener("input", function(){
+        this.value = this.value.replace(/[^0-9]/g, '').slice(0, 13);
+    });
 
     async function initializeLiff() {
         const loading = document.getElementById('loading');
@@ -116,11 +147,16 @@
         try {
             await liff.init({ liffId: MY_LIFF_ID });
             
+            // 7️⃣ แจ้งเตือนถ้าเปิดนอก LINE
+            if (!liff.isInClient()) {
+                alert("⚠️ แนะนำให้เปิดระบบนี้ผ่านแอปพลิเคชัน LINE เพื่อการทำงานที่สมบูรณ์ครับ");
+            }
+
             if (!liff.isInClient() && !liff.isLoggedIn()) {
                 liff.login();
             }
 
-            // เมื่อล็อกอินหรืออยู่ในแอป LINE แล้ว ให้ดึง Line ID ไปหาข้อมูลเก่า
+            // ดึงข้อมูลเก่า
             if (liff.isLoggedIn()) {
                 const profile = await liff.getProfile();
                 await fetchExistingData(profile.userId);
@@ -135,15 +171,19 @@
 
     window.onload = function() { initializeLiff(); };
 
-    // 🌟 ฟังก์ชันดึงข้อมูลเก่าจากฐานข้อมูลมาแสดงบนฟอร์ม
     async function fetchExistingData(userId) {
         try {
-            // เรียกไปที่ API ของ server.js
             const response = await fetch(`/api/getUser?userId=${userId}`);
+            
+            // 5️⃣ เพิ่ม Error UI ถ้า API พัง (ข้ามเคส 404 เพราะแปลว่าเป็นคนไข้ใหม่)
+            if (!response.ok && response.status !== 404) {
+                alert("⚠️ ไม่สามารถเชื่อมต่อฐานข้อมูลได้ชั่วคราว กรุณาลองใหม่อีกครั้งครับ");
+                return;
+            }
+
             if (response.ok) {
                 const data = await response.json();
                 if (data && data.cid) {
-                    // เติมข้อมูลเก่าลงในช่อง Input
                     document.getElementById('cid').value = data.cid || '';
                     document.getElementById('birthday').value = data.birthday || '';
                     if(data.gender) document.getElementById('gender').value = data.gender;
@@ -152,7 +192,6 @@
                     if(data.activity) document.getElementById('activity').value = data.activity;
                     if(data.dietType) document.getElementById('dietType').value = data.dietType;
 
-                    // แสดงแถบแจ้งเตือนและเปลี่ยนข้อความปุ่ม
                     document.getElementById('updateNotice').style.display = 'block';
                     document.getElementById('submitBtn').innerText = 'อัปเดตข้อมูลและคำนวณคาร์บใหม่';
                 }
@@ -167,7 +206,12 @@
         const birthday = document.getElementById('birthday').value.trim();
 
         if (cid.length !== 13) return alert('กรุณากรอกเลขบัตรประชาชนให้ครบ 13 หลักครับ');
-        if (!birthday) return alert('กรุณากรอกวันเดือนปีเกิด (เช่น 01/01/2500)');
+        
+        // เช็กรูปแบบวันเกิด (ง่ายๆ เบื้องต้น)
+        const datePattern = /^[0-9]{2}\/[0-9]{2}\/[0-9]{4}$/;
+        if (!datePattern.test(birthday)) {
+            return alert('กรุณากรอกวันเดือนปีเกิดให้ถูกต้องตามรูปแบบ (เช่น 01/01/2500)');
+        }
 
         document.getElementById('step1').classList.remove('active');
         document.getElementById('step2').classList.add('active');
@@ -188,34 +232,37 @@
         const height = parseFloat(document.getElementById('height').value);
         const activityMultiplier = parseFloat(document.getElementById('activity').value);
         const dietMultiplier = parseFloat(document.getElementById('dietType').value);
+        const consent = document.getElementById('pdpaConsent').checked;
         const submitBtn = document.getElementById('submitBtn');
+        const loadingOverlay = document.getElementById('loadingOverlay');
 
+        // Validation ครบถ้วน
         if (!gender) return alert('กรุณาเลือกเพศครับ');
         if (!weight || weight <= 0) return alert('กรุณากรอกน้ำหนักให้ถูกต้องครับ');
         if (!height || height <= 0) return alert('กรุณากรอกส่วนสูงให้ถูกต้องครับ');
         if (!activityMultiplier) return alert('กรุณาเลือกระดับกิจกรรมครับ');
+        
+        // 1️⃣ ตรวจสอบ PDPA Consent
+        if (!consent) {
+            return alert('กรุณากดยินยอมการใช้ข้อมูลส่วนบุคคลก่อนบันทึกข้อมูลครับ');
+        }
 
+        // 4️⃣ ป้องกันการกดซ้ำ + แสดง Overlay (8️⃣)
         submitBtn.disabled = true;
         submitBtn.innerText = 'กำลังประมวลผล...';
+        loadingOverlay.style.display = 'flex';
 
         try {
             let birthYearMatch = birthday.match(/\d{4}/);
-            if (!birthYearMatch) {
-                alert('กรุณากรอกปีเกิดให้ถูกต้อง (เช่น 01/01/2500)');
-                submitBtn.disabled = false;
-                submitBtn.innerText = 'บันทึกข้อมูลและคำนวณคาร์บ';
-                return;
-            }
-            
             let birthYear = parseInt(birthYearMatch[0]);
             if (birthYear > 2400) birthYear -= 543; 
             let age = new Date().getFullYear() - birthYear;
 
             if (age < 1 || age > 120) {
-                alert('อายุที่คำนวณได้ไม่ถูกต้อง กรุณาตรวจสอบปีเกิดอีกครั้ง');
+                loadingOverlay.style.display = 'none';
                 submitBtn.disabled = false;
                 submitBtn.innerText = 'บันทึกข้อมูลและคำนวณคาร์บ';
-                return;
+                return alert('อายุที่คำนวณได้ไม่ถูกต้อง กรุณาตรวจสอบปีเกิดอีกครั้ง');
             }
 
             let bmr = (gender === 'ชาย') 
@@ -231,15 +278,18 @@
             if (carbPerMeal < 1) carbPerMeal = 1;
 
             if (liff.isInClient()) {
+                // 9️⃣ ส่งข้อมูลผ่าน Chat (ตามที่อนุโลมให้ใช้ก่อน)
                 let messagePayload = `ลงทะเบียน ${cid} ${birthday} ${gender} ${weight} ${height} ${activityMultiplier} ${dietMultiplier} ${carbPerMeal}`;
                 await liff.sendMessages([{ type: 'text', text: messagePayload }]);
                 liff.closeWindow(); 
             } else {
-                alert(`(โหมดจำลองการทำงาน)\nอายุ: ${age} ปี\nBMR: ${Math.round(bmr)} kcal\nTDEE: ${Math.round(tdee)} kcal\n\n📌 โควตาคาร์บของคุณ:\nทานได้มื้อละ ${carbPerMeal} คาร์บ`);
+                loadingOverlay.style.display = 'none';
+                alert(`(โหมดทดสอบ)\nอายุ: ${age} ปี\nBMR: ${Math.round(bmr)} kcal\n\n📌 ทานได้มื้อละ ${carbPerMeal} คาร์บ`);
                 submitBtn.disabled = false;
                 submitBtn.innerText = 'อัปเดตข้อมูลและคำนวณคาร์บ';
             }
         } catch (error) {
+            loadingOverlay.style.display = 'none';
             alert('เกิดข้อผิดพลาดในการประมวลผล: ' + error.message);
             submitBtn.disabled = false;
             submitBtn.innerText = 'ลองใหม่อีกครั้ง';
