@@ -9,11 +9,14 @@
     <style>
         body { font-family: 'Kanit', sans-serif; background-color: #f0f4f3; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; margin: 0; padding-top: 30px; padding-bottom: 30px; }
         .container { background: white; width: 90%; max-width: 400px; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); overflow: hidden; }
-        .header { text-align: center; margin-bottom: 25px; }
+        .header { text-align: center; margin-bottom: 20px; }
         .header img { width: 80px; margin-bottom: 10px; }
         .header h2 { color: #00897B; margin: 0; font-size: 22px; }
         .header p { color: #777; font-size: 14px; margin-top: 5px; }
         
+        /* แถบแจ้งเตือนเมื่อพบข้อมูลเก่า */
+        #updateNotice { display: none; background-color: #e3f2fd; color: #00695c; padding: 10px; border-radius: 8px; font-size: 13px; text-align: center; margin-bottom: 20px; border: 1px solid #b2dfdb; }
+
         .form-group { margin-bottom: 20px; }
         label { display: block; margin-bottom: 8px; font-size: 14px; color: #444; font-weight: 600; }
         input, select { width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 10px; font-size: 15px; box-sizing: border-box; outline: none; transition: 0.3s; font-family: 'Kanit', sans-serif; }
@@ -28,7 +31,6 @@
         .footer-text { text-align: center; font-size: 11px; color: #aaa; margin-top: 20px; }
         #loading { display: none; text-align: center; color: #00897B; font-weight: bold; margin-bottom: 15px; font-size: 14px; }
         
-        /* สไตล์สำหรับซ่อน/แสดงหน้าของฟอร์ม */
         .step { display: none; animation: fadeIn 0.4s; }
         .step.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -44,6 +46,7 @@
     </div>
 
     <div id="loading">⏳ กำลังเชื่อมต่อระบบ...</div>
+    <div id="updateNotice">💡 พบข้อมูลเดิมของคุณในระบบ<br>สามารถแก้ไขตัวเลขเพื่ออัปเดตได้เลยครับ</div>
 
     <div id="step1" class="step active">
         <div class="form-group">
@@ -105,7 +108,6 @@
 </div>
 
 <script>
-    // ตั้งค่า LIFF ID 
     const MY_LIFF_ID = '2009419837-irqrUiU1'; 
 
     async function initializeLiff() {
@@ -113,10 +115,17 @@
         loading.style.display = 'block'; 
         try {
             await liff.init({ liffId: MY_LIFF_ID });
-            // รองรับ iOS: เช็กว่าไม่ได้เปิดใน LINE ค่อยพยายาม Login ป้องกันการติด Loop
+            
             if (!liff.isInClient() && !liff.isLoggedIn()) {
                 liff.login();
             }
+
+            // เมื่อล็อกอินหรืออยู่ในแอป LINE แล้ว ให้ดึง Line ID ไปหาข้อมูลเก่า
+            if (liff.isLoggedIn()) {
+                const profile = await liff.getProfile();
+                await fetchExistingData(profile.userId);
+            }
+
         } catch (error) {
             console.error('LIFF Error:', error);
         } finally {
@@ -124,10 +133,35 @@
         }
     }
 
-    // เรียก LIFF เมื่อโหลดหน้าเว็บเสร็จสมบูรณ์
     window.onload = function() { initializeLiff(); };
 
-    // เปลี่ยนไปหน้าที่ 2
+    // 🌟 ฟังก์ชันดึงข้อมูลเก่าจากฐานข้อมูลมาแสดงบนฟอร์ม
+    async function fetchExistingData(userId) {
+        try {
+            // เรียกไปที่ API ของ server.js
+            const response = await fetch(`/api/getUser?userId=${userId}`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data && data.cid) {
+                    // เติมข้อมูลเก่าลงในช่อง Input
+                    document.getElementById('cid').value = data.cid || '';
+                    document.getElementById('birthday').value = data.birthday || '';
+                    if(data.gender) document.getElementById('gender').value = data.gender;
+                    if(data.weight) document.getElementById('weight').value = data.weight;
+                    if(data.height) document.getElementById('height').value = data.height;
+                    if(data.activity) document.getElementById('activity').value = data.activity;
+                    if(data.dietType) document.getElementById('dietType').value = data.dietType;
+
+                    // แสดงแถบแจ้งเตือนและเปลี่ยนข้อความปุ่ม
+                    document.getElementById('updateNotice').style.display = 'block';
+                    document.getElementById('submitBtn').innerText = 'อัปเดตข้อมูลและคำนวณคาร์บใหม่';
+                }
+            }
+        } catch (error) {
+            console.error('ไม่สามารถดึงข้อมูลเก่าได้:', error);
+        }
+    }
+
     function nextStep() {
         const cid = document.getElementById('cid').value.trim();
         const birthday = document.getElementById('birthday').value.trim();
@@ -140,14 +174,12 @@
         document.getElementById('subtitle').innerText = 'ส่วนที่ 2: ข้อมูลสุขภาพเบื้องต้น';
     }
 
-    // ย้อนกลับไปหน้าที่ 1
     function prevStep() {
         document.getElementById('step2').classList.remove('active');
         document.getElementById('step1').classList.add('active');
         document.getElementById('subtitle').innerText = 'ส่วนที่ 1: ข้อมูลประจำตัว';
     }
 
-    // ฟังก์ชันคำนวณโควตาคาร์บและส่งข้อมูลกลับเข้า LINE Bot
     async function submitRegistration() {
         const cid = document.getElementById('cid').value.trim();
         const birthday = document.getElementById('birthday').value.trim();
@@ -158,7 +190,6 @@
         const dietMultiplier = parseFloat(document.getElementById('dietType').value);
         const submitBtn = document.getElementById('submitBtn');
 
-        // ตรวจสอบความครบถ้วนของข้อมูล
         if (!gender) return alert('กรุณาเลือกเพศครับ');
         if (!weight || weight <= 0) return alert('กรุณากรอกน้ำหนักให้ถูกต้องครับ');
         if (!height || height <= 0) return alert('กรุณากรอกส่วนสูงให้ถูกต้องครับ');
@@ -168,7 +199,6 @@
         submitBtn.innerText = 'กำลังประมวลผล...';
 
         try {
-            // ดึงปี พ.ศ. ออกมาคำนวณอายุ โดยใช้ Regular Expression จับตัวเลข 4 หลัก
             let birthYearMatch = birthday.match(/\d{4}/);
             if (!birthYearMatch) {
                 alert('กรุณากรอกปีเกิดให้ถูกต้อง (เช่น 01/01/2500)');
@@ -178,9 +208,8 @@
             }
             
             let birthYear = parseInt(birthYearMatch[0]);
-            if (birthYear > 2400) birthYear -= 543; // แปลง พ.ศ. เป็น ค.ศ.
-            let currentYear = new Date().getFullYear();
-            let age = currentYear - birthYear;
+            if (birthYear > 2400) birthYear -= 543; 
+            let age = new Date().getFullYear() - birthYear;
 
             if (age < 1 || age > 120) {
                 alert('อายุที่คำนวณได้ไม่ถูกต้อง กรุณาตรวจสอบปีเกิดอีกครั้ง');
@@ -189,59 +218,31 @@
                 return;
             }
 
-            // ==========================================
-            // 💡 1. คำนวณพลังงานพื้นฐาน BMR (Harris-Benedict)
-            // ==========================================
-            let bmr = 0;
-            if (gender === 'ชาย') {
-                bmr = 66 + (13.7 * weight) + (5 * height) - (6.8 * age);
-            } else {
-                bmr = 665 + (9.6 * weight) + (1.8 * height) - (4.7 * age);
-            }
+            let bmr = (gender === 'ชาย') 
+                ? 66 + (13.7 * weight) + (5 * height) - (6.8 * age)
+                : 665 + (9.6 * weight) + (1.8 * height) - (4.7 * age);
 
-            // ==========================================
-            // 💡 2. คำนวณค่าพลังงานทั้งหมดต่อวัน TDEE
-            // ==========================================
             let tdee = bmr * activityMultiplier;
-
-            // ==========================================
-            // 💡 3. คำนวณเป็นพลังงานจากคาร์บ (ตามเป้าหมาย 20% หรือ 50%)
-            // ==========================================
             let carbCalories = tdee * dietMultiplier;
-
-            // ==========================================
-            // 💡 4. แปลงพลังงานเป็นกรัม (คาร์บ 1 กรัม = 4 kcal)
-            // ==========================================
             let carbGrams = carbCalories / 4;
-
-            // ==========================================
-            // 💡 5. แปลงปริมาณกรัมเป็นจำนวน "คาร์บ" (1 คาร์บ = 15 กรัม)
-            // ==========================================
             let totalCarbExchange = carbGrams / 15;
-            
-            // แบ่งทาน 3 มื้อหลักต่อวัน และปัดเศษให้เข้าใจง่าย
             let carbPerMeal = Math.round(totalCarbExchange / 3);
             
-            // ป้องกันกรณีคำนวณได้น้อยเกินไป ให้ทานได้อย่างน้อยมื้อละ 1 คาร์บ
             if (carbPerMeal < 1) carbPerMeal = 1;
 
             if (liff.isInClient()) {
-                // ส่ง Payload กลับไปให้ Webhook ของบอท
-                // รูปแบบ: ลงทะเบียน [CID] [วันเกิด] [เพศ] [น้ำหนัก] [ส่วนสูง] [ระดับกิจกรรม] [สัดส่วนคาร์บ] [คาร์บ/มื้อ]
                 let messagePayload = `ลงทะเบียน ${cid} ${birthday} ${gender} ${weight} ${height} ${activityMultiplier} ${dietMultiplier} ${carbPerMeal}`;
-                
                 await liff.sendMessages([{ type: 'text', text: messagePayload }]);
-                liff.closeWindow(); // ปิดหน้าเว็บอัตโนมัติเมื่อส่งข้อมูลเสร็จ
+                liff.closeWindow(); 
             } else {
-                // สำหรับกรณีเปิดทดสอบผ่าน Browser บนคอมพิวเตอร์
-                alert(`(โหมดจำลองการทำงาน)\nอายุ: ${age} ปี\nBMR: ${Math.round(bmr)} kcal\nTDEE: ${Math.round(tdee)} kcal\n\n📌 โควตาคาร์บของคุณ:\nทานได้มื้อละ ${carbPerMeal} คาร์บ\n\n* กรุณาทำรายการจริงผ่านแอปพลิเคชัน LINE`);
+                alert(`(โหมดจำลองการทำงาน)\nอายุ: ${age} ปี\nBMR: ${Math.round(bmr)} kcal\nTDEE: ${Math.round(tdee)} kcal\n\n📌 โควตาคาร์บของคุณ:\nทานได้มื้อละ ${carbPerMeal} คาร์บ`);
                 submitBtn.disabled = false;
-                submitBtn.innerText = 'บันทึกข้อมูลและคำนวณคาร์บ';
+                submitBtn.innerText = 'อัปเดตข้อมูลและคำนวณคาร์บ';
             }
         } catch (error) {
             alert('เกิดข้อผิดพลาดในการประมวลผล: ' + error.message);
             submitBtn.disabled = false;
-            submitBtn.innerText = 'บันทึกข้อมูลและคำนวณคาร์บ';
+            submitBtn.innerText = 'ลองใหม่อีกครั้ง';
         }
     }
 </script>
