@@ -11,7 +11,20 @@ try {
 
 const SHEET_ID = '190jkS-78iiOg9UjYjpmlLnC90FdmiMi4lV4Wb-h2LS4';
 
-// ตั้งชื่อคอลัมน์แท็บผลแล็บ (Tab 1)
+// =====================================
+// การตั้งค่าเชื่อมต่อ Google Sheet (ทำครั้งเดียว)
+// =====================================
+const serviceAccountAuth = new JWT({
+    email: creds.client_email,
+    key: creds.private_key,
+    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+});
+const doc = new GoogleSpreadsheet(SHEET_ID, serviceAccountAuth);
+
+// =====================================
+// ตั้งชื่อหัวคอลัมน์ (ต้องให้ตรงกับแถวที่ 1 ใน Google Sheet)
+// =====================================
+// แท็บผลแล็บ (Tab 1)
 const COL = {
     CID: 'cid',
     HN: 'hn', 
@@ -25,11 +38,18 @@ const COL = {
     NORMAL_VAL: 'normal_value'
 };
 
-// ตั้งชื่อคอลัมน์แท็บลงทะเบียน (Tab ชื่อ users)
+// แท็บลงทะเบียน (Tab ชื่อ users)
 const COL_USER = {
     LINE_ID: 'line_id',
     CID: 'cid',
-    BIRTHDAY: 'birthday'
+    BIRTHDAY: 'birthday',
+    GENDER: 'gender',
+    WEIGHT: 'weight',
+    HEIGHT: 'height',
+    ACTIVITY: 'activity',
+    DIET_TYPE: 'diet_type',
+    CARB_PER_MEAL: 'carb_per_meal',
+    REG_DATE: 'registered_date'
 };
 
 // =====================================
@@ -37,13 +57,6 @@ const COL_USER = {
 // =====================================
 async function getPatientHealthReport(targetCid, targetBirthday) {
     try {
-        const serviceAccountAuth = new JWT({
-            email: creds.client_email,
-            key: creds.private_key,
-            scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-        });
-
-        const doc = new GoogleSpreadsheet(SHEET_ID, serviceAccountAuth);
         await doc.loadInfo();
         const sheet = doc.sheetsByIndex[0]; 
         const rows = await sheet.getRows(); 
@@ -82,56 +95,84 @@ async function getPatientHealthReport(targetCid, targetBirthday) {
         }
 
         return { patientInfo, labTextSummary: finalLabList.join('\n') };
-    } catch (e) { console.error(e); return null; }
+    } catch (e) { 
+        console.error("Error getPatientHealthReport:", e); 
+        return null; 
+    }
 }
 
 // =====================================
-// ฟังก์ชัน 2: เช็คสถานะการลงทะเบียน (ดึง CID จาก LINE ID)
+// ฟังก์ชัน 2: เช็คสถานะการลงทะเบียน (ดึงข้อมูลผู้ใช้)
 // =====================================
 async function getRegisteredUser(userId) {
     try {
-        const serviceAccountAuth = new JWT({
-            email: creds.client_email,
-            key: creds.private_key,
-            scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-        });
-        const doc = new GoogleSpreadsheet(SHEET_ID, serviceAccountAuth);
         await doc.loadInfo();
-        
         const userSheet = doc.sheetsByTitle['users'];
         const rows = await userSheet.getRows();
         
         const userRow = rows.find(row => row.get(COL_USER.LINE_ID) === userId);
-        return userRow ? { cid: userRow.get(COL_USER.CID), birthday: userRow.get(COL_USER.BIRTHDAY) } : null;
-    } catch (e) { return null; }
+        
+        // ถ้าเจอข้อมูล ให้ดึงข้อมูลโควตาคาร์บออกไปด้วย เพื่อให้ AI ใช้ประเมิน
+        return userRow ? { 
+            cid: userRow.get(COL_USER.CID), 
+            birthday: userRow.get(COL_USER.BIRTHDAY),
+            gender: userRow.get(COL_USER.GENDER),
+            weight: userRow.get(COL_USER.WEIGHT),
+            height: userRow.get(COL_USER.HEIGHT),
+            carbPerMeal: userRow.get(COL_USER.CARB_PER_MEAL)
+        } : null;
+    } catch (e) { 
+        console.error("Error getRegisteredUser:", e); 
+        return null; 
+    }
 }
 
 // =====================================
-// ฟังก์ชัน 3: บันทึกการลงทะเบียนใหม่
+// ฟังก์ชัน 3: บันทึกการลงทะเบียนใหม่ หรือ อัปเดตข้อมูลเดิม
 // =====================================
-async function registerNewUser(userId, cid, birthday) {
+async function registerNewUser(userId, cid, birthday, gender, weight, height, activity, dietType, carbPerMeal) {
     try {
-        const serviceAccountAuth = new JWT({
-            email: creds.client_email,
-            key: creds.private_key,
-            scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-        });
-        const doc = new GoogleSpreadsheet(SHEET_ID, serviceAccountAuth);
         await doc.loadInfo();
-        
         const userSheet = doc.sheetsByTitle['users'];
         const rows = await userSheet.getRows();
 
-        const isDuplicate = rows.some(row => row.get(COL_USER.LINE_ID) === userId || row.get(COL_USER.CID) === cid);
-        if (isDuplicate) return "duplicate";
+        const today = new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' });
 
-        await userSheet.addRow({
-            [COL_USER.LINE_ID]: userId,
-            [COL_USER.CID]: cid,
-            [COL_USER.BIRTHDAY]: birthday
-        });
-        return "success";
-    } catch (e) { return "error"; }
+        // ค้นหาว่าเคยลงทะเบียนไว้หรือยัง
+        const existingUserRow = rows.find(row => row.get(COL_USER.LINE_ID) === userId || row.get(COL_USER.CID) === cid);
+        
+        if (existingUserRow) {
+            // 🔄 กรณีคนไข้เก่า: ให้อัปเดตข้อมูลสุขภาพใหม่
+            existingUserRow.assign({
+                [COL_USER.WEIGHT]: weight,
+                [COL_USER.HEIGHT]: height,
+                [COL_USER.ACTIVITY]: activity,
+                [COL_USER.DIET_TYPE]: dietType,
+                [COL_USER.CARB_PER_MEAL]: carbPerMeal,
+                [COL_USER.REG_DATE]: today
+            });
+            await existingUserRow.save(); // บันทึกการแก้ไข
+            return "updated"; 
+        } else {
+            // 🆕 กรณีคนไข้ใหม่: เพิ่มแถวใหม่
+            await userSheet.addRow({
+                [COL_USER.LINE_ID]: userId,
+                [COL_USER.CID]: cid,
+                [COL_USER.BIRTHDAY]: birthday,
+                [COL_USER.GENDER]: gender,
+                [COL_USER.WEIGHT]: weight,
+                [COL_USER.HEIGHT]: height,
+                [COL_USER.ACTIVITY]: activity,
+                [COL_USER.DIET_TYPE]: dietType,
+                [COL_USER.CARB_PER_MEAL]: carbPerMeal,
+                [COL_USER.REG_DATE]: today
+            });
+            return "success";
+        }
+    } catch (e) { 
+        console.error("Error registerNewUser:", e); 
+        return "error"; 
+    }
 }
 
 module.exports = { getPatientHealthReport, getRegisteredUser, registerNewUser };
