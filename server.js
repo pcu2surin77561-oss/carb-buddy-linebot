@@ -546,6 +546,21 @@ async function handleEvent(event) {
     return Promise.resolve(null);
 }
 
+// =====================================
+// 8. API สำหรับดึงข้อมูลเก่าไปโชว์ที่หน้าเว็บ LIFF (index.html)
+// =====================================
+app.get('/api/getUser', async (req, res) => {
+    const userId = req.query.userId;
+    if (!userId) return res.status(400).json({ error: "Missing userId" });
+    
+    const userInfo = await getRegisteredUser(userId);
+    if (userInfo) {
+        res.json(userInfo); 
+    } else {
+        res.status(404).json({ error: "User not found" });
+    }
+});
+
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
     console.log(`Webhook server listening on port ${port}`);
