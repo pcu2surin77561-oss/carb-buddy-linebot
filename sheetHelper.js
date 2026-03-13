@@ -11,9 +11,6 @@ try {
 
 const SHEET_ID = '190jkS-78iiOg9UjYjpmlLnC90FdmiMi4lV4Wb-h2LS4';
 
-// =====================================
-// การตั้งค่าเชื่อมต่อ Google Sheet (ทำครั้งเดียว)
-// =====================================
 const serviceAccountAuth = new JWT({
     email: creds.client_email,
     key: creds.private_key,
@@ -21,46 +18,24 @@ const serviceAccountAuth = new JWT({
 });
 const doc = new GoogleSpreadsheet(SHEET_ID, serviceAccountAuth);
 
-// =====================================
-// ตั้งชื่อหัวคอลัมน์ (ต้องให้ตรงกับแถวที่ 1 ใน Google Sheet)
-// =====================================
-// แท็บผลแล็บ (Tab 1)
 const COL = {
-    CID: 'cid',
-    HN: 'hn', 
-    FNAME: 'fname',
-    LNAME: 'lname',
-    BIRTHDAY: 'birthday1',
-    AGE: 'age_y',
-    LAB_DATE: 'lab_date',
-    LAB_NAME: 'lab_name',
-    LAB_RESULT: 'lab_result',
-    NORMAL_VAL: 'normal_value'
+    CID: 'cid', HN: 'hn', FNAME: 'fname', LNAME: 'lname', 
+    BIRTHDAY: 'birthday1', AGE: 'age_y', LAB_DATE: 'lab_date', 
+    LAB_NAME: 'lab_name', LAB_RESULT: 'lab_result', NORMAL_VAL: 'normal_value'
 };
 
-// แท็บลงทะเบียน (Tab ชื่อ users)
 const COL_USER = {
-    LINE_ID: 'line_id',
-    CID: 'cid',
-    BIRTHDAY: 'birthday',
-    GENDER: 'gender',
-    WEIGHT: 'weight',
-    HEIGHT: 'height',
-    ACTIVITY: 'activity',
-    DIET_TYPE: 'diet_type',
-    CARB_PER_MEAL: 'carb_per_meal',
-    REG_DATE: 'registered_date'
+    LINE_ID: 'line_id', CID: 'cid', BIRTHDAY: 'birthday', 
+    GENDER: 'gender', WEIGHT: 'weight', HEIGHT: 'height', 
+    ACTIVITY: 'activity', DIET_TYPE: 'diet_type', 
+    CARB_PER_MEAL: 'carb_per_meal', REG_DATE: 'registered_date'
 };
 
-// =====================================
-// ฟังก์ชัน 1: ดึงข้อมูลผลแล็บ
-// =====================================
 async function getPatientHealthReport(targetCid, targetBirthday) {
     try {
         await doc.loadInfo();
         const sheet = doc.sheetsByIndex[0]; 
         const rows = await sheet.getRows(); 
-
         let patientInfo = null;
         let labResultsMap = {}; 
 
@@ -71,45 +46,30 @@ async function getPatientHealthReport(targetCid, targetBirthday) {
                     age: row.get(COL.AGE),
                     date: row.get(COL.LAB_DATE)
                 };
-
                 const labDate = row.get(COL.LAB_DATE);
                 const labName = row.get(COL.LAB_NAME);
                 const labResult = row.get(COL.LAB_RESULT);
                 const normalVal = row.get(COL.NORMAL_VAL);
 
                 if (labName && labResult) {
-                    labResultsMap[labName] = {
-                        result: labResult,
-                        normal: normalVal || 'ไม่ระบุ',
-                        date: labDate 
-                    };
+                    labResultsMap[labName] = { result: labResult, normal: normalVal || 'ไม่ระบุ', date: labDate };
                 }
             }
         }
-
         if (!patientInfo) return null;
-
         let finalLabList = [];
         for (const [name, data] of Object.entries(labResultsMap)) {
             finalLabList.push(`- ${name}: ${data.result} (ค่าปกติ: ${data.normal}) [ตรวจเมื่อ: ${data.date}]`);
         }
-
         return { patientInfo, labTextSummary: finalLabList.join('\n') };
-    } catch (e) { 
-        console.error("Error getPatientHealthReport:", e); 
-        return null; 
-    }
+    } catch (e) { return null; }
 }
 
-// =====================================
-// ฟังก์ชัน 2: เช็คสถานะการลงทะเบียน (ดึงข้อมูลผู้ใช้)
-// =====================================
 async function getRegisteredUser(userId) {
     try {
         await doc.loadInfo();
         const userSheet = doc.sheetsByTitle['users'];
         const rows = await userSheet.getRows();
-        
         const userRow = rows.find(row => row.get(COL_USER.LINE_ID) === userId);
         
         return userRow ? { 
@@ -122,92 +82,72 @@ async function getRegisteredUser(userId) {
             dietType: userRow.get(COL_USER.DIET_TYPE),
             carbPerMeal: userRow.get(COL_USER.CARB_PER_MEAL)
         } : null;
-    } catch (e) { 
-        console.error("Error getRegisteredUser:", e); 
-        return null; 
-    }
+    } catch (e) { return null; }
 }
 
-// =====================================
-// ฟังก์ชัน 3: บันทึกการลงทะเบียนใหม่ หรือ อัปเดตข้อมูลเดิม
-// =====================================
 async function registerNewUser(userId, cid, birthday, gender, weight, height, activity, dietType, carbPerMeal) {
     try {
         await doc.loadInfo();
         const userSheet = doc.sheetsByTitle['users'];
         const rows = await userSheet.getRows();
-
         const today = new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' });
-
-        // ค้นหาว่าเคยลงทะเบียนไว้หรือยัง
         const existingUserRow = rows.find(row => row.get(COL_USER.LINE_ID) === userId || row.get(COL_USER.CID) === cid);
         
         if (existingUserRow) {
-            // 🔄 กรณีคนไข้เก่า: ให้อัปเดตข้อมูลสุขภาพใหม่
             existingUserRow.assign({
-                [COL_USER.WEIGHT]: weight,
-                [COL_USER.HEIGHT]: height,
-                [COL_USER.ACTIVITY]: activity,
-                [COL_USER.DIET_TYPE]: dietType,
-                [COL_USER.CARB_PER_MEAL]: carbPerMeal,
-                [COL_USER.REG_DATE]: today
+                [COL_USER.WEIGHT]: weight, [COL_USER.HEIGHT]: height, [COL_USER.ACTIVITY]: activity,
+                [COL_USER.DIET_TYPE]: dietType, [COL_USER.CARB_PER_MEAL]: carbPerMeal, [COL_USER.REG_DATE]: today
             });
-            await existingUserRow.save(); // บันทึกการแก้ไข
+            await existingUserRow.save(); 
             return "updated"; 
         } else {
-            // 🆕 กรณีคนไข้ใหม่: เพิ่มแถวใหม่
             await userSheet.addRow({
-                [COL_USER.LINE_ID]: userId,
-                [COL_USER.CID]: cid,
-                [COL_USER.BIRTHDAY]: birthday,
-                [COL_USER.GENDER]: gender,
-                [COL_USER.WEIGHT]: weight,
-                [COL_USER.HEIGHT]: height,
-                [COL_USER.ACTIVITY]: activity,
-                [COL_USER.DIET_TYPE]: dietType,
-                [COL_USER.CARB_PER_MEAL]: carbPerMeal,
-                [COL_USER.REG_DATE]: today
+                [COL_USER.LINE_ID]: userId, [COL_USER.CID]: cid, [COL_USER.BIRTHDAY]: birthday,
+                [COL_USER.GENDER]: gender, [COL_USER.WEIGHT]: weight, [COL_USER.HEIGHT]: height,
+                [COL_USER.ACTIVITY]: activity, [COL_USER.DIET_TYPE]: dietType,
+                [COL_USER.CARB_PER_MEAL]: carbPerMeal, [COL_USER.REG_DATE]: today
             });
             return "success";
         }
-    } catch (e) { 
-        console.error("Error registerNewUser:", e); 
-        return "error"; 
-    }
+    } catch (e) { return "error"; }
 }
 
-// =====================================
-// ฟังก์ชัน 4: บันทึกประวัติการกินอาหารลงชีต food_logs
-// =====================================
 async function saveFoodLog(data) {
     try {
         await doc.loadInfo();
         const foodSheet = doc.sheetsByTitle['food_logs'];
-        
-        if (!foodSheet) {
-            console.error("ไม่พบแท็บ food_logs ใน Google Sheet");
-            return false;
-        }
+        if (!foodSheet) return false;
 
-        // ✅ บันทึกข้อมูลลง Google Sheet (ช่อง image_url จะถูกใส่เป็น '-' เสมอ)
         await foodSheet.addRow({
-            date: data.date,
-            time: data.time,
-            userId: data.userId,
-            cid: data.cid,
-            food_name: data.food,
-            estimated_carb: data.carb,
-            portion: data.portion,
-            actual_carb: data.actual_carb,
-            status: data.status,
-            image_url: '-', // ปิดการเก็บรูปภาพ
-            note: data.note || '-'
+            date: data.date, time: data.time, userId: data.userId, cid: data.cid,
+            food_name: data.food, estimated_carb: data.carb, portion: data.portion,
+            actual_carb: data.actual_carb, status: data.status, image_url: '-', note: data.note || '-'
         });
         return true;
+    } catch (error) { return false; }
+}
+
+async function getTodayCarbTotal(userId) {
+    try {
+        await doc.loadInfo();
+        const sheet = doc.sheetsByTitle['food_logs'];
+        if (!sheet) return 0;
+
+        const rows = await sheet.getRows();
+        const today = new Date().toLocaleDateString('th-TH', {timeZone: 'Asia/Bangkok'});
+        let total = 0;
+
+        rows.forEach(r => {
+            if (r.get('userId') === userId && r.get('date') === today) {
+                total += Number(r.get('actual_carb') || 0);
+            }
+        });
+
+        return parseFloat(total.toFixed(1));
     } catch (error) {
-        console.error("Error saving food log:", error);
-        return false;
+        console.error("Error getting today carb:", error);
+        return 0;
     }
 }
 
-module.exports = { getPatientHealthReport, getRegisteredUser, registerNewUser, saveFoodLog };
+module.exports = { getPatientHealthReport, getRegisteredUser, registerNewUser, saveFoodLog, getTodayCarbTotal };
