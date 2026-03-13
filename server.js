@@ -847,8 +847,12 @@ async function handleEvent(event) {
                 finalText += `\n\n📌 หมายเหตุ: 1 คาร์บ = คาร์โบไฮเดรต 15 กรัม (เทียบเท่าข้าวสวย 1 ทัพพี)`;
             }
 
-            // บันทึก Cache ก่อนตอบกลับ
+            // 🌟 บันทึก Cache ก่อนตอบกลับ พร้อมระบบจัดการ LRU แบบง่าย (จำกัด 500 รูป)
             foodCache.set(imageHash, finalText);
+            if (foodCache.size > 500) {
+                const firstKey = foodCache.keys().next().value;
+                foodCache.delete(firstKey);
+            }
 
             if (estimatedCarb > 0) {
                 const safeFoodName = encodeURIComponent(foodNameToSave.substring(0, 50));
@@ -916,4 +920,41 @@ async function handleEvent(event) {
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
     console.log(`Webhook server listening on port ${port}`);
-});
+}); ใช้อันล่าสุดด้วยน้ะ ที่เป็น   มี BUG ในส่วนของ AI Abuse limit ครับ
+ตอนนี้คุณใช้
+
+
+const userUsage = new Map();
+function canUseAI(userId) {
+    const count = userUsage.get(userId) || 0;
+    if (count > 20) return false;
+    userUsage.set(userId, count + 1);
+    return true;
+}
+
+มันจะนับไปเรื่อยๆ จนถึง 20 และ ผู้ใช้จะไม่สามารถใช้ AI ได้อีกเลยตลอดไป (จนกว่าเซิร์ฟเวอร์จะถูก restart)
+
+วิธีแก้ (ต้องมี Reset รายวัน)
+เพิ่มตัวแปรเก็บวันที่
+
+
+let currentDay = new Date().toDateString();
+const userUsage = new Map();
+
+function canUseAI(userId) {
+    const today = new Date().toDateString();
+    
+    // ถ้าข้ามวัน ให้ reset ข้อมูลทั้งหมด
+    if (today !== currentDay) {
+        userUsage.clear();
+        currentDay = today;
+    }
+
+    const count = userUsage.get(userId) || 0;
+    
+    // กำหนดให้ใช้ได้ 20 ครั้งต่อวัน
+    if (count >= 20) return false;
+    
+    userUsage.set(userId, count + 1);
+    return true;
+}
