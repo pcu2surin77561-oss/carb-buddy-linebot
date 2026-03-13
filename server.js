@@ -9,7 +9,6 @@ const path = require('path');
 const crypto = require("crypto"); 
 const fs = require('fs'); // 🌟 นำเข้า fs สำหรับอ่านไฟล์ foods.json
 
-const fetch = require('node-fetch');
 const sharp = require('sharp');
 const rateLimit = require('express-rate-limit');
 
@@ -92,7 +91,13 @@ const config = {
     channelSecret: process.env.LINE_CHANNEL_SECRET
 };
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const API_SECRET = process.env.API_SECRET || "default_api_secret_key"; 
+
+// 🌟 4️⃣ Security: API_SECRET ควรบังคับตั้ง env
+const API_SECRET = process.env.API_SECRET;
+if (!API_SECRET) {
+   throw new Error("🚨 SECURITY ALERT: API_SECRET is not set in Environment Variables!");
+}
+
 // 🌟 กำหนดความยาว 32 ตัวอักษรสำหรับ aes-256-cbc เสมอ
 const SECRET = process.env.CID_SECRET || "12345678901234567890123456789012"; 
 
@@ -231,7 +236,7 @@ function calculateUserNutrition(userInfo) {
 let availableGeminiModels = [];
 
 async function discoverGeminiModels() {
-    console.log("🔍 กำลังตรวจสอบรายชื่อโมเดล Gemini...");
+    console.log("🔍 กำลังตรวจสอบรายชื่อโมเดล Gemini ที่ API Key ของคุณรองรับ...");
     try {
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`);
         const data = await response.json();
@@ -804,7 +809,7 @@ async function handleEvent(event) {
             const buffer = Buffer.concat(chunks);
             
             // 3️⃣ Resize ภาพเพื่อความแม่นยำและประหยัด Token
-            const resizedImage = await sharp(buffer).resize({ width: 768, withoutEnlargement: true }).jpeg({ quality: 80 }).toBuffer();
+            const resizedImage = await sharp(buffer).resize({ width: 640, withoutEnlargement: true }).jpeg({ quality: 80 }).toBuffer();
             const base64Image = resizedImage.toString('base64');
             
             // 🌟 1️⃣ Layer 1: Cache check ด้วย SHA-256 ป้องกัน Hash ชนกัน
@@ -818,32 +823,6 @@ async function handleEvent(event) {
             let userCarbContext = "";
             if (userInfo && userInfo.carbPerMeal) {
                 userCarbContext = `ข้อมูลเพิ่มเติม: นักเรียนท่านนี้มีโควตาคาร์บจำกัดอยู่ที่ "มื้อละ ${userInfo.carbPerMeal} คาร์บ" โปรดแนะนำเพิ่มเติมว่าอาหารในภาพนี้เกินโควตาหรือไม่`;
-            }
-
-            // 🌟 1️⃣ ตรวจ fingerprint ก่อนเรียก AI
-            const detectedFoodsEarly = detectThaiFoods(base64Image);
-            const fingerprintEarly = createFoodFingerprint(detectedFoodsEarly);
-
-            if (fingerprintEarly && fingerprintCache.has(fingerprintEarly)) {
-                console.log("⚡ Skip Gemini (fingerprint hit)");
-                const cached = fingerprintCache.get(fingerprintEarly);
-                
-                const safeFoodName = encodeURIComponent(fingerprintEarly.substring(0, 50));
-                const estimatedCarb = cached.carb;
-                
-                const quickReply = {
-                    items: [
-                        { type: "action", action: { type: "postback", label: "😋 กินหมด 100%", data: `action=logfood&p=1&c=${estimatedCarb}&f=${safeFoodName}`, displayText: "ฉันกินหมดจานเลยครับ/ค่ะ" } },
-                        { type: "action", action: { type: "postback", label: "🌗 กินครึ่งเดียว 50%", data: `action=logfood&p=0.5&c=${estimatedCarb}&f=${safeFoodName}`, displayText: "ฉันกินไปแค่ครึ่งเดียวครับ/ค่ะ" } },
-                        { type: "action", action: { type: "postback", label: "❌ ถ่ายเฉยๆ", data: `action=logfood&p=0&c=${estimatedCarb}&f=${safeFoodName}`, displayText: "แค่ถ่ายรูปมาถามเฉยๆ ไม่ได้กินครับ" } }
-                    ]
-                };
-
-                return lineClient.pushMessage(userId, {
-                    type: 'text',
-                    text: cached.text + `\n\n👇 กดปุ่มด้านล่างเพื่อบันทึกปริมาณที่คุณทานจริงได้เลยครับ`,
-                    quickReply: quickReply
-                });
             }
 
             // 🌟 4️⃣ Layer 4: Gemini AI (ใช้เมื่อ Cache ไม่มี)
@@ -950,14 +929,12 @@ async function handleEvent(event) {
                 finalText += `\n\n📌 หมายเหตุ: 1 คาร์บ = คาร์โบไฮเดรต 15 กรัม (เทียบเท่าข้าวสวย 1 ทัพพี)`;
             }
 
-            // 🌟 7️⃣ บันทึก fingerprint หลัง AI วิเคราะห์
-            const fingerprint = createFoodFingerprint(detectedFoods);
-            if (fingerprint) {
-                setCacheWithTTL(fingerprintCache, fingerprint, { text: finalText, carb: estimatedCarb });
+            // 🌟 บันทึก Cache ก่อนตอบกลับ พร้อมระบบจัดการ LRU แบบง่าย (จำกัด 500 รูป)
+            foodCache.set(imageHash, finalText);
+            if (foodCache.size > 500) {
+                const firstKey = foodCache.keys().next().value;
+                foodCache.delete(firstKey);
             }
-
-            // 🌟 บันทึก Cache รูปภาพก่อนตอบกลับ พร้อม TTL
-            setCacheWithTTL(foodCache, imageHash, finalText);
 
             if (estimatedCarb > 0) {
                 const safeFoodName = encodeURIComponent(foodNameToSave.substring(0, 50));
@@ -1037,3 +1014,4 @@ app.listen(port, () => {
     }, 60000);
     console.log(`Webhook server listening on port ${port}`);
 });
+// ใช้อันนี้และแก้ไข จากปัญหาที่วิเคราะหฺ์
