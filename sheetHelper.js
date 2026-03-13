@@ -189,6 +189,7 @@ async function saveFoodLog(data) {
             return false;
         }
 
+        // ✅ บันทึกข้อมูลลง Google Sheet (ช่อง image_url จะถูกใส่เป็น '-' เสมอ)
         await foodSheet.addRow({
             date: data.date,
             time: data.time,
@@ -199,7 +200,7 @@ async function saveFoodLog(data) {
             portion: data.portion,
             actual_carb: data.actual_carb,
             status: data.status,
-            image_url: data.image || '-',
+            image_url: '-', // ปิดการเก็บรูปภาพ
             note: data.note || '-'
         });
         return true;
