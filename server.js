@@ -920,7 +920,8 @@ async function handleEvent(event) {
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
     console.log(`Webhook server listening on port ${port}`);
-}); ใช้อันล่าสุดด้วยน้ะ ที่เป็น   มี BUG ในส่วนของ AI Abuse limit ครับ
+});
+// ใช้อันล่าสุดด้วยน้ะ ที่เป็น มี BUG ในส่วนของ AI Abuse limit ครับ
 ตอนนี้คุณใช้
 
 
