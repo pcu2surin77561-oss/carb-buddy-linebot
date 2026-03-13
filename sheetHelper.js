@@ -112,7 +112,6 @@ async function getRegisteredUser(userId) {
         
         const userRow = rows.find(row => row.get(COL_USER.LINE_ID) === userId);
         
-        // 🌟 แก้ไข: ดึงข้อมูล activity และ dietType ให้ครบถ้วน เพื่อให้ server.js นำไปคำนวณ TDEE ได้
         return userRow ? { 
             cid: userRow.get(COL_USER.CID), 
             birthday: userRow.get(COL_USER.BIRTHDAY),
@@ -177,4 +176,37 @@ async function registerNewUser(userId, cid, birthday, gender, weight, height, ac
     }
 }
 
-module.exports = { getPatientHealthReport, getRegisteredUser, registerNewUser };
+// =====================================
+// ฟังก์ชัน 4: บันทึกประวัติการกินอาหารลงชีต food_logs
+// =====================================
+async function saveFoodLog(data) {
+    try {
+        await doc.loadInfo();
+        const foodSheet = doc.sheetsByTitle['food_logs'];
+        
+        if (!foodSheet) {
+            console.error("ไม่พบแท็บ food_logs ใน Google Sheet");
+            return false;
+        }
+
+        await foodSheet.addRow({
+            date: data.date,
+            time: data.time,
+            userId: data.userId,
+            cid: data.cid,
+            food_name: data.food,
+            estimated_carb: data.carb,
+            portion: data.portion,
+            actual_carb: data.actual_carb,
+            status: data.status,
+            image_url: data.image || '-',
+            note: data.note || '-'
+        });
+        return true;
+    } catch (error) {
+        console.error("Error saving food log:", error);
+        return false;
+    }
+}
+
+module.exports = { getPatientHealthReport, getRegisteredUser, registerNewUser, saveFoodLog };
