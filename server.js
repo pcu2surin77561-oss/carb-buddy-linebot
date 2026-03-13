@@ -7,7 +7,6 @@ const { middleware, Client } = require('@line/bot-sdk');
 const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require('@google/generative-ai');
 const path = require('path');
 
-// 🌟 นำเข้า saveFoodLog เพื่อใช้บันทึกข้อมูลอาหาร
 const { getPatientHealthReport, getRegisteredUser, registerNewUser, saveFoodLog } = require('./sheetHelper');
 
 // =====================================
@@ -312,7 +311,7 @@ async function handleEvent(event) {
     const userId = event.source.userId;
 
     // -----------------------------------------
-    // 🌟 11.1 จัดการ Postback (เมื่อผู้ใช้กดปุ่ม Quick Reply กินหมด/ครึ่งเดียว)
+    // 🌟 11.1 จัดการ Postback (เมื่อผู้ใช้กดปุ่ม Quick Reply)
     // -----------------------------------------
     if (event.type === 'postback') {
         const data = new URLSearchParams(event.postback.data);
@@ -326,6 +325,10 @@ async function handleEvent(event) {
             const portion = parseFloat(data.get('p'));
             const estimatedCarb = parseFloat(data.get('c'));
             const actualCarb = parseFloat((estimatedCarb * portion).toFixed(1));
+            
+            // ✅ ดึงค่าชื่ออาหารและ Message ID จาก Payload
+            const foodName = data.get('f') || 'AI_Analyzed';
+            const imageId = data.get('img') || '-';
             
             const now = new Date();
             const dateStr = now.toLocaleDateString('th-TH', {timeZone: 'Asia/Bangkok'});
@@ -341,12 +344,12 @@ async function handleEvent(event) {
                 time: timeStr,
                 userId: userId,
                 cid: userInfo.cid,
-                food: 'เมนูที่วิเคราะห์โดย AI',
+                food: foodName, // ใช้ชื่ออาหารจริง
                 carb: estimatedCarb,
                 portion: portion,
                 actual_carb: actualCarb,
                 status: statusStr,
-                image: '-', 
+                image: imageId, // ใช้ Message ID
                 note: 'บันทึกผ่าน Quick Reply'
             });
 
@@ -439,7 +442,6 @@ async function handleEvent(event) {
             return lineClient.pushMessage(userId, lessonFlex);
         }
 
-        // 🔥 ระบบสมุดพก
         if (text === 'ดูสมุดพก') {
             const userInfo = await getRegisteredUser(userId);
 
@@ -595,6 +597,7 @@ async function handleEvent(event) {
             for await (const chunk of stream) { chunks.push(chunk); }
             const buffer = Buffer.concat(chunks);
             const base64Image = buffer.toString('base64');
+            const messageId = event.message.id; // ✅ เก็บ Message ID ไว้ใช้บันทึกรูป
             
             const userInfo = await getRegisteredUser(userId);
             let userCarbContext = "";
@@ -602,7 +605,6 @@ async function handleEvent(event) {
                 userCarbContext = `ข้อมูลเพิ่มเติม: นักเรียนท่านนี้มีโควตาคาร์บจำกัดอยู่ที่ "มื้อละ ${userInfo.carbPerMeal} คาร์บ" โปรดแนะนำเพิ่มเติมว่าอาหารในภาพนี้เกินโควตาหรือไม่`;
             }
 
-            // 🌟 บังคับให้ AI เพิ่ม [TOTAL_CARB: x] เพื่อนำไปสร้างปุ่ม
             const prompt = `
                 คุณคือ "ผู้ช่วย AI โรงเรียนเบาหวาน" ผู้เชี่ยวชาญด้านโภชนาการ
                 หากเป็นภาพผลตรวจสุขภาพ: สรุปค่าที่สำคัญ(โดยเฉพาะเบาหวาน), บอกว่าปกติหรือไม่, ให้คำแนะนำ
@@ -627,15 +629,15 @@ async function handleEvent(event) {
             let finalText = text;
             let estimatedCarb = 0;
 
-            // 🌟 ดึงตัวเลขคาร์บออกจากคำตอบของ AI ด้วย Regex
             const carbMatch = text.match(/\[TOTAL_CARB:\s*([0-9.]+)\]/i);
             if (carbMatch) {
                 estimatedCarb = parseFloat(carbMatch[1]);
-                // ลบบรรทัด [TOTAL_CARB: x] ออกจากข้อความที่จะส่งให้ผู้ใช้เห็น
                 finalText = finalText.replace(/\[TOTAL_CARB:\s*[0-9.]+\]/gi, '').trim();
             }
 
             const detectedFoods = detectThaiFoods(text);
+            // ✅ ดึงชื่ออาหาร เพื่อฝังไปในปุ่ม (จำกัดความยาวเพื่อป้องกัน Error)
+            const foodNameToSave = detectedFoods.length > 0 ? detectedFoods[0] : "AI Analyzed";
 
             if (detectedFoods.length > 0) {
                 finalText += `\n\n📊 ข้อมูลโภชนาการมาตรฐาน (ต่อ 1 เสิร์ฟปกติ):`;
@@ -649,8 +651,10 @@ async function handleEvent(event) {
                 finalText += `\n\n📌 หมายเหตุ: 1 คาร์บ = คาร์โบไฮเดรต 15 กรัม (เทียบเท่าข้าวสวย 1 ทัพพี)`;
             }
 
-            // 🌟 สร้าง Quick Reply Menu ถ้าหาคาร์บเจอ
             if (estimatedCarb > 0) {
+                // ✅ เข้ารหัสชื่ออาหารเพื่อซ่อนไปกับปุ่ม
+                const safeFoodName = encodeURIComponent(foodNameToSave.substring(0, 50));
+                
                 const quickReply = {
                     items: [
                         {
@@ -658,7 +662,7 @@ async function handleEvent(event) {
                             action: {
                                 type: "postback",
                                 label: "😋 กินหมด 100%",
-                                data: `action=logfood&p=1&c=${estimatedCarb}`,
+                                data: `action=logfood&p=1&c=${estimatedCarb}&f=${safeFoodName}&img=${messageId}`,
                                 displayText: "ฉันกินหมดจานเลยครับ/ค่ะ"
                             }
                         },
@@ -667,7 +671,7 @@ async function handleEvent(event) {
                             action: {
                                 type: "postback",
                                 label: "🌗 กินครึ่งเดียว 50%",
-                                data: `action=logfood&p=0.5&c=${estimatedCarb}`,
+                                data: `action=logfood&p=0.5&c=${estimatedCarb}&f=${safeFoodName}&img=${messageId}`,
                                 displayText: "ฉันกินไปแค่ครึ่งเดียวครับ/ค่ะ"
                             }
                         },
@@ -676,7 +680,7 @@ async function handleEvent(event) {
                             action: {
                                 type: "postback",
                                 label: "❌ ถ่ายเฉยๆ",
-                                data: `action=logfood&p=0&c=${estimatedCarb}`,
+                                data: `action=logfood&p=0&c=${estimatedCarb}&f=${safeFoodName}&img=${messageId}`,
                                 displayText: "แค่ถ่ายรูปมาถามเฉยๆ ไม่ได้กินครับ"
                             }
                         }
@@ -689,7 +693,6 @@ async function handleEvent(event) {
                     quickReply: quickReply
                 });
             } else {
-                // ถ้าหาคาร์บไม่เจอ (เช่น เป็นรูปผลเลือด หรือ AI ตอบผิดฟอร์แมต) ให้ตอบแบบปกติไม่มีปุ่ม
                 return lineClient.pushMessage(userId, {
                     type: 'text',
                     text: finalText
@@ -714,4 +717,22 @@ async function handleEvent(event) {
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
     console.log(`Webhook server listening on port ${port}`);
-});
+}); ใช้วิธี้ มีที่เก็บ รูปฟรี แนะนำมั้ย นอกเหนือจาก Message ID แล้วเราไปดึงรูปยังไง หรือวิธีอื่น เพื่อใช้ทำประวัติอาหารให้ผู้ป่วย 
+
+เราต้องใช้ Cloud Storage เพื่อฝากรูป เพราะ
+Message ID ของ LINE มีอายุใช้งานจำกัด (เก็บไว้ดูย้อนหลังนานๆ ไม่ได้)
+Google Sheet เก็บได้แค่ "URL" หรือ Text เท่านั้น
+
+มีบริการไหนฟรีและทำง่ายบ้าง?
+1. Imgur API (⭐ แนะนำสำหรับโปรเจกต์นี้)
+ฟรี: 1,250 รูป/วัน หรือ 12,500 request/เดือน
+ข้อดี: แค่มี API Key โยน Base64 เข้าไป แล้วมันจะคืน URL รูป (เช่น https://i.imgur.com/abc.jpg) กลับมาให้เลย เอายิงลง Google Sheet ได้ทันที
+2. Firebase Storage
+ฟรี: 5 GB
+ข้อดี: ปลอดภัยมาก อยู่ร่วมกับ Ecosystem Google
+ข้อเสีย: การ Setup และโค้ดค่อนข้างซับซ้อนสำหรับโปรเจกต์ขนาดเล็ก
+3. Google Drive API
+ฟรี: 15 GB
+ข้อดี: คุ้นเคยดี โฟลเดอร์ดูง่าย
+ข้อเสีย: โค้ดปวดหัวมากตอน Upload
+💡 สรุป: ใช้ Imgur API เหมาะสมและง่ายที่สุดครับ ใช้ Imgur API ให้หน่อยครับ ต้องไปเอาอะไรที่ Imgur API บ้าง ขอโค้ด server.js ที่สมบูรณ์แล้ว
