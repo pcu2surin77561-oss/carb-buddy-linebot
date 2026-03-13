@@ -1,0 +1,7004 @@
+{
+  "foods": [
+    {
+      "name": "ข้าวหน้าเป็ดลดคาร์บ #1",
+      "carb_g": 30,
+      "carb_unit": 2.0,
+      "calories": 360,
+      "sugar_g": 5
+    },
+    {
+      "name": "ข้าวผัดปูไม่มัน #2",
+      "carb_g": 7,
+      "carb_unit": 0.47,
+      "calories": 413,
+      "sugar_g": 25
+    },
+    {
+      "name": "ข้าวกะเพราอกไก่ #3",
+      "carb_g": 56,
+      "carb_unit": 3.73,
+      "calories": 440,
+      "sugar_g": 17
+    },
+    {
+      "name": "ส้มตำหมูไม่ติดมัน #4",
+      "carb_g": 60,
+      "carb_unit": 4.0,
+      "calories": 83,
+      "sugar_g": 7
+    },
+    {
+      "name": "ไข่ต้มสูตรผู้ป่วยเบาหวาน #5",
+      "carb_g": 28,
+      "carb_unit": 1.87,
+      "calories": 256,
+      "sugar_g": 9
+    },
+    {
+      "name": "แกงป่าหวานน้อย #6",
+      "carb_g": 51,
+      "carb_unit": 3.4,
+      "calories": 491,
+      "sugar_g": 10
+    },
+    {
+      "name": "ยำวุ้นเส้นใส่ผักเพิ่ม #7",
+      "carb_g": 40,
+      "carb_unit": 2.67,
+      "calories": 107,
+      "sugar_g": 23
+    },
+    {
+      "name": "หมูทอดหมูไม่ติดมัน #8",
+      "carb_g": 19,
+      "carb_unit": 1.27,
+      "calories": 481,
+      "sugar_g": 18
+    },
+    {
+      "name": "ไก่ทอดใส่ผักเพิ่ม #9",
+      "carb_g": 16,
+      "carb_unit": 1.07,
+      "calories": 110,
+      "sugar_g": 3
+    },
+    {
+      "name": "ลาบไม่ใส่น้ำตาล #10",
+      "carb_g": 16,
+      "carb_unit": 1.07,
+      "calories": 289,
+      "sugar_g": 19
+    },
+    {
+      "name": "ไข่ต้มสูตรร้านอาหาร #11",
+      "carb_g": 31,
+      "carb_unit": 2.07,
+      "calories": 294,
+      "sugar_g": 23
+    },
+    {
+      "name": "ตำไทยคลีน #12",
+      "carb_g": 47,
+      "carb_unit": 3.13,
+      "calories": 402,
+      "sugar_g": 23
+    },
+    {
+      "name": "ตำปูปลาร้าคลีน #13",
+      "carb_g": 30,
+      "carb_unit": 2.0,
+      "calories": 362,
+      "sugar_g": 3
+    },
+    {
+      "name": "ไก่ย่างจานใหญ่ #14",
+      "carb_g": 18,
+      "carb_unit": 1.2,
+      "calories": 148,
+      "sugar_g": 18
+    },
+    {
+      "name": "ไข่ต้มคลีน #15",
+      "carb_g": 33,
+      "carb_unit": 2.2,
+      "calories": 378,
+      "sugar_g": 21
+    },
+    {
+      "name": "แกงพะแนงใส่ผักเพิ่ม #16",
+      "carb_g": 27,
+      "carb_unit": 1.8,
+      "calories": 404,
+      "sugar_g": 23
+    },
+    {
+      "name": "ไข่พะโล้ไม่ใส่น้ำตาล #17",
+      "carb_g": 48,
+      "carb_unit": 3.2,
+      "calories": 251,
+      "sugar_g": 25
+    },
+    {
+      "name": "ตำไทยพิเศษ #18",
+      "carb_g": 5,
+      "carb_unit": 0.33,
+      "calories": 118,
+      "sugar_g": 5
+    },
+    {
+      "name": "แกงส้มไม่ใส่น้ำตาล #19",
+      "carb_g": 45,
+      "carb_unit": 3.0,
+      "calories": 136,
+      "sugar_g": 22
+    },
+    {
+      "name": "ไก่ย่างพิเศษ #20",
+      "carb_g": 27,
+      "carb_unit": 1.8,
+      "calories": 391,
+      "sugar_g": 17
+    },
+    {
+      "name": "ส้มตำข้าวกล้อง #21",
+      "carb_g": 24,
+      "carb_unit": 1.6,
+      "calories": 341,
+      "sugar_g": 4
+    },
+    {
+      "name": "ปลานึ่งอกไก่ #22",
+      "carb_g": 11,
+      "carb_unit": 0.73,
+      "calories": 129,
+      "sugar_g": 7
+    },
+    {
+      "name": "ตำไทยไม่ใส่ผงชูรส #23",
+      "carb_g": 8,
+      "carb_unit": 0.53,
+      "calories": 126,
+      "sugar_g": 15
+    },
+    {
+      "name": "ข้าวต้มจานใหญ่ #24",
+      "carb_g": 23,
+      "carb_unit": 1.53,
+      "calories": 207,
+      "sugar_g": 14
+    },
+    {
+      "name": "ข้าวไข่เจียวไม่ใส่น้ำตาล #25",
+      "carb_g": 8,
+      "carb_unit": 0.53,
+      "calories": 369,
+      "sugar_g": 3
+    },
+    {
+      "name": "แกงป่าข้าวกล้อง #26",
+      "carb_g": 11,
+      "carb_unit": 0.73,
+      "calories": 169,
+      "sugar_g": 8
+    },
+    {
+      "name": "หมูย่างคลีน #27",
+      "carb_g": 58,
+      "carb_unit": 3.87,
+      "calories": 80,
+      "sugar_g": 2
+    },
+    {
+      "name": "ข้าวมันไก่สูตรผู้ป่วยเบาหวาน #28",
+      "carb_g": 37,
+      "carb_unit": 2.47,
+      "calories": 172,
+      "sugar_g": 3
+    },
+    {
+      "name": "ข้าวหน้าไก่ไม่ใส่น้ำตาล #29",
+      "carb_g": 14,
+      "carb_unit": 0.93,
+      "calories": 145,
+      "sugar_g": 1
+    },
+    {
+      "name": "แกงเขียวหวานอกไก่ #30",
+      "carb_g": 51,
+      "carb_unit": 3.4,
+      "calories": 238,
+      "sugar_g": 15
+    },
+    {
+      "name": "ข้าวผัดปูเพิ่มผัก #31",
+      "carb_g": 22,
+      "carb_unit": 1.47,
+      "calories": 65,
+      "sugar_g": 2
+    },
+    {
+      "name": "หมูทอดใส่ผักเพิ่ม #32",
+      "carb_g": 26,
+      "carb_unit": 1.73,
+      "calories": 162,
+      "sugar_g": 2
+    },
+    {
+      "name": "ยำปลากระป๋องใส่ผักเพิ่ม #33",
+      "carb_g": 48,
+      "carb_unit": 3.2,
+      "calories": 310,
+      "sugar_g": 1
+    },
+    {
+      "name": "โจ๊กสตรีทฟู้ด #34",
+      "carb_g": 54,
+      "carb_unit": 3.6,
+      "calories": 326,
+      "sugar_g": 10
+    },
+    {
+      "name": "ข้าวผัดปูไม่ใส่ผงชูรส #35",
+      "carb_g": 24,
+      "carb_unit": 1.6,
+      "calories": 323,
+      "sugar_g": 12
+    },
+    {
+      "name": "ไข่พะโล้สูตรร้านอาหาร #36",
+      "carb_g": 18,
+      "carb_unit": 1.2,
+      "calories": 136,
+      "sugar_g": 8
+    },
+    {
+      "name": "ปลาเผาอกไก่ #37",
+      "carb_g": 24,
+      "carb_unit": 1.6,
+      "calories": 421,
+      "sugar_g": 21
+    },
+    {
+      "name": "แกงพะแนงอกไก่ #38",
+      "carb_g": 35,
+      "carb_unit": 2.33,
+      "calories": 436,
+      "sugar_g": 5
+    },
+    {
+      "name": "ต้มยำพิเศษ #39",
+      "carb_g": 9,
+      "carb_unit": 0.6,
+      "calories": 182,
+      "sugar_g": 1
+    },
+    {
+      "name": "ปลาเผาหวานน้อย #40",
+      "carb_g": 48,
+      "carb_unit": 3.2,
+      "calories": 278,
+      "sugar_g": 9
+    },
+    {
+      "name": "ส้มตำจานใหญ่ #41",
+      "carb_g": 8,
+      "carb_unit": 0.53,
+      "calories": 363,
+      "sugar_g": 22
+    },
+    {
+      "name": "ข้าวไข่เจียวสตรีทฟู้ด #42",
+      "carb_g": 9,
+      "carb_unit": 0.6,
+      "calories": 416,
+      "sugar_g": 23
+    },
+    {
+      "name": "แกงพะแนงสูตรร้านอาหาร #43",
+      "carb_g": 22,
+      "carb_unit": 1.47,
+      "calories": 273,
+      "sugar_g": 16
+    },
+    {
+      "name": "ต้มยำข้าวกล้อง #44",
+      "carb_g": 18,
+      "carb_unit": 1.2,
+      "calories": 397,
+      "sugar_g": 2
+    },
+    {
+      "name": "แกงส้มโซเดียมต่ำ #45",
+      "carb_g": 21,
+      "carb_unit": 1.4,
+      "calories": 418,
+      "sugar_g": 9
+    },
+    {
+      "name": "แกงเขียวหวานใส่ไข่ #46",
+      "carb_g": 50,
+      "carb_unit": 3.33,
+      "calories": 103,
+      "sugar_g": 8
+    },
+    {
+      "name": "แกงส้มข้าวกล้อง #47",
+      "carb_g": 31,
+      "carb_unit": 2.07,
+      "calories": 155,
+      "sugar_g": 5
+    },
+    {
+      "name": "ผัดซีอิ๊วข้าวกล้อง #48",
+      "carb_g": 60,
+      "carb_unit": 4.0,
+      "calories": 366,
+      "sugar_g": 10
+    },
+    {
+      "name": "ข้าวหมูทอดกระเทียมข้าวกล้อง #49",
+      "carb_g": 58,
+      "carb_unit": 3.87,
+      "calories": 71,
+      "sugar_g": 14
+    },
+    {
+      "name": "ส้มตำสูตรร้านอาหาร #50",
+      "carb_g": 48,
+      "carb_unit": 3.2,
+      "calories": 373,
+      "sugar_g": 16
+    },
+    {
+      "name": "แกงเผ็ดหวานน้อย #51",
+      "carb_g": 29,
+      "carb_unit": 1.93,
+      "calories": 362,
+      "sugar_g": 14
+    },
+    {
+      "name": "แกงจืดไม่ใส่น้ำตาล #52",
+      "carb_g": 21,
+      "carb_unit": 1.4,
+      "calories": 437,
+      "sugar_g": 22
+    },
+    {
+      "name": "ไข่พะโล้หมูไม่ติดมัน #53",
+      "carb_g": 53,
+      "carb_unit": 3.53,
+      "calories": 151,
+      "sugar_g": 17
+    },
+    {
+      "name": "ข้าวไก่ทอดลดคาร์บ #54",
+      "carb_g": 9,
+      "carb_unit": 0.6,
+      "calories": 66,
+      "sugar_g": 21
+    },
+    {
+      "name": "ยำวุ้นเส้นไม่มัน #55",
+      "carb_g": 6,
+      "carb_unit": 0.4,
+      "calories": 87,
+      "sugar_g": 19
+    },
+    {
+      "name": "แกงป่าสูตรผู้ป่วยเบาหวาน #56",
+      "carb_g": 6,
+      "carb_unit": 0.4,
+      "calories": 319,
+      "sugar_g": 14
+    },
+    {
+      "name": "หมูย่างไม่ใส่น้ำตาล #57",
+      "carb_g": 34,
+      "carb_unit": 2.27,
+      "calories": 456,
+      "sugar_g": 21
+    },
+    {
+      "name": "แกงเผ็ดคลีน #58",
+      "carb_g": 32,
+      "carb_unit": 2.13,
+      "calories": 102,
+      "sugar_g": 6
+    },
+    {
+      "name": "ไข่ดาวหวานน้อย #59",
+      "carb_g": 43,
+      "carb_unit": 2.87,
+      "calories": 319,
+      "sugar_g": 21
+    },
+    {
+      "name": "ลาบหวานน้อย #60",
+      "carb_g": 18,
+      "carb_unit": 1.2,
+      "calories": 175,
+      "sugar_g": 8
+    },
+    {
+      "name": "ข้าวไก่อบเพิ่มผัก #61",
+      "carb_g": 42,
+      "carb_unit": 2.8,
+      "calories": 329,
+      "sugar_g": 23
+    },
+    {
+      "name": "ก๋วยเตี๋ยวเรือไม่มัน #62",
+      "carb_g": 24,
+      "carb_unit": 1.6,
+      "calories": 314,
+      "sugar_g": 19
+    },
+    {
+      "name": "ข้าวหน้าเป็ดใส่ไข่ #63",
+      "carb_g": 39,
+      "carb_unit": 2.6,
+      "calories": 344,
+      "sugar_g": 14
+    },
+    {
+      "name": "ยำวุ้นเส้นอกไก่ #64",
+      "carb_g": 33,
+      "carb_unit": 2.2,
+      "calories": 469,
+      "sugar_g": 13
+    },
+    {
+      "name": "ปลานึ่งอกไก่ #65",
+      "carb_g": 59,
+      "carb_unit": 3.93,
+      "calories": 244,
+      "sugar_g": 18
+    },
+    {
+      "name": "ข้าวไก่ทอดเพิ่มผัก #66",
+      "carb_g": 18,
+      "carb_unit": 1.2,
+      "calories": 483,
+      "sugar_g": 0
+    },
+    {
+      "name": "ข้าวหมูทอดกระเทียมหวานน้อย #67",
+      "carb_g": 42,
+      "carb_unit": 2.8,
+      "calories": 365,
+      "sugar_g": 19
+    },
+    {
+      "name": "ก๋วยเตี๋ยวเรือเพิ่มผัก #68",
+      "carb_g": 53,
+      "carb_unit": 3.53,
+      "calories": 249,
+      "sugar_g": 6
+    },
+    {
+      "name": "ยำวุ้นเส้นลดคาร์บ #69",
+      "carb_g": 44,
+      "carb_unit": 2.93,
+      "calories": 427,
+      "sugar_g": 16
+    },
+    {
+      "name": "ข้าวผัดไก่ไม่ใส่น้ำตาล #70",
+      "carb_g": 11,
+      "carb_unit": 0.73,
+      "calories": 70,
+      "sugar_g": 20
+    },
+    {
+      "name": "ปลาเผาสตรีทฟู้ด #71",
+      "carb_g": 14,
+      "carb_unit": 0.93,
+      "calories": 297,
+      "sugar_g": 20
+    },
+    {
+      "name": "ผัดไทยสตรีทฟู้ด #72",
+      "carb_g": 30,
+      "carb_unit": 2.0,
+      "calories": 428,
+      "sugar_g": 3
+    },
+    {
+      "name": "ส้มตำสูตรร้านอาหาร #73",
+      "carb_g": 19,
+      "carb_unit": 1.27,
+      "calories": 342,
+      "sugar_g": 19
+    },
+    {
+      "name": "หมูทอดอกไก่ #74",
+      "carb_g": 51,
+      "carb_unit": 3.4,
+      "calories": 190,
+      "sugar_g": 17
+    },
+    {
+      "name": "ก๋วยเตี๋ยวเรือไม่มัน #75",
+      "carb_g": 60,
+      "carb_unit": 4.0,
+      "calories": 134,
+      "sugar_g": 10
+    },
+    {
+      "name": "แกงส้มสูตรสุขภาพ #76",
+      "carb_g": 5,
+      "carb_unit": 0.33,
+      "calories": 346,
+      "sugar_g": 22
+    },
+    {
+      "name": "ก๋วยเตี๋ยวต้มยำสตรีทฟู้ด #77",
+      "carb_g": 23,
+      "carb_unit": 1.53,
+      "calories": 131,
+      "sugar_g": 19
+    },
+    {
+      "name": "ข้าวคลุกกะปิข้าวกล้อง #78",
+      "carb_g": 23,
+      "carb_unit": 1.53,
+      "calories": 342,
+      "sugar_g": 2
+    },
+    {
+      "name": "ข้าวไก่ทอดไม่มัน #79",
+      "carb_g": 13,
+      "carb_unit": 0.87,
+      "calories": 436,
+      "sugar_g": 14
+    },
+    {
+      "name": "ผัดไทยสูตรร้านอาหาร #80",
+      "carb_g": 10,
+      "carb_unit": 0.67,
+      "calories": 86,
+      "sugar_g": 22
+    },
+    {
+      "name": "แกงจืดโซเดียมต่ำ #81",
+      "carb_g": 36,
+      "carb_unit": 2.4,
+      "calories": 424,
+      "sugar_g": 3
+    },
+    {
+      "name": "ราดหน้าสูตรผู้ป่วยเบาหวาน #82",
+      "carb_g": 38,
+      "carb_unit": 2.53,
+      "calories": 105,
+      "sugar_g": 2
+    },
+    {
+      "name": "ราดหน้าสูตรร้านอาหาร #83",
+      "carb_g": 10,
+      "carb_unit": 0.67,
+      "calories": 174,
+      "sugar_g": 6
+    },
+    {
+      "name": "ปลานึ่งข้าวกล้อง #84",
+      "carb_g": 20,
+      "carb_unit": 1.33,
+      "calories": 212,
+      "sugar_g": 12
+    },
+    {
+      "name": "ข้าวผัดใส่ไข่ #85",
+      "carb_g": 7,
+      "carb_unit": 0.47,
+      "calories": 317,
+      "sugar_g": 21
+    },
+    {
+      "name": "ข้าวคลุกกะปิคลีน #86",
+      "carb_g": 56,
+      "carb_unit": 3.73,
+      "calories": 115,
+      "sugar_g": 7
+    },
+    {
+      "name": "ผัดซีอิ๊วสูตรสุขภาพ #87",
+      "carb_g": 40,
+      "carb_unit": 2.67,
+      "calories": 325,
+      "sugar_g": 10
+    },
+    {
+      "name": "ข้าวไก่อบสตรีทฟู้ด #88",
+      "carb_g": 38,
+      "carb_unit": 2.53,
+      "calories": 307,
+      "sugar_g": 0
+    },
+    {
+      "name": "ต้มจืดอกไก่ #89",
+      "carb_g": 13,
+      "carb_unit": 0.87,
+      "calories": 438,
+      "sugar_g": 1
+    },
+    {
+      "name": "แกงเผ็ดสูตรสุขภาพ #90",
+      "carb_g": 40,
+      "carb_unit": 2.67,
+      "calories": 185,
+      "sugar_g": 17
+    },
+    {
+      "name": "ก๋วยเตี๋ยวต้มยำสูตรผู้ป่วยเบาหวาน #91",
+      "carb_g": 39,
+      "carb_unit": 2.6,
+      "calories": 98,
+      "sugar_g": 5
+    },
+    {
+      "name": "ข้าวหน้าไก่เพิ่มผัก #92",
+      "carb_g": 21,
+      "carb_unit": 1.4,
+      "calories": 421,
+      "sugar_g": 2
+    },
+    {
+      "name": "ยำวุ้นเส้นหมูไม่ติดมัน #93",
+      "carb_g": 57,
+      "carb_unit": 3.8,
+      "calories": 245,
+      "sugar_g": 18
+    },
+    {
+      "name": "ข้าวไก่อบสูตรผู้ป่วยเบาหวาน #94",
+      "carb_g": 34,
+      "carb_unit": 2.27,
+      "calories": 419,
+      "sugar_g": 14
+    },
+    {
+      "name": "ข้าวผัดกุ้งใส่ไข่ #95",
+      "carb_g": 13,
+      "carb_unit": 0.87,
+      "calories": 284,
+      "sugar_g": 24
+    },
+    {
+      "name": "ต้มจืดหวานน้อย #96",
+      "carb_g": 16,
+      "carb_unit": 1.07,
+      "calories": 155,
+      "sugar_g": 11
+    },
+    {
+      "name": "ข้าวผัดหมูไม่ติดมัน #97",
+      "carb_g": 45,
+      "carb_unit": 3.0,
+      "calories": 458,
+      "sugar_g": 13
+    },
+    {
+      "name": "ไก่ทอดลดคาร์บ #98",
+      "carb_g": 25,
+      "carb_unit": 1.67,
+      "calories": 148,
+      "sugar_g": 3
+    },
+    {
+      "name": "โจ๊กใส่ผักเพิ่ม #99",
+      "carb_g": 36,
+      "carb_unit": 2.4,
+      "calories": 285,
+      "sugar_g": 9
+    },
+    {
+      "name": "ข้าวกะเพราไม่มัน #100",
+      "carb_g": 55,
+      "carb_unit": 3.67,
+      "calories": 170,
+      "sugar_g": 3
+    },
+    {
+      "name": "ข้าวไก่ทอดจานใหญ่ #101",
+      "carb_g": 42,
+      "carb_unit": 2.8,
+      "calories": 319,
+      "sugar_g": 5
+    },
+    {
+      "name": "ราดหน้าไม่ใส่ผงชูรส #102",
+      "carb_g": 32,
+      "carb_unit": 2.13,
+      "calories": 173,
+      "sugar_g": 22
+    },
+    {
+      "name": "แกงเขียวหวานหมูไม่ติดมัน #103",
+      "carb_g": 26,
+      "carb_unit": 1.73,
+      "calories": 194,
+      "sugar_g": 7
+    },
+    {
+      "name": "แกงจืดโซเดียมต่ำ #104",
+      "carb_g": 50,
+      "carb_unit": 3.33,
+      "calories": 159,
+      "sugar_g": 12
+    },
+    {
+      "name": "ไก่ย่างสตรีทฟู้ด #105",
+      "carb_g": 27,
+      "carb_unit": 1.8,
+      "calories": 276,
+      "sugar_g": 18
+    },
+    {
+      "name": "หมูย่างใส่ไข่ #106",
+      "carb_g": 6,
+      "carb_unit": 0.4,
+      "calories": 334,
+      "sugar_g": 21
+    },
+    {
+      "name": "ยำมาม่าลดคาร์บ #107",
+      "carb_g": 52,
+      "carb_unit": 3.47,
+      "calories": 486,
+      "sugar_g": 17
+    },
+    {
+      "name": "ข้าวผัดหวานน้อย #108",
+      "carb_g": 19,
+      "carb_unit": 1.27,
+      "calories": 72,
+      "sugar_g": 1
+    },
+    {
+      "name": "ข้าวมันไก่คลีน #109",
+      "carb_g": 40,
+      "carb_unit": 2.67,
+      "calories": 236,
+      "sugar_g": 18
+    },
+    {
+      "name": "ยำปลากระป๋องคลีน #110",
+      "carb_g": 6,
+      "carb_unit": 0.4,
+      "calories": 235,
+      "sugar_g": 5
+    },
+    {
+      "name": "ข้าวไก่ทอดใส่ไข่ #111",
+      "carb_g": 11,
+      "carb_unit": 0.73,
+      "calories": 228,
+      "sugar_g": 9
+    },
+    {
+      "name": "ตำปูปลาร้าใส่ไข่ #112",
+      "carb_g": 10,
+      "carb_unit": 0.67,
+      "calories": 86,
+      "sugar_g": 13
+    },
+    {
+      "name": "ปลานึ่งหวานน้อย #113",
+      "carb_g": 29,
+      "carb_unit": 1.93,
+      "calories": 225,
+      "sugar_g": 18
+    },
+    {
+      "name": "ลาบไม่มัน #114",
+      "carb_g": 30,
+      "carb_unit": 2.0,
+      "calories": 380,
+      "sugar_g": 12
+    },
+    {
+      "name": "ข้าวกะเพราหมูไม่ติดมัน #115",
+      "carb_g": 11,
+      "carb_unit": 0.73,
+      "calories": 159,
+      "sugar_g": 10
+    },
+    {
+      "name": "ข้าวผัดไก่เพิ่มผัก #116",
+      "carb_g": 37,
+      "carb_unit": 2.47,
+      "calories": 463,
+      "sugar_g": 24
+    },
+    {
+      "name": "ปลานึ่งสตรีทฟู้ด #117",
+      "carb_g": 51,
+      "carb_unit": 3.4,
+      "calories": 107,
+      "sugar_g": 2
+    },
+    {
+      "name": "ก๋วยเตี๋ยวไม่มัน #118",
+      "carb_g": 33,
+      "carb_unit": 2.2,
+      "calories": 225,
+      "sugar_g": 8
+    },
+    {
+      "name": "ข้าวหน้าเป็ดคลีน #119",
+      "carb_g": 49,
+      "carb_unit": 3.27,
+      "calories": 96,
+      "sugar_g": 25
+    },
+    {
+      "name": "ข้าวต้มข้าวกล้อง #120",
+      "carb_g": 37,
+      "carb_unit": 2.47,
+      "calories": 367,
+      "sugar_g": 12
+    },
+    {
+      "name": "แกงส้มใส่ผักเพิ่ม #121",
+      "carb_g": 50,
+      "carb_unit": 3.33,
+      "calories": 381,
+      "sugar_g": 8
+    },
+    {
+      "name": "ยำมาม่าข้าวกล้อง #122",
+      "carb_g": 15,
+      "carb_unit": 1.0,
+      "calories": 255,
+      "sugar_g": 12
+    },
+    {
+      "name": "แกงพะแนงหมูไม่ติดมัน #123",
+      "carb_g": 42,
+      "carb_unit": 2.8,
+      "calories": 95,
+      "sugar_g": 4
+    },
+    {
+      "name": "ตำไทยใส่ผักเพิ่ม #124",
+      "carb_g": 14,
+      "carb_unit": 0.93,
+      "calories": 75,
+      "sugar_g": 2
+    },
+    {
+      "name": "ข้าวคลุกกะปิหวานน้อย #125",
+      "carb_g": 39,
+      "carb_unit": 2.6,
+      "calories": 361,
+      "sugar_g": 12
+    },
+    {
+      "name": "ตำปูปลาร้าสูตรร้านอาหาร #126",
+      "carb_g": 8,
+      "carb_unit": 0.53,
+      "calories": 252,
+      "sugar_g": 4
+    },
+    {
+      "name": "ข้าวต้มใส่ผักเพิ่ม #127",
+      "carb_g": 30,
+      "carb_unit": 2.0,
+      "calories": 238,
+      "sugar_g": 7
+    },
+    {
+      "name": "ผัดไทยลดคาร์บ #128",
+      "carb_g": 54,
+      "carb_unit": 3.6,
+      "calories": 82,
+      "sugar_g": 0
+    },
+    {
+      "name": "แกงเขียวหวานไม่ใส่น้ำตาล #129",
+      "carb_g": 44,
+      "carb_unit": 2.93,
+      "calories": 208,
+      "sugar_g": 13
+    },
+    {
+      "name": "ข้าวผัดปูใส่ผักเพิ่ม #130",
+      "carb_g": 6,
+      "carb_unit": 0.4,
+      "calories": 319,
+      "sugar_g": 0
+    },
+    {
+      "name": "ราดหน้าจานใหญ่ #131",
+      "carb_g": 21,
+      "carb_unit": 1.4,
+      "calories": 222,
+      "sugar_g": 16
+    },
+    {
+      "name": "ยำมาม่าใส่ไข่ #132",
+      "carb_g": 25,
+      "carb_unit": 1.67,
+      "calories": 485,
+      "sugar_g": 14
+    },
+    {
+      "name": "ข้าวหมูทอดกระเทียมสูตรสุขภาพ #133",
+      "carb_g": 8,
+      "carb_unit": 0.53,
+      "calories": 498,
+      "sugar_g": 4
+    },
+    {
+      "name": "ข้าวผัดกุ้งสูตรสุขภาพ #134",
+      "carb_g": 52,
+      "carb_unit": 3.47,
+      "calories": 340,
+      "sugar_g": 22
+    },
+    {
+      "name": "โจ๊กสูตรผู้ป่วยเบาหวาน #135",
+      "carb_g": 56,
+      "carb_unit": 3.73,
+      "calories": 353,
+      "sugar_g": 24
+    },
+    {
+      "name": "ตำไทยจานใหญ่ #136",
+      "carb_g": 44,
+      "carb_unit": 2.93,
+      "calories": 470,
+      "sugar_g": 4
+    },
+    {
+      "name": "ไข่ดาวสตรีทฟู้ด #137",
+      "carb_g": 18,
+      "carb_unit": 1.2,
+      "calories": 450,
+      "sugar_g": 9
+    },
+    {
+      "name": "ข้าวคลุกกะปิอกไก่ #138",
+      "carb_g": 36,
+      "carb_unit": 2.4,
+      "calories": 340,
+      "sugar_g": 4
+    },
+    {
+      "name": "แกงพะแนงสูตรสุขภาพ #139",
+      "carb_g": 47,
+      "carb_unit": 3.13,
+      "calories": 317,
+      "sugar_g": 17
+    },
+    {
+      "name": "ข้าวผัดไม่ใส่น้ำตาล #140",
+      "carb_g": 33,
+      "carb_unit": 2.2,
+      "calories": 430,
+      "sugar_g": 12
+    },
+    {
+      "name": "ตำปูปลาร้าไม่มัน #141",
+      "carb_g": 27,
+      "carb_unit": 1.8,
+      "calories": 102,
+      "sugar_g": 21
+    },
+    {
+      "name": "แกงเขียวหวานจานใหญ่ #142",
+      "carb_g": 16,
+      "carb_unit": 1.07,
+      "calories": 341,
+      "sugar_g": 2
+    },
+    {
+      "name": "ยำปลากระป๋องสูตรสุขภาพ #143",
+      "carb_g": 53,
+      "carb_unit": 3.53,
+      "calories": 399,
+      "sugar_g": 22
+    },
+    {
+      "name": "ข้าวหน้าเป็ดหมูไม่ติดมัน #144",
+      "carb_g": 17,
+      "carb_unit": 1.13,
+      "calories": 158,
+      "sugar_g": 4
+    },
+    {
+      "name": "ข้าวไก่ทอดสูตรผู้ป่วยเบาหวาน #145",
+      "carb_g": 29,
+      "carb_unit": 1.93,
+      "calories": 425,
+      "sugar_g": 25
+    },
+    {
+      "name": "ก๋วยเตี๋ยวต้มยำหมูไม่ติดมัน #146",
+      "carb_g": 59,
+      "carb_unit": 3.93,
+      "calories": 375,
+      "sugar_g": 16
+    },
+    {
+      "name": "ข้าวมันไก่ใส่ผักเพิ่ม #147",
+      "carb_g": 7,
+      "carb_unit": 0.47,
+      "calories": 233,
+      "sugar_g": 21
+    },
+    {
+      "name": "ไข่ดาวสูตรผู้ป่วยเบาหวาน #148",
+      "carb_g": 10,
+      "carb_unit": 0.67,
+      "calories": 262,
+      "sugar_g": 12
+    },
+    {
+      "name": "ต้มจืดลดคาร์บ #149",
+      "carb_g": 15,
+      "carb_unit": 1.0,
+      "calories": 238,
+      "sugar_g": 22
+    },
+    {
+      "name": "ตำไทยอกไก่ #150",
+      "carb_g": 40,
+      "carb_unit": 2.67,
+      "calories": 188,
+      "sugar_g": 10
+    },
+    {
+      "name": "ปลาเผาลดคาร์บ #151",
+      "carb_g": 34,
+      "carb_unit": 2.27,
+      "calories": 140,
+      "sugar_g": 23
+    },
+    {
+      "name": "แกงพะแนงไม่ใส่ผงชูรส #152",
+      "carb_g": 45,
+      "carb_unit": 3.0,
+      "calories": 269,
+      "sugar_g": 21
+    },
+    {
+      "name": "หมูทอดไม่ใส่น้ำตาล #153",
+      "carb_g": 30,
+      "carb_unit": 2.0,
+      "calories": 447,
+      "sugar_g": 10
+    },
+    {
+      "name": "ตำแตงไม่มัน #154",
+      "carb_g": 41,
+      "carb_unit": 2.73,
+      "calories": 388,
+      "sugar_g": 21
+    },
+    {
+      "name": "แกงป่าสูตรสุขภาพ #155",
+      "carb_g": 8,
+      "carb_unit": 0.53,
+      "calories": 116,
+      "sugar_g": 19
+    },
+    {
+      "name": "ข้าวไก่อบหวานน้อย #156",
+      "carb_g": 50,
+      "carb_unit": 3.33,
+      "calories": 212,
+      "sugar_g": 10
+    },
+    {
+      "name": "ข้าวผัดปูอกไก่ #157",
+      "carb_g": 17,
+      "carb_unit": 1.13,
+      "calories": 229,
+      "sugar_g": 16
+    },
+    {
+      "name": "ข้าวผัดกุ้งใส่ผักเพิ่ม #158",
+      "carb_g": 43,
+      "carb_unit": 2.87,
+      "calories": 484,
+      "sugar_g": 17
+    },
+    {
+      "name": "ไข่พะโล้ไม่ใส่ผงชูรส #159",
+      "carb_g": 55,
+      "carb_unit": 3.67,
+      "calories": 190,
+      "sugar_g": 6
+    },
+    {
+      "name": "ไข่พะโล้สูตรผู้ป่วยเบาหวาน #160",
+      "carb_g": 38,
+      "carb_unit": 2.53,
+      "calories": 258,
+      "sugar_g": 19
+    },
+    {
+      "name": "แกงพะแนงคลีน #161",
+      "carb_g": 43,
+      "carb_unit": 2.87,
+      "calories": 430,
+      "sugar_g": 9
+    },
+    {
+      "name": "ข้าวหน้าไก่สูตรร้านอาหาร #162",
+      "carb_g": 20,
+      "carb_unit": 1.33,
+      "calories": 163,
+      "sugar_g": 15
+    },
+    {
+      "name": "แกงป่าข้าวกล้อง #163",
+      "carb_g": 53,
+      "carb_unit": 3.53,
+      "calories": 408,
+      "sugar_g": 14
+    },
+    {
+      "name": "ข้าวหน้าเป็ดโซเดียมต่ำ #164",
+      "carb_g": 6,
+      "carb_unit": 0.4,
+      "calories": 286,
+      "sugar_g": 13
+    },
+    {
+      "name": "ข้าวหน้าไก่ข้าวกล้อง #165",
+      "carb_g": 31,
+      "carb_unit": 2.07,
+      "calories": 83,
+      "sugar_g": 20
+    },
+    {
+      "name": "ต้มยำสูตรผู้ป่วยเบาหวาน #166",
+      "carb_g": 29,
+      "carb_unit": 1.93,
+      "calories": 170,
+      "sugar_g": 1
+    },
+    {
+      "name": "ข้าวไก่ทอดหมูไม่ติดมัน #167",
+      "carb_g": 57,
+      "carb_unit": 3.8,
+      "calories": 91,
+      "sugar_g": 3
+    },
+    {
+      "name": "สุกี้ไม่ใส่น้ำตาล #168",
+      "carb_g": 21,
+      "carb_unit": 1.4,
+      "calories": 401,
+      "sugar_g": 24
+    },
+    {
+      "name": "แกงเขียวหวานคลีน #169",
+      "carb_g": 45,
+      "carb_unit": 3.0,
+      "calories": 260,
+      "sugar_g": 6
+    },
+    {
+      "name": "ข้าวหมูแดงหวานน้อย #170",
+      "carb_g": 11,
+      "carb_unit": 0.73,
+      "calories": 60,
+      "sugar_g": 5
+    },
+    {
+      "name": "ข้าวหมูทอดกระเทียมคลีน #171",
+      "carb_g": 11,
+      "carb_unit": 0.73,
+      "calories": 446,
+      "sugar_g": 13
+    },
+    {
+      "name": "ยำปลากระป๋องคลีน #172",
+      "carb_g": 33,
+      "carb_unit": 2.2,
+      "calories": 245,
+      "sugar_g": 12
+    },
+    {
+      "name": "ไข่ต้มคลีน #173",
+      "carb_g": 18,
+      "carb_unit": 1.2,
+      "calories": 69,
+      "sugar_g": 25
+    },
+    {
+      "name": "ลาบสูตรสุขภาพ #174",
+      "carb_g": 53,
+      "carb_unit": 3.53,
+      "calories": 223,
+      "sugar_g": 17
+    },
+    {
+      "name": "ตำไทยใส่ผักเพิ่ม #175",
+      "carb_g": 53,
+      "carb_unit": 3.53,
+      "calories": 334,
+      "sugar_g": 22
+    },
+    {
+      "name": "ไข่ดาวใส่ผักเพิ่ม #176",
+      "carb_g": 42,
+      "carb_unit": 2.8,
+      "calories": 345,
+      "sugar_g": 0
+    },
+    {
+      "name": "ข้าวต้มหวานน้อย #177",
+      "carb_g": 13,
+      "carb_unit": 0.87,
+      "calories": 330,
+      "sugar_g": 4
+    },
+    {
+      "name": "ไข่ต้มไม่ใส่น้ำตาล #178",
+      "carb_g": 43,
+      "carb_unit": 2.87,
+      "calories": 146,
+      "sugar_g": 18
+    },
+    {
+      "name": "ข้าวไก่ทอดคลีน #179",
+      "carb_g": 48,
+      "carb_unit": 3.2,
+      "calories": 269,
+      "sugar_g": 25
+    },
+    {
+      "name": "ผัดซีอิ๊วโซเดียมต่ำ #180",
+      "carb_g": 47,
+      "carb_unit": 3.13,
+      "calories": 296,
+      "sugar_g": 20
+    },
+    {
+      "name": "ผัดซีอิ๊วไม่ใส่น้ำตาล #181",
+      "carb_g": 7,
+      "carb_unit": 0.47,
+      "calories": 499,
+      "sugar_g": 10
+    },
+    {
+      "name": "ข้าวคลุกกะปิไม่ใส่ผงชูรส #182",
+      "carb_g": 21,
+      "carb_unit": 1.4,
+      "calories": 182,
+      "sugar_g": 3
+    },
+    {
+      "name": "ข้าวผัดกุ้งข้าวกล้อง #183",
+      "carb_g": 34,
+      "carb_unit": 2.27,
+      "calories": 269,
+      "sugar_g": 7
+    },
+    {
+      "name": "ปลานึ่งไม่มัน #184",
+      "carb_g": 47,
+      "carb_unit": 3.13,
+      "calories": 396,
+      "sugar_g": 19
+    },
+    {
+      "name": "ข้าวไข่เจียวสูตรสุขภาพ #185",
+      "carb_g": 30,
+      "carb_unit": 2.0,
+      "calories": 163,
+      "sugar_g": 18
+    },
+    {
+      "name": "ข้าวมันไก่โซเดียมต่ำ #186",
+      "carb_g": 40,
+      "carb_unit": 2.67,
+      "calories": 165,
+      "sugar_g": 4
+    },
+    {
+      "name": "ปลานึ่งสูตรสุขภาพ #187",
+      "carb_g": 27,
+      "carb_unit": 1.8,
+      "calories": 372,
+      "sugar_g": 5
+    },
+    {
+      "name": "ไก่ย่างไม่ใส่น้ำตาล #188",
+      "carb_g": 41,
+      "carb_unit": 2.73,
+      "calories": 98,
+      "sugar_g": 25
+    },
+    {
+      "name": "ไก่ย่างหมูไม่ติดมัน #189",
+      "carb_g": 57,
+      "carb_unit": 3.8,
+      "calories": 235,
+      "sugar_g": 13
+    },
+    {
+      "name": "ข้าวหน้าไก่ไม่มัน #190",
+      "carb_g": 55,
+      "carb_unit": 3.67,
+      "calories": 373,
+      "sugar_g": 17
+    },
+    {
+      "name": "ข้าวไก่อบหมูไม่ติดมัน #191",
+      "carb_g": 13,
+      "carb_unit": 0.87,
+      "calories": 60,
+      "sugar_g": 4
+    },
+    {
+      "name": "ก๋วยเตี๋ยวหมูไม่ติดมัน #192",
+      "carb_g": 38,
+      "carb_unit": 2.53,
+      "calories": 483,
+      "sugar_g": 3
+    },
+    {
+      "name": "ไก่ย่างใส่ผักเพิ่ม #193",
+      "carb_g": 49,
+      "carb_unit": 3.27,
+      "calories": 464,
+      "sugar_g": 9
+    },
+    {
+      "name": "ก๋วยเตี๋ยวเรือไม่ใส่น้ำตาล #194",
+      "carb_g": 49,
+      "carb_unit": 3.27,
+      "calories": 479,
+      "sugar_g": 1
+    },
+    {
+      "name": "ไข่ต้มอกไก่ #195",
+      "carb_g": 19,
+      "carb_unit": 1.27,
+      "calories": 365,
+      "sugar_g": 25
+    },
+    {
+      "name": "ผัดซีอิ๊วจานใหญ่ #196",
+      "carb_g": 23,
+      "carb_unit": 1.53,
+      "calories": 359,
+      "sugar_g": 16
+    },
+    {
+      "name": "หมูย่างใส่ผักเพิ่ม #197",
+      "carb_g": 24,
+      "carb_unit": 1.6,
+      "calories": 325,
+      "sugar_g": 12
+    },
+    {
+      "name": "น้ำตกคลีน #198",
+      "carb_g": 44,
+      "carb_unit": 2.93,
+      "calories": 276,
+      "sugar_g": 0
+    },
+    {
+      "name": "ข้าวผัดกุ้งสูตรสุขภาพ #199",
+      "carb_g": 31,
+      "carb_unit": 2.07,
+      "calories": 109,
+      "sugar_g": 11
+    },
+    {
+      "name": "ข้าวหมูทอดกระเทียมจานใหญ่ #200",
+      "carb_g": 43,
+      "carb_unit": 2.87,
+      "calories": 137,
+      "sugar_g": 6
+    },
+    {
+      "name": "ข้าวไก่ทอดไม่ใส่น้ำตาล #201",
+      "carb_g": 55,
+      "carb_unit": 3.67,
+      "calories": 155,
+      "sugar_g": 7
+    },
+    {
+      "name": "ข้าวต้มไม่ใส่น้ำตาล #202",
+      "carb_g": 29,
+      "carb_unit": 1.93,
+      "calories": 108,
+      "sugar_g": 8
+    },
+    {
+      "name": "ปลาเผาไม่ใส่น้ำตาล #203",
+      "carb_g": 38,
+      "carb_unit": 2.53,
+      "calories": 463,
+      "sugar_g": 16
+    },
+    {
+      "name": "แกงจืดสูตรผู้ป่วยเบาหวาน #204",
+      "carb_g": 50,
+      "carb_unit": 3.33,
+      "calories": 286,
+      "sugar_g": 12
+    },
+    {
+      "name": "ข้าวไก่อบใส่ผักเพิ่ม #205",
+      "carb_g": 51,
+      "carb_unit": 3.4,
+      "calories": 307,
+      "sugar_g": 12
+    },
+    {
+      "name": "แกงส้มใส่ไข่ #206",
+      "carb_g": 55,
+      "carb_unit": 3.67,
+      "calories": 94,
+      "sugar_g": 0
+    },
+    {
+      "name": "ข้าวหมูทอดกระเทียมสูตรสุขภาพ #207",
+      "carb_g": 13,
+      "carb_unit": 0.87,
+      "calories": 306,
+      "sugar_g": 18
+    },
+    {
+      "name": "ยำมาม่าไม่ใส่ผงชูรส #208",
+      "carb_g": 45,
+      "carb_unit": 3.0,
+      "calories": 365,
+      "sugar_g": 2
+    },
+    {
+      "name": "สุกี้สตรีทฟู้ด #209",
+      "carb_g": 42,
+      "carb_unit": 2.8,
+      "calories": 146,
+      "sugar_g": 20
+    },
+    {
+      "name": "ข้าวหมูแดงไม่ใส่ผงชูรส #210",
+      "carb_g": 11,
+      "carb_unit": 0.73,
+      "calories": 259,
+      "sugar_g": 4
+    },
+    {
+      "name": "ข้าวหมูแดงสูตรผู้ป่วยเบาหวาน #211",
+      "carb_g": 56,
+      "carb_unit": 3.73,
+      "calories": 459,
+      "sugar_g": 22
+    },
+    {
+      "name": "ข้าวไก่ทอดอกไก่ #212",
+      "carb_g": 25,
+      "carb_unit": 1.67,
+      "calories": 91,
+      "sugar_g": 7
+    },
+    {
+      "name": "ผัดไทยสูตรผู้ป่วยเบาหวาน #213",
+      "carb_g": 32,
+      "carb_unit": 2.13,
+      "calories": 429,
+      "sugar_g": 9
+    },
+    {
+      "name": "ข้าวหน้าไก่สูตรสุขภาพ #214",
+      "carb_g": 58,
+      "carb_unit": 3.87,
+      "calories": 357,
+      "sugar_g": 5
+    },
+    {
+      "name": "ไก่ทอดไม่ใส่น้ำตาล #215",
+      "carb_g": 22,
+      "carb_unit": 1.47,
+      "calories": 176,
+      "sugar_g": 7
+    },
+    {
+      "name": "ข้าวกะเพราสตรีทฟู้ด #216",
+      "carb_g": 5,
+      "carb_unit": 0.33,
+      "calories": 414,
+      "sugar_g": 6
+    },
+    {
+      "name": "ไข่ดาวพิเศษ #217",
+      "carb_g": 46,
+      "carb_unit": 3.07,
+      "calories": 163,
+      "sugar_g": 0
+    },
+    {
+      "name": "ข้าวผัดกุ้งสูตรผู้ป่วยเบาหวาน #218",
+      "carb_g": 26,
+      "carb_unit": 1.73,
+      "calories": 338,
+      "sugar_g": 15
+    },
+    {
+      "name": "แกงส้มหมูไม่ติดมัน #219",
+      "carb_g": 8,
+      "carb_unit": 0.53,
+      "calories": 424,
+      "sugar_g": 0
+    },
+    {
+      "name": "ปลาทอดใส่ผักเพิ่ม #220",
+      "carb_g": 55,
+      "carb_unit": 3.67,
+      "calories": 115,
+      "sugar_g": 23
+    },
+    {
+      "name": "แกงพะแนงหวานน้อย #221",
+      "carb_g": 37,
+      "carb_unit": 2.47,
+      "calories": 64,
+      "sugar_g": 0
+    },
+    {
+      "name": "ข้าวผัดหมูใส่ผักเพิ่ม #222",
+      "carb_g": 42,
+      "carb_unit": 2.8,
+      "calories": 390,
+      "sugar_g": 18
+    },
+    {
+      "name": "ส้มตำหมูไม่ติดมัน #223",
+      "carb_g": 45,
+      "carb_unit": 3.0,
+      "calories": 92,
+      "sugar_g": 4
+    },
+    {
+      "name": "แกงป่าไม่ใส่ผงชูรส #224",
+      "carb_g": 24,
+      "carb_unit": 1.6,
+      "calories": 232,
+      "sugar_g": 23
+    },
+    {
+      "name": "ข้าวผัดข้าวกล้อง #225",
+      "carb_g": 26,
+      "carb_unit": 1.73,
+      "calories": 190,
+      "sugar_g": 11
+    },
+    {
+      "name": "ข้าวไก่ทอดหมูไม่ติดมัน #226",
+      "carb_g": 32,
+      "carb_unit": 2.13,
+      "calories": 493,
+      "sugar_g": 10
+    },
+    {
+      "name": "ข้าวมันไก่ใส่ผักเพิ่ม #227",
+      "carb_g": 48,
+      "carb_unit": 3.2,
+      "calories": 73,
+      "sugar_g": 24
+    },
+    {
+      "name": "ไก่ย่างใส่ไข่ #228",
+      "carb_g": 27,
+      "carb_unit": 1.8,
+      "calories": 81,
+      "sugar_g": 11
+    },
+    {
+      "name": "ข้าวหน้าเป็ดจานใหญ่ #229",
+      "carb_g": 44,
+      "carb_unit": 2.93,
+      "calories": 254,
+      "sugar_g": 10
+    },
+    {
+      "name": "ผัดซีอิ๊วหวานน้อย #230",
+      "carb_g": 42,
+      "carb_unit": 2.8,
+      "calories": 401,
+      "sugar_g": 23
+    },
+    {
+      "name": "ผัดไทยใส่ผักเพิ่ม #231",
+      "carb_g": 24,
+      "carb_unit": 1.6,
+      "calories": 218,
+      "sugar_g": 11
+    },
+    {
+      "name": "แกงเขียวหวานข้าวกล้อง #232",
+      "carb_g": 25,
+      "carb_unit": 1.67,
+      "calories": 63,
+      "sugar_g": 24
+    },
+    {
+      "name": "น้ำตกสูตรผู้ป่วยเบาหวาน #233",
+      "carb_g": 32,
+      "carb_unit": 2.13,
+      "calories": 368,
+      "sugar_g": 1
+    },
+    {
+      "name": "ต้มยำพิเศษ #234",
+      "carb_g": 28,
+      "carb_unit": 1.87,
+      "calories": 410,
+      "sugar_g": 11
+    },
+    {
+      "name": "ต้มยำหมูไม่ติดมัน #235",
+      "carb_g": 8,
+      "carb_unit": 0.53,
+      "calories": 137,
+      "sugar_g": 4
+    },
+    {
+      "name": "ยำมาม่าลดคาร์บ #236",
+      "carb_g": 12,
+      "carb_unit": 0.8,
+      "calories": 313,
+      "sugar_g": 17
+    },
+    {
+      "name": "ยำมาม่าข้าวกล้อง #237",
+      "carb_g": 27,
+      "carb_unit": 1.8,
+      "calories": 308,
+      "sugar_g": 12
+    },
+    {
+      "name": "ไก่ทอดพิเศษ #238",
+      "carb_g": 37,
+      "carb_unit": 2.47,
+      "calories": 410,
+      "sugar_g": 5
+    },
+    {
+      "name": "ข้าวหมูแดงอกไก่ #239",
+      "carb_g": 52,
+      "carb_unit": 3.47,
+      "calories": 324,
+      "sugar_g": 4
+    },
+    {
+      "name": "ยำปลากระป๋องจานใหญ่ #240",
+      "carb_g": 55,
+      "carb_unit": 3.67,
+      "calories": 388,
+      "sugar_g": 16
+    },
+    {
+      "name": "แกงเขียวหวานข้าวกล้อง #241",
+      "carb_g": 50,
+      "carb_unit": 3.33,
+      "calories": 483,
+      "sugar_g": 2
+    },
+    {
+      "name": "ต้มยำสตรีทฟู้ด #242",
+      "carb_g": 59,
+      "carb_unit": 3.93,
+      "calories": 322,
+      "sugar_g": 8
+    },
+    {
+      "name": "แกงจืดหวานน้อย #243",
+      "carb_g": 10,
+      "carb_unit": 0.67,
+      "calories": 167,
+      "sugar_g": 6
+    },
+    {
+      "name": "แกงจืดจานใหญ่ #244",
+      "carb_g": 39,
+      "carb_unit": 2.6,
+      "calories": 413,
+      "sugar_g": 4
+    },
+    {
+      "name": "ตำแตงสตรีทฟู้ด #245",
+      "carb_g": 40,
+      "carb_unit": 2.67,
+      "calories": 178,
+      "sugar_g": 2
+    },
+    {
+      "name": "ข้าวหมูกรอบพิเศษ #246",
+      "carb_g": 25,
+      "carb_unit": 1.67,
+      "calories": 376,
+      "sugar_g": 18
+    },
+    {
+      "name": "แกงส้มไม่ใส่ผงชูรส #247",
+      "carb_g": 58,
+      "carb_unit": 3.87,
+      "calories": 166,
+      "sugar_g": 8
+    },
+    {
+      "name": "ข้าวกะเพราเพิ่มผัก #248",
+      "carb_g": 24,
+      "carb_unit": 1.6,
+      "calories": 173,
+      "sugar_g": 22
+    },
+    {
+      "name": "ต้มยำเพิ่มผัก #249",
+      "carb_g": 7,
+      "carb_unit": 0.47,
+      "calories": 369,
+      "sugar_g": 14
+    },
+    {
+      "name": "ไข่ต้มไม่ใส่ผงชูรส #250",
+      "carb_g": 37,
+      "carb_unit": 2.47,
+      "calories": 87,
+      "sugar_g": 8
+    },
+    {
+      "name": "ข้าวผัดจานใหญ่ #251",
+      "carb_g": 50,
+      "carb_unit": 3.33,
+      "calories": 354,
+      "sugar_g": 13
+    },
+    {
+      "name": "แกงเขียวหวานพิเศษ #252",
+      "carb_g": 11,
+      "carb_unit": 0.73,
+      "calories": 302,
+      "sugar_g": 24
+    },
+    {
+      "name": "แกงเผ็ดหวานน้อย #253",
+      "carb_g": 30,
+      "carb_unit": 2.0,
+      "calories": 135,
+      "sugar_g": 1
+    },
+    {
+      "name": "หมูย่างสูตรสุขภาพ #254",
+      "carb_g": 22,
+      "carb_unit": 1.47,
+      "calories": 236,
+      "sugar_g": 20
+    },
+    {
+      "name": "ข้าวผัดปูสตรีทฟู้ด #255",
+      "carb_g": 45,
+      "carb_unit": 3.0,
+      "calories": 399,
+      "sugar_g": 20
+    },
+    {
+      "name": "ยำปลากระป๋องหมูไม่ติดมัน #256",
+      "carb_g": 23,
+      "carb_unit": 1.53,
+      "calories": 146,
+      "sugar_g": 5
+    },
+    {
+      "name": "แกงส้มใส่ไข่ #257",
+      "carb_g": 42,
+      "carb_unit": 2.8,
+      "calories": 269,
+      "sugar_g": 21
+    },
+    {
+      "name": "ก๋วยเตี๋ยวใส่ไข่ #258",
+      "carb_g": 19,
+      "carb_unit": 1.27,
+      "calories": 242,
+      "sugar_g": 1
+    },
+    {
+      "name": "แกงป่าสูตรร้านอาหาร #259",
+      "carb_g": 8,
+      "carb_unit": 0.53,
+      "calories": 491,
+      "sugar_g": 2
+    },
+    {
+      "name": "ข้าวผัดปูใส่ไข่ #260",
+      "carb_g": 42,
+      "carb_unit": 2.8,
+      "calories": 483,
+      "sugar_g": 19
+    },
+    {
+      "name": "ข้าวหน้าเป็ดลดคาร์บ #261",
+      "carb_g": 29,
+      "carb_unit": 1.93,
+      "calories": 267,
+      "sugar_g": 11
+    },
+    {
+      "name": "ข้าวผัดกุ้งสูตรสุขภาพ #262",
+      "carb_g": 36,
+      "carb_unit": 2.4,
+      "calories": 478,
+      "sugar_g": 3
+    },
+    {
+      "name": "ข้าวหมูแดงสูตรร้านอาหาร #263",
+      "carb_g": 53,
+      "carb_unit": 3.53,
+      "calories": 346,
+      "sugar_g": 11
+    },
+    {
+      "name": "ข้าวหมูแดงไม่ใส่ผงชูรส #264",
+      "carb_g": 25,
+      "carb_unit": 1.67,
+      "calories": 114,
+      "sugar_g": 19
+    },
+    {
+      "name": "ปลานึ่งสูตรร้านอาหาร #265",
+      "carb_g": 39,
+      "carb_unit": 2.6,
+      "calories": 339,
+      "sugar_g": 21
+    },
+    {
+      "name": "ข้าวผัดไก่ไม่ใส่น้ำตาล #266",
+      "carb_g": 48,
+      "carb_unit": 3.2,
+      "calories": 166,
+      "sugar_g": 12
+    },
+    {
+      "name": "แกงป่าอกไก่ #267",
+      "carb_g": 34,
+      "carb_unit": 2.27,
+      "calories": 124,
+      "sugar_g": 13
+    },
+    {
+      "name": "ข้าวหมูแดงไม่มัน #268",
+      "carb_g": 15,
+      "carb_unit": 1.0,
+      "calories": 330,
+      "sugar_g": 9
+    },
+    {
+      "name": "ข้าวไข่เจียวสูตรร้านอาหาร #269",
+      "carb_g": 37,
+      "carb_unit": 2.47,
+      "calories": 142,
+      "sugar_g": 8
+    },
+    {
+      "name": "น้ำตกเพิ่มผัก #270",
+      "carb_g": 25,
+      "carb_unit": 1.67,
+      "calories": 130,
+      "sugar_g": 25
+    },
+    {
+      "name": "ผัดซีอิ๊วหมูไม่ติดมัน #271",
+      "carb_g": 48,
+      "carb_unit": 3.2,
+      "calories": 377,
+      "sugar_g": 21
+    },
+    {
+      "name": "ข้าวไก่ทอดอกไก่ #272",
+      "carb_g": 43,
+      "carb_unit": 2.87,
+      "calories": 272,
+      "sugar_g": 19
+    },
+    {
+      "name": "ข้าวไก่ทอดไม่มัน #273",
+      "carb_g": 14,
+      "carb_unit": 0.93,
+      "calories": 409,
+      "sugar_g": 2
+    },
+    {
+      "name": "ไก่ทอดจานใหญ่ #274",
+      "carb_g": 53,
+      "carb_unit": 3.53,
+      "calories": 300,
+      "sugar_g": 21
+    },
+    {
+      "name": "ไก่ทอดไม่ใส่น้ำตาล #275",
+      "carb_g": 47,
+      "carb_unit": 3.13,
+      "calories": 216,
+      "sugar_g": 18
+    },
+    {
+      "name": "ราดหน้าคลีน #276",
+      "carb_g": 13,
+      "carb_unit": 0.87,
+      "calories": 389,
+      "sugar_g": 11
+    },
+    {
+      "name": "ข้าวผัดหวานน้อย #277",
+      "carb_g": 39,
+      "carb_unit": 2.6,
+      "calories": 427,
+      "sugar_g": 0
+    },
+    {
+      "name": "ยำวุ้นเส้นใส่ผักเพิ่ม #278",
+      "carb_g": 30,
+      "carb_unit": 2.0,
+      "calories": 255,
+      "sugar_g": 0
+    },
+    {
+      "name": "ตำไทยอกไก่ #279",
+      "carb_g": 41,
+      "carb_unit": 2.73,
+      "calories": 113,
+      "sugar_g": 11
+    },
+    {
+      "name": "ข้าวหมูกรอบหมูไม่ติดมัน #280",
+      "carb_g": 22,
+      "carb_unit": 1.47,
+      "calories": 424,
+      "sugar_g": 0
+    },
+    {
+      "name": "สุกี้พิเศษ #281",
+      "carb_g": 51,
+      "carb_unit": 3.4,
+      "calories": 87,
+      "sugar_g": 25
+    },
+    {
+      "name": "แกงป่าใส่ผักเพิ่ม #282",
+      "carb_g": 55,
+      "carb_unit": 3.67,
+      "calories": 259,
+      "sugar_g": 22
+    },
+    {
+      "name": "ข้าวหน้าเป็ดอกไก่ #283",
+      "carb_g": 57,
+      "carb_unit": 3.8,
+      "calories": 100,
+      "sugar_g": 25
+    },
+    {
+      "name": "ไข่ต้มสูตรสุขภาพ #284",
+      "carb_g": 58,
+      "carb_unit": 3.87,
+      "calories": 178,
+      "sugar_g": 2
+    },
+    {
+      "name": "ข้าวหมูกรอบใส่ผักเพิ่ม #285",
+      "carb_g": 38,
+      "carb_unit": 2.53,
+      "calories": 132,
+      "sugar_g": 6
+    },
+    {
+      "name": "ปลานึ่งสตรีทฟู้ด #286",
+      "carb_g": 14,
+      "carb_unit": 0.93,
+      "calories": 426,
+      "sugar_g": 0
+    },
+    {
+      "name": "ส้มตำสตรีทฟู้ด #287",
+      "carb_g": 36,
+      "carb_unit": 2.4,
+      "calories": 175,
+      "sugar_g": 18
+    },
+    {
+      "name": "ต้มจืดอกไก่ #288",
+      "carb_g": 8,
+      "carb_unit": 0.53,
+      "calories": 365,
+      "sugar_g": 23
+    },
+    {
+      "name": "ข้าวหมูแดงหมูไม่ติดมัน #289",
+      "carb_g": 58,
+      "carb_unit": 3.87,
+      "calories": 470,
+      "sugar_g": 15
+    },
+    {
+      "name": "ข้าวหมูแดงใส่ผักเพิ่ม #290",
+      "carb_g": 33,
+      "carb_unit": 2.2,
+      "calories": 239,
+      "sugar_g": 2
+    },
+    {
+      "name": "ไก่ทอดสตรีทฟู้ด #291",
+      "carb_g": 41,
+      "carb_unit": 2.73,
+      "calories": 422,
+      "sugar_g": 25
+    },
+    {
+      "name": "ยำมาม่าใส่ไข่ #292",
+      "carb_g": 53,
+      "carb_unit": 3.53,
+      "calories": 416,
+      "sugar_g": 14
+    },
+    {
+      "name": "สุกี้สตรีทฟู้ด #293",
+      "carb_g": 43,
+      "carb_unit": 2.87,
+      "calories": 369,
+      "sugar_g": 5
+    },
+    {
+      "name": "ก๋วยเตี๋ยวต้มยำสตรีทฟู้ด #294",
+      "carb_g": 43,
+      "carb_unit": 2.87,
+      "calories": 493,
+      "sugar_g": 8
+    },
+    {
+      "name": "ผัดซีอิ๊วคลีน #295",
+      "carb_g": 39,
+      "carb_unit": 2.6,
+      "calories": 61,
+      "sugar_g": 0
+    },
+    {
+      "name": "ข้าวผัดสูตรร้านอาหาร #296",
+      "carb_g": 47,
+      "carb_unit": 3.13,
+      "calories": 116,
+      "sugar_g": 1
+    },
+    {
+      "name": "ลาบสูตรสุขภาพ #297",
+      "carb_g": 36,
+      "carb_unit": 2.4,
+      "calories": 115,
+      "sugar_g": 10
+    },
+    {
+      "name": "ข้าวหมูทอดกระเทียมใส่ไข่ #298",
+      "carb_g": 9,
+      "carb_unit": 0.6,
+      "calories": 126,
+      "sugar_g": 13
+    },
+    {
+      "name": "ข้าวหมูแดงไม่ใส่น้ำตาล #299",
+      "carb_g": 45,
+      "carb_unit": 3.0,
+      "calories": 210,
+      "sugar_g": 20
+    },
+    {
+      "name": "แกงเผ็ดสตรีทฟู้ด #300",
+      "carb_g": 11,
+      "carb_unit": 0.73,
+      "calories": 419,
+      "sugar_g": 3
+    },
+    {
+      "name": "ก๋วยเตี๋ยวหวานน้อย #301",
+      "carb_g": 28,
+      "carb_unit": 1.87,
+      "calories": 154,
+      "sugar_g": 0
+    },
+    {
+      "name": "ตำแตงใส่ไข่ #302",
+      "carb_g": 12,
+      "carb_unit": 0.8,
+      "calories": 359,
+      "sugar_g": 4
+    },
+    {
+      "name": "ข้าวหน้าเป็ดคลีน #303",
+      "carb_g": 24,
+      "carb_unit": 1.6,
+      "calories": 490,
+      "sugar_g": 14
+    },
+    {
+      "name": "ข้าวหมูกรอบสูตรผู้ป่วยเบาหวาน #304",
+      "carb_g": 33,
+      "carb_unit": 2.2,
+      "calories": 268,
+      "sugar_g": 25
+    },
+    {
+      "name": "ตำปูปลาร้าข้าวกล้อง #305",
+      "carb_g": 34,
+      "carb_unit": 2.27,
+      "calories": 145,
+      "sugar_g": 3
+    },
+    {
+      "name": "ยำวุ้นเส้นเพิ่มผัก #306",
+      "carb_g": 60,
+      "carb_unit": 4.0,
+      "calories": 307,
+      "sugar_g": 7
+    },
+    {
+      "name": "แกงพะแนงสูตรสุขภาพ #307",
+      "carb_g": 19,
+      "carb_unit": 1.27,
+      "calories": 164,
+      "sugar_g": 5
+    },
+    {
+      "name": "ยำปลากระป๋องโซเดียมต่ำ #308",
+      "carb_g": 12,
+      "carb_unit": 0.8,
+      "calories": 91,
+      "sugar_g": 14
+    },
+    {
+      "name": "ไข่ต้มใส่ผักเพิ่ม #309",
+      "carb_g": 57,
+      "carb_unit": 3.8,
+      "calories": 339,
+      "sugar_g": 24
+    },
+    {
+      "name": "ข้าวคลุกกะปิจานใหญ่ #310",
+      "carb_g": 28,
+      "carb_unit": 1.87,
+      "calories": 310,
+      "sugar_g": 13
+    },
+    {
+      "name": "ข้าวผัดไก่สตรีทฟู้ด #311",
+      "carb_g": 6,
+      "carb_unit": 0.4,
+      "calories": 256,
+      "sugar_g": 5
+    },
+    {
+      "name": "ตำแตงลดคาร์บ #312",
+      "carb_g": 7,
+      "carb_unit": 0.47,
+      "calories": 445,
+      "sugar_g": 12
+    },
+    {
+      "name": "ข้าวหน้าเป็ดลดคาร์บ #313",
+      "carb_g": 41,
+      "carb_unit": 2.73,
+      "calories": 79,
+      "sugar_g": 6
+    },
+    {
+      "name": "ลาบอกไก่ #314",
+      "carb_g": 39,
+      "carb_unit": 2.6,
+      "calories": 219,
+      "sugar_g": 17
+    },
+    {
+      "name": "ข้าวผัดหมูสตรีทฟู้ด #315",
+      "carb_g": 14,
+      "carb_unit": 0.93,
+      "calories": 304,
+      "sugar_g": 10
+    },
+    {
+      "name": "น้ำตกหมูไม่ติดมัน #316",
+      "carb_g": 27,
+      "carb_unit": 1.8,
+      "calories": 437,
+      "sugar_g": 25
+    },
+    {
+      "name": "ข้าวมันไก่หวานน้อย #317",
+      "carb_g": 37,
+      "carb_unit": 2.47,
+      "calories": 427,
+      "sugar_g": 12
+    },
+    {
+      "name": "ข้าวผัดกุ้งสูตรร้านอาหาร #318",
+      "carb_g": 8,
+      "carb_unit": 0.53,
+      "calories": 212,
+      "sugar_g": 20
+    },
+    {
+      "name": "ข้าวหน้าเป็ดไม่มัน #319",
+      "carb_g": 56,
+      "carb_unit": 3.73,
+      "calories": 479,
+      "sugar_g": 1
+    },
+    {
+      "name": "ไข่ต้มสูตรผู้ป่วยเบาหวาน #320",
+      "carb_g": 16,
+      "carb_unit": 1.07,
+      "calories": 313,
+      "sugar_g": 17
+    },
+    {
+      "name": "ข้าวผัดปูจานใหญ่ #321",
+      "carb_g": 35,
+      "carb_unit": 2.33,
+      "calories": 267,
+      "sugar_g": 14
+    },
+    {
+      "name": "ผัดซีอิ๊วโซเดียมต่ำ #322",
+      "carb_g": 55,
+      "carb_unit": 3.67,
+      "calories": 139,
+      "sugar_g": 7
+    },
+    {
+      "name": "ไข่พะโล้ลดคาร์บ #323",
+      "carb_g": 27,
+      "carb_unit": 1.8,
+      "calories": 155,
+      "sugar_g": 9
+    },
+    {
+      "name": "ปลาทอดสูตรผู้ป่วยเบาหวาน #324",
+      "carb_g": 17,
+      "carb_unit": 1.13,
+      "calories": 142,
+      "sugar_g": 9
+    },
+    {
+      "name": "ข้าวมันไก่ไม่มัน #325",
+      "carb_g": 55,
+      "carb_unit": 3.67,
+      "calories": 236,
+      "sugar_g": 11
+    },
+    {
+      "name": "ตำไทยจานใหญ่ #326",
+      "carb_g": 23,
+      "carb_unit": 1.53,
+      "calories": 268,
+      "sugar_g": 24
+    },
+    {
+      "name": "ตำปูปลาร้าจานใหญ่ #327",
+      "carb_g": 47,
+      "carb_unit": 3.13,
+      "calories": 275,
+      "sugar_g": 6
+    },
+    {
+      "name": "ไข่ต้มจานใหญ่ #328",
+      "carb_g": 52,
+      "carb_unit": 3.47,
+      "calories": 479,
+      "sugar_g": 25
+    },
+    {
+      "name": "ตำไทยคลีน #329",
+      "carb_g": 50,
+      "carb_unit": 3.33,
+      "calories": 446,
+      "sugar_g": 11
+    },
+    {
+      "name": "ลาบลดคาร์บ #330",
+      "carb_g": 35,
+      "carb_unit": 2.33,
+      "calories": 279,
+      "sugar_g": 9
+    },
+    {
+      "name": "ข้าวหมูกรอบคลีน #331",
+      "carb_g": 11,
+      "carb_unit": 0.73,
+      "calories": 75,
+      "sugar_g": 20
+    },
+    {
+      "name": "ข้าวหน้าไก่ใส่ผักเพิ่ม #332",
+      "carb_g": 56,
+      "carb_unit": 3.73,
+      "calories": 318,
+      "sugar_g": 16
+    },
+    {
+      "name": "ข้าวมันไก่ไม่ใส่ผงชูรส #333",
+      "carb_g": 34,
+      "carb_unit": 2.27,
+      "calories": 383,
+      "sugar_g": 4
+    },
+    {
+      "name": "ยำวุ้นเส้นใส่ไข่ #334",
+      "carb_g": 56,
+      "carb_unit": 3.73,
+      "calories": 105,
+      "sugar_g": 8
+    },
+    {
+      "name": "น้ำตกจานใหญ่ #335",
+      "carb_g": 10,
+      "carb_unit": 0.67,
+      "calories": 288,
+      "sugar_g": 9
+    },
+    {
+      "name": "ยำปลากระป๋องสตรีทฟู้ด #336",
+      "carb_g": 16,
+      "carb_unit": 1.07,
+      "calories": 336,
+      "sugar_g": 11
+    },
+    {
+      "name": "ไข่พะโล้ใส่ผักเพิ่ม #337",
+      "carb_g": 14,
+      "carb_unit": 0.93,
+      "calories": 152,
+      "sugar_g": 9
+    },
+    {
+      "name": "ยำปลากระป๋องไม่ใส่ผงชูรส #338",
+      "carb_g": 9,
+      "carb_unit": 0.6,
+      "calories": 172,
+      "sugar_g": 19
+    },
+    {
+      "name": "ต้มจืดไม่มัน #339",
+      "carb_g": 49,
+      "carb_unit": 3.27,
+      "calories": 272,
+      "sugar_g": 22
+    },
+    {
+      "name": "ข้าวไก่ทอดโซเดียมต่ำ #340",
+      "carb_g": 60,
+      "carb_unit": 4.0,
+      "calories": 475,
+      "sugar_g": 25
+    },
+    {
+      "name": "ไข่ดาวอกไก่ #341",
+      "carb_g": 42,
+      "carb_unit": 2.8,
+      "calories": 431,
+      "sugar_g": 20
+    },
+    {
+      "name": "ต้มจืดสูตรร้านอาหาร #342",
+      "carb_g": 32,
+      "carb_unit": 2.13,
+      "calories": 268,
+      "sugar_g": 0
+    },
+    {
+      "name": "ตำแตงไม่ใส่น้ำตาล #343",
+      "carb_g": 36,
+      "carb_unit": 2.4,
+      "calories": 309,
+      "sugar_g": 10
+    },
+    {
+      "name": "ข้าวผัดปูข้าวกล้อง #344",
+      "carb_g": 21,
+      "carb_unit": 1.4,
+      "calories": 330,
+      "sugar_g": 16
+    },
+    {
+      "name": "แกงเขียวหวานใส่ผักเพิ่ม #345",
+      "carb_g": 21,
+      "carb_unit": 1.4,
+      "calories": 262,
+      "sugar_g": 23
+    },
+    {
+      "name": "โจ๊กลดคาร์บ #346",
+      "carb_g": 46,
+      "carb_unit": 3.07,
+      "calories": 168,
+      "sugar_g": 1
+    },
+    {
+      "name": "ตำไทยข้าวกล้อง #347",
+      "carb_g": 8,
+      "carb_unit": 0.53,
+      "calories": 248,
+      "sugar_g": 25
+    },
+    {
+      "name": "แกงจืดอกไก่ #348",
+      "carb_g": 46,
+      "carb_unit": 3.07,
+      "calories": 214,
+      "sugar_g": 13
+    },
+    {
+      "name": "หมูทอดไม่ใส่ผงชูรส #349",
+      "carb_g": 16,
+      "carb_unit": 1.07,
+      "calories": 189,
+      "sugar_g": 24
+    },
+    {
+      "name": "ข้าวหน้าไก่อกไก่ #350",
+      "carb_g": 21,
+      "carb_unit": 1.4,
+      "calories": 225,
+      "sugar_g": 19
+    },
+    {
+      "name": "ไข่ต้มข้าวกล้อง #351",
+      "carb_g": 41,
+      "carb_unit": 2.73,
+      "calories": 384,
+      "sugar_g": 20
+    },
+    {
+      "name": "ข้าวต้มอกไก่ #352",
+      "carb_g": 35,
+      "carb_unit": 2.33,
+      "calories": 352,
+      "sugar_g": 5
+    },
+    {
+      "name": "ราดหน้าสูตรร้านอาหาร #353",
+      "carb_g": 59,
+      "carb_unit": 3.93,
+      "calories": 230,
+      "sugar_g": 20
+    },
+    {
+      "name": "ข้าวผัดหมูโซเดียมต่ำ #354",
+      "carb_g": 51,
+      "carb_unit": 3.4,
+      "calories": 302,
+      "sugar_g": 15
+    },
+    {
+      "name": "ก๋วยเตี๋ยวเรือคลีน #355",
+      "carb_g": 19,
+      "carb_unit": 1.27,
+      "calories": 361,
+      "sugar_g": 1
+    },
+    {
+      "name": "ก๋วยเตี๋ยวเพิ่มผัก #356",
+      "carb_g": 14,
+      "carb_unit": 0.93,
+      "calories": 173,
+      "sugar_g": 5
+    },
+    {
+      "name": "ไข่ต้มสูตรสุขภาพ #357",
+      "carb_g": 35,
+      "carb_unit": 2.33,
+      "calories": 446,
+      "sugar_g": 9
+    },
+    {
+      "name": "ข้าวหมูกรอบสูตรร้านอาหาร #358",
+      "carb_g": 22,
+      "carb_unit": 1.47,
+      "calories": 163,
+      "sugar_g": 11
+    },
+    {
+      "name": "ก๋วยเตี๋ยวต้มยำใส่ผักเพิ่ม #359",
+      "carb_g": 31,
+      "carb_unit": 2.07,
+      "calories": 185,
+      "sugar_g": 25
+    },
+    {
+      "name": "ไข่ดาวเพิ่มผัก #360",
+      "carb_g": 28,
+      "carb_unit": 1.87,
+      "calories": 463,
+      "sugar_g": 3
+    },
+    {
+      "name": "ข้าวผัดไก่สตรีทฟู้ด #361",
+      "carb_g": 20,
+      "carb_unit": 1.33,
+      "calories": 102,
+      "sugar_g": 11
+    },
+    {
+      "name": "แกงเผ็ดสูตรผู้ป่วยเบาหวาน #362",
+      "carb_g": 9,
+      "carb_unit": 0.6,
+      "calories": 277,
+      "sugar_g": 22
+    },
+    {
+      "name": "ข้าวหมูแดงจานใหญ่ #363",
+      "carb_g": 7,
+      "carb_unit": 0.47,
+      "calories": 272,
+      "sugar_g": 25
+    },
+    {
+      "name": "ยำวุ้นเส้นสูตรผู้ป่วยเบาหวาน #364",
+      "carb_g": 13,
+      "carb_unit": 0.87,
+      "calories": 180,
+      "sugar_g": 3
+    },
+    {
+      "name": "ปลานึ่งสูตรผู้ป่วยเบาหวาน #365",
+      "carb_g": 44,
+      "carb_unit": 2.93,
+      "calories": 435,
+      "sugar_g": 16
+    },
+    {
+      "name": "ข้าวหน้าเป็ดสูตรร้านอาหาร #366",
+      "carb_g": 16,
+      "carb_unit": 1.07,
+      "calories": 475,
+      "sugar_g": 24
+    },
+    {
+      "name": "แกงป่าจานใหญ่ #367",
+      "carb_g": 5,
+      "carb_unit": 0.33,
+      "calories": 390,
+      "sugar_g": 8
+    },
+    {
+      "name": "โจ๊กเพิ่มผัก #368",
+      "carb_g": 58,
+      "carb_unit": 3.87,
+      "calories": 380,
+      "sugar_g": 11
+    },
+    {
+      "name": "ไก่ทอดไม่ใส่น้ำตาล #369",
+      "carb_g": 48,
+      "carb_unit": 3.2,
+      "calories": 422,
+      "sugar_g": 10
+    },
+    {
+      "name": "ยำปลากระป๋องไม่มัน #370",
+      "carb_g": 37,
+      "carb_unit": 2.47,
+      "calories": 132,
+      "sugar_g": 18
+    },
+    {
+      "name": "ส้มตำหวานน้อย #371",
+      "carb_g": 37,
+      "carb_unit": 2.47,
+      "calories": 435,
+      "sugar_g": 5
+    },
+    {
+      "name": "ราดหน้าไม่ใส่น้ำตาล #372",
+      "carb_g": 9,
+      "carb_unit": 0.6,
+      "calories": 285,
+      "sugar_g": 9
+    },
+    {
+      "name": "ข้าวไก่ทอดสตรีทฟู้ด #373",
+      "carb_g": 43,
+      "carb_unit": 2.87,
+      "calories": 449,
+      "sugar_g": 17
+    },
+    {
+      "name": "ปลาเผาไม่ใส่ผงชูรส #374",
+      "carb_g": 43,
+      "carb_unit": 2.87,
+      "calories": 421,
+      "sugar_g": 1
+    },
+    {
+      "name": "ข้าวหมูกรอบสูตรผู้ป่วยเบาหวาน #375",
+      "carb_g": 44,
+      "carb_unit": 2.93,
+      "calories": 93,
+      "sugar_g": 2
+    },
+    {
+      "name": "แกงเขียวหวานอกไก่ #376",
+      "carb_g": 55,
+      "carb_unit": 3.67,
+      "calories": 301,
+      "sugar_g": 20
+    },
+    {
+      "name": "ส้มตำสตรีทฟู้ด #377",
+      "carb_g": 40,
+      "carb_unit": 2.67,
+      "calories": 363,
+      "sugar_g": 4
+    },
+    {
+      "name": "ข้าวผัดหมูสตรีทฟู้ด #378",
+      "carb_g": 50,
+      "carb_unit": 3.33,
+      "calories": 99,
+      "sugar_g": 3
+    },
+    {
+      "name": "ข้าวหน้าเป็ดใส่ไข่ #379",
+      "carb_g": 55,
+      "carb_unit": 3.67,
+      "calories": 82,
+      "sugar_g": 24
+    },
+    {
+      "name": "ก๋วยเตี๋ยวต้มยำหมูไม่ติดมัน #380",
+      "carb_g": 24,
+      "carb_unit": 1.6,
+      "calories": 351,
+      "sugar_g": 5
+    },
+    {
+      "name": "แกงเผ็ดไม่ใส่น้ำตาล #381",
+      "carb_g": 21,
+      "carb_unit": 1.4,
+      "calories": 465,
+      "sugar_g": 0
+    },
+    {
+      "name": "ข้าวไข่เจียวจานใหญ่ #382",
+      "carb_g": 18,
+      "carb_unit": 1.2,
+      "calories": 144,
+      "sugar_g": 4
+    },
+    {
+      "name": "ข้าวไก่อบสูตรสุขภาพ #383",
+      "carb_g": 36,
+      "carb_unit": 2.4,
+      "calories": 244,
+      "sugar_g": 17
+    },
+    {
+      "name": "ตำไทยลดคาร์บ #384",
+      "carb_g": 19,
+      "carb_unit": 1.27,
+      "calories": 160,
+      "sugar_g": 0
+    },
+    {
+      "name": "ก๋วยเตี๋ยวต้มยำลดคาร์บ #385",
+      "carb_g": 18,
+      "carb_unit": 1.2,
+      "calories": 178,
+      "sugar_g": 21
+    },
+    {
+      "name": "ยำมาม่าไม่มัน #386",
+      "carb_g": 8,
+      "carb_unit": 0.53,
+      "calories": 379,
+      "sugar_g": 0
+    },
+    {
+      "name": "น้ำตกไม่ใส่ผงชูรส #387",
+      "carb_g": 31,
+      "carb_unit": 2.07,
+      "calories": 191,
+      "sugar_g": 15
+    },
+    {
+      "name": "แกงพะแนงสูตรผู้ป่วยเบาหวาน #388",
+      "carb_g": 39,
+      "carb_unit": 2.6,
+      "calories": 109,
+      "sugar_g": 11
+    },
+    {
+      "name": "แกงส้มสูตรผู้ป่วยเบาหวาน #389",
+      "carb_g": 43,
+      "carb_unit": 2.87,
+      "calories": 383,
+      "sugar_g": 25
+    },
+    {
+      "name": "ข้าวหมูทอดกระเทียมจานใหญ่ #390",
+      "carb_g": 11,
+      "carb_unit": 0.73,
+      "calories": 317,
+      "sugar_g": 11
+    },
+    {
+      "name": "แกงพะแนงใส่ผักเพิ่ม #391",
+      "carb_g": 47,
+      "carb_unit": 3.13,
+      "calories": 152,
+      "sugar_g": 10
+    },
+    {
+      "name": "หมูทอดหมูไม่ติดมัน #392",
+      "carb_g": 18,
+      "carb_unit": 1.2,
+      "calories": 231,
+      "sugar_g": 20
+    },
+    {
+      "name": "ผัดซีอิ๊วหวานน้อย #393",
+      "carb_g": 38,
+      "carb_unit": 2.53,
+      "calories": 360,
+      "sugar_g": 25
+    },
+    {
+      "name": "ข้าวผัดกุ้งไม่ใส่ผงชูรส #394",
+      "carb_g": 7,
+      "carb_unit": 0.47,
+      "calories": 152,
+      "sugar_g": 10
+    },
+    {
+      "name": "สุกี้ไม่ใส่ผงชูรส #395",
+      "carb_g": 5,
+      "carb_unit": 0.33,
+      "calories": 415,
+      "sugar_g": 16
+    },
+    {
+      "name": "แกงป่าโซเดียมต่ำ #396",
+      "carb_g": 37,
+      "carb_unit": 2.47,
+      "calories": 186,
+      "sugar_g": 0
+    },
+    {
+      "name": "ก๋วยเตี๋ยวต้มยำหวานน้อย #397",
+      "carb_g": 23,
+      "carb_unit": 1.53,
+      "calories": 223,
+      "sugar_g": 2
+    },
+    {
+      "name": "น้ำตกสูตรผู้ป่วยเบาหวาน #398",
+      "carb_g": 18,
+      "carb_unit": 1.2,
+      "calories": 167,
+      "sugar_g": 12
+    },
+    {
+      "name": "หมูย่างจานใหญ่ #399",
+      "carb_g": 22,
+      "carb_unit": 1.47,
+      "calories": 329,
+      "sugar_g": 14
+    },
+    {
+      "name": "ก๋วยเตี๋ยวต้มยำข้าวกล้อง #400",
+      "carb_g": 6,
+      "carb_unit": 0.4,
+      "calories": 472,
+      "sugar_g": 2
+    },
+    {
+      "name": "ยำวุ้นเส้นข้าวกล้อง #401",
+      "carb_g": 58,
+      "carb_unit": 3.87,
+      "calories": 477,
+      "sugar_g": 19
+    },
+    {
+      "name": "ข้าวกะเพราสูตรผู้ป่วยเบาหวาน #402",
+      "carb_g": 56,
+      "carb_unit": 3.73,
+      "calories": 147,
+      "sugar_g": 21
+    },
+    {
+      "name": "ข้าวมันไก่สูตรสุขภาพ #403",
+      "carb_g": 6,
+      "carb_unit": 0.4,
+      "calories": 370,
+      "sugar_g": 17
+    },
+    {
+      "name": "ยำปลากระป๋องสูตรผู้ป่วยเบาหวาน #404",
+      "carb_g": 19,
+      "carb_unit": 1.27,
+      "calories": 73,
+      "sugar_g": 22
+    },
+    {
+      "name": "ข้าวหมูแดงข้าวกล้อง #405",
+      "carb_g": 39,
+      "carb_unit": 2.6,
+      "calories": 472,
+      "sugar_g": 17
+    },
+    {
+      "name": "ยำมาม่าพิเศษ #406",
+      "carb_g": 51,
+      "carb_unit": 3.4,
+      "calories": 489,
+      "sugar_g": 12
+    },
+    {
+      "name": "ข้าวไก่ทอดไม่มัน #407",
+      "carb_g": 47,
+      "carb_unit": 3.13,
+      "calories": 342,
+      "sugar_g": 24
+    },
+    {
+      "name": "ส้มตำสูตรผู้ป่วยเบาหวาน #408",
+      "carb_g": 12,
+      "carb_unit": 0.8,
+      "calories": 451,
+      "sugar_g": 23
+    },
+    {
+      "name": "ข้าวหมูแดงคลีน #409",
+      "carb_g": 47,
+      "carb_unit": 3.13,
+      "calories": 485,
+      "sugar_g": 5
+    },
+    {
+      "name": "สุกี้ไม่ใส่น้ำตาล #410",
+      "carb_g": 25,
+      "carb_unit": 1.67,
+      "calories": 68,
+      "sugar_g": 20
+    },
+    {
+      "name": "ไก่ทอดไม่มัน #411",
+      "carb_g": 13,
+      "carb_unit": 0.87,
+      "calories": 124,
+      "sugar_g": 10
+    },
+    {
+      "name": "ไข่พะโล้พิเศษ #412",
+      "carb_g": 44,
+      "carb_unit": 2.93,
+      "calories": 236,
+      "sugar_g": 6
+    },
+    {
+      "name": "ข้าวไก่ทอดโซเดียมต่ำ #413",
+      "carb_g": 50,
+      "carb_unit": 3.33,
+      "calories": 470,
+      "sugar_g": 21
+    },
+    {
+      "name": "ข้าวคลุกกะปิคลีน #414",
+      "carb_g": 57,
+      "carb_unit": 3.8,
+      "calories": 430,
+      "sugar_g": 0
+    },
+    {
+      "name": "หมูย่างสตรีทฟู้ด #415",
+      "carb_g": 15,
+      "carb_unit": 1.0,
+      "calories": 239,
+      "sugar_g": 13
+    },
+    {
+      "name": "น้ำตกจานใหญ่ #416",
+      "carb_g": 52,
+      "carb_unit": 3.47,
+      "calories": 64,
+      "sugar_g": 22
+    },
+    {
+      "name": "ข้าวผัดกุ้งข้าวกล้อง #417",
+      "carb_g": 23,
+      "carb_unit": 1.53,
+      "calories": 333,
+      "sugar_g": 16
+    },
+    {
+      "name": "แกงจืดใส่ผักเพิ่ม #418",
+      "carb_g": 54,
+      "carb_unit": 3.6,
+      "calories": 134,
+      "sugar_g": 20
+    },
+    {
+      "name": "ข้าวคลุกกะปิพิเศษ #419",
+      "carb_g": 5,
+      "carb_unit": 0.33,
+      "calories": 389,
+      "sugar_g": 5
+    },
+    {
+      "name": "ก๋วยเตี๋ยวต้มยำใส่ผักเพิ่ม #420",
+      "carb_g": 49,
+      "carb_unit": 3.27,
+      "calories": 445,
+      "sugar_g": 18
+    },
+    {
+      "name": "ข้าวหมูแดงอกไก่ #421",
+      "carb_g": 29,
+      "carb_unit": 1.93,
+      "calories": 72,
+      "sugar_g": 8
+    },
+    {
+      "name": "ข้าวผัดไก่โซเดียมต่ำ #422",
+      "carb_g": 35,
+      "carb_unit": 2.33,
+      "calories": 484,
+      "sugar_g": 9
+    },
+    {
+      "name": "ไก่ทอดเพิ่มผัก #423",
+      "carb_g": 28,
+      "carb_unit": 1.87,
+      "calories": 68,
+      "sugar_g": 8
+    },
+    {
+      "name": "ข้าวหมูทอดกระเทียมไม่ใส่น้ำตาล #424",
+      "carb_g": 36,
+      "carb_unit": 2.4,
+      "calories": 210,
+      "sugar_g": 2
+    },
+    {
+      "name": "ไข่พะโล้อกไก่ #425",
+      "carb_g": 48,
+      "carb_unit": 3.2,
+      "calories": 478,
+      "sugar_g": 6
+    },
+    {
+      "name": "ข้าวผัดไก่ใส่ไข่ #426",
+      "carb_g": 54,
+      "carb_unit": 3.6,
+      "calories": 498,
+      "sugar_g": 19
+    },
+    {
+      "name": "ข้าวผัดกุ้งไม่ใส่น้ำตาล #427",
+      "carb_g": 13,
+      "carb_unit": 0.87,
+      "calories": 480,
+      "sugar_g": 23
+    },
+    {
+      "name": "ผัดซีอิ๊วไม่มัน #428",
+      "carb_g": 39,
+      "carb_unit": 2.6,
+      "calories": 392,
+      "sugar_g": 21
+    },
+    {
+      "name": "แกงส้มคลีน #429",
+      "carb_g": 17,
+      "carb_unit": 1.13,
+      "calories": 103,
+      "sugar_g": 20
+    },
+    {
+      "name": "ข้าวไก่ทอดไม่ใส่น้ำตาล #430",
+      "carb_g": 52,
+      "carb_unit": 3.47,
+      "calories": 408,
+      "sugar_g": 22
+    },
+    {
+      "name": "ข้าวหน้าไก่เพิ่มผัก #431",
+      "carb_g": 12,
+      "carb_unit": 0.8,
+      "calories": 81,
+      "sugar_g": 19
+    },
+    {
+      "name": "ข้าวหน้าเป็ดพิเศษ #432",
+      "carb_g": 31,
+      "carb_unit": 2.07,
+      "calories": 415,
+      "sugar_g": 5
+    },
+    {
+      "name": "ข้าวหน้าไก่ใส่ไข่ #433",
+      "carb_g": 54,
+      "carb_unit": 3.6,
+      "calories": 452,
+      "sugar_g": 13
+    },
+    {
+      "name": "ก๋วยเตี๋ยวต้มยำสูตรสุขภาพ #434",
+      "carb_g": 52,
+      "carb_unit": 3.47,
+      "calories": 159,
+      "sugar_g": 10
+    },
+    {
+      "name": "ข้าวผัดไก่หมูไม่ติดมัน #435",
+      "carb_g": 13,
+      "carb_unit": 0.87,
+      "calories": 329,
+      "sugar_g": 4
+    },
+    {
+      "name": "ข้าวกะเพราคลีน #436",
+      "carb_g": 44,
+      "carb_unit": 2.93,
+      "calories": 464,
+      "sugar_g": 13
+    },
+    {
+      "name": "ข้าวมันไก่ไม่มัน #437",
+      "carb_g": 16,
+      "carb_unit": 1.07,
+      "calories": 212,
+      "sugar_g": 18
+    },
+    {
+      "name": "ข้าวผัดปูข้าวกล้อง #438",
+      "carb_g": 28,
+      "carb_unit": 1.87,
+      "calories": 410,
+      "sugar_g": 14
+    },
+    {
+      "name": "ข้าวผัดอกไก่ #439",
+      "carb_g": 52,
+      "carb_unit": 3.47,
+      "calories": 421,
+      "sugar_g": 23
+    },
+    {
+      "name": "ก๋วยเตี๋ยวต้มยำไม่มัน #440",
+      "carb_g": 57,
+      "carb_unit": 3.8,
+      "calories": 330,
+      "sugar_g": 3
+    },
+    {
+      "name": "ไก่ทอดใส่ไข่ #441",
+      "carb_g": 39,
+      "carb_unit": 2.6,
+      "calories": 387,
+      "sugar_g": 20
+    },
+    {
+      "name": "ข้าวต้มหวานน้อย #442",
+      "carb_g": 60,
+      "carb_unit": 4.0,
+      "calories": 389,
+      "sugar_g": 11
+    },
+    {
+      "name": "ข้าวผัดกุ้งโซเดียมต่ำ #443",
+      "carb_g": 30,
+      "carb_unit": 2.0,
+      "calories": 74,
+      "sugar_g": 20
+    },
+    {
+      "name": "ข้าวไก่ทอดใส่ผักเพิ่ม #444",
+      "carb_g": 41,
+      "carb_unit": 2.73,
+      "calories": 307,
+      "sugar_g": 13
+    },
+    {
+      "name": "ต้มยำลดคาร์บ #445",
+      "carb_g": 42,
+      "carb_unit": 2.8,
+      "calories": 187,
+      "sugar_g": 9
+    },
+    {
+      "name": "ข้าวผัดกุ้งหมูไม่ติดมัน #446",
+      "carb_g": 23,
+      "carb_unit": 1.53,
+      "calories": 419,
+      "sugar_g": 6
+    },
+    {
+      "name": "ข้าวผัดปูใส่ไข่ #447",
+      "carb_g": 9,
+      "carb_unit": 0.6,
+      "calories": 184,
+      "sugar_g": 25
+    },
+    {
+      "name": "แกงป่าลดคาร์บ #448",
+      "carb_g": 33,
+      "carb_unit": 2.2,
+      "calories": 373,
+      "sugar_g": 19
+    },
+    {
+      "name": "ยำมาม่าข้าวกล้อง #449",
+      "carb_g": 22,
+      "carb_unit": 1.47,
+      "calories": 485,
+      "sugar_g": 17
+    },
+    {
+      "name": "โจ๊กสูตรร้านอาหาร #450",
+      "carb_g": 46,
+      "carb_unit": 3.07,
+      "calories": 255,
+      "sugar_g": 6
+    },
+    {
+      "name": "ปลาทอดจานใหญ่ #451",
+      "carb_g": 18,
+      "carb_unit": 1.2,
+      "calories": 438,
+      "sugar_g": 3
+    },
+    {
+      "name": "แกงจืดจานใหญ่ #452",
+      "carb_g": 37,
+      "carb_unit": 2.47,
+      "calories": 271,
+      "sugar_g": 1
+    },
+    {
+      "name": "หมูย่างลดคาร์บ #453",
+      "carb_g": 17,
+      "carb_unit": 1.13,
+      "calories": 376,
+      "sugar_g": 11
+    },
+    {
+      "name": "ข้าวคลุกกะปิไม่ใส่น้ำตาล #454",
+      "carb_g": 60,
+      "carb_unit": 4.0,
+      "calories": 420,
+      "sugar_g": 9
+    },
+    {
+      "name": "แกงเขียวหวานสูตรผู้ป่วยเบาหวาน #455",
+      "carb_g": 23,
+      "carb_unit": 1.53,
+      "calories": 90,
+      "sugar_g": 8
+    },
+    {
+      "name": "ข้าวไก่ทอดเพิ่มผัก #456",
+      "carb_g": 26,
+      "carb_unit": 1.73,
+      "calories": 332,
+      "sugar_g": 20
+    },
+    {
+      "name": "ข้าวหมูทอดกระเทียมไม่ใส่น้ำตาล #457",
+      "carb_g": 56,
+      "carb_unit": 3.73,
+      "calories": 470,
+      "sugar_g": 6
+    },
+    {
+      "name": "ข้าวคลุกกะปิหมูไม่ติดมัน #458",
+      "carb_g": 44,
+      "carb_unit": 2.93,
+      "calories": 165,
+      "sugar_g": 19
+    },
+    {
+      "name": "ยำปลากระป๋องพิเศษ #459",
+      "carb_g": 43,
+      "carb_unit": 2.87,
+      "calories": 196,
+      "sugar_g": 17
+    },
+    {
+      "name": "ไข่ต้มหวานน้อย #460",
+      "carb_g": 31,
+      "carb_unit": 2.07,
+      "calories": 282,
+      "sugar_g": 4
+    },
+    {
+      "name": "ข้าวผัดปูข้าวกล้อง #461",
+      "carb_g": 52,
+      "carb_unit": 3.47,
+      "calories": 85,
+      "sugar_g": 22
+    },
+    {
+      "name": "ข้าวหน้าเป็ดข้าวกล้อง #462",
+      "carb_g": 56,
+      "carb_unit": 3.73,
+      "calories": 179,
+      "sugar_g": 3
+    },
+    {
+      "name": "สุกี้ไม่มัน #463",
+      "carb_g": 34,
+      "carb_unit": 2.27,
+      "calories": 490,
+      "sugar_g": 19
+    },
+    {
+      "name": "ข้าวหมูทอดกระเทียมหวานน้อย #464",
+      "carb_g": 45,
+      "carb_unit": 3.0,
+      "calories": 337,
+      "sugar_g": 0
+    },
+    {
+      "name": "ไก่ทอดโซเดียมต่ำ #465",
+      "carb_g": 13,
+      "carb_unit": 0.87,
+      "calories": 274,
+      "sugar_g": 0
+    },
+    {
+      "name": "ต้มจืดหมูไม่ติดมัน #466",
+      "carb_g": 50,
+      "carb_unit": 3.33,
+      "calories": 350,
+      "sugar_g": 14
+    },
+    {
+      "name": "ไข่ต้มคลีน #467",
+      "carb_g": 50,
+      "carb_unit": 3.33,
+      "calories": 208,
+      "sugar_g": 11
+    },
+    {
+      "name": "ก๋วยเตี๋ยวเรือข้าวกล้อง #468",
+      "carb_g": 47,
+      "carb_unit": 3.13,
+      "calories": 141,
+      "sugar_g": 7
+    },
+    {
+      "name": "ไก่ทอดพิเศษ #469",
+      "carb_g": 31,
+      "carb_unit": 2.07,
+      "calories": 341,
+      "sugar_g": 13
+    },
+    {
+      "name": "แกงเผ็ดจานใหญ่ #470",
+      "carb_g": 40,
+      "carb_unit": 2.67,
+      "calories": 260,
+      "sugar_g": 15
+    },
+    {
+      "name": "ก๋วยเตี๋ยวต้มยำจานใหญ่ #471",
+      "carb_g": 56,
+      "carb_unit": 3.73,
+      "calories": 310,
+      "sugar_g": 6
+    },
+    {
+      "name": "หมูทอดลดคาร์บ #472",
+      "carb_g": 55,
+      "carb_unit": 3.67,
+      "calories": 111,
+      "sugar_g": 5
+    },
+    {
+      "name": "ปลานึ่งหวานน้อย #473",
+      "carb_g": 53,
+      "carb_unit": 3.53,
+      "calories": 337,
+      "sugar_g": 5
+    },
+    {
+      "name": "แกงพะแนงข้าวกล้อง #474",
+      "carb_g": 20,
+      "carb_unit": 1.33,
+      "calories": 306,
+      "sugar_g": 5
+    },
+    {
+      "name": "ข้าวหน้าเป็ดใส่ผักเพิ่ม #475",
+      "carb_g": 38,
+      "carb_unit": 2.53,
+      "calories": 396,
+      "sugar_g": 8
+    },
+    {
+      "name": "ข้าวผัดกุ้งใส่ไข่ #476",
+      "carb_g": 30,
+      "carb_unit": 2.0,
+      "calories": 187,
+      "sugar_g": 16
+    },
+    {
+      "name": "ต้มยำไม่ใส่น้ำตาล #477",
+      "carb_g": 29,
+      "carb_unit": 1.93,
+      "calories": 206,
+      "sugar_g": 19
+    },
+    {
+      "name": "ราดหน้าเพิ่มผัก #478",
+      "carb_g": 47,
+      "carb_unit": 3.13,
+      "calories": 315,
+      "sugar_g": 24
+    },
+    {
+      "name": "ข้าวหมูทอดกระเทียมลดคาร์บ #479",
+      "carb_g": 43,
+      "carb_unit": 2.87,
+      "calories": 291,
+      "sugar_g": 22
+    },
+    {
+      "name": "ยำปลากระป๋องใส่ไข่ #480",
+      "carb_g": 43,
+      "carb_unit": 2.87,
+      "calories": 487,
+      "sugar_g": 15
+    },
+    {
+      "name": "หมูทอดไม่ใส่น้ำตาล #481",
+      "carb_g": 33,
+      "carb_unit": 2.2,
+      "calories": 211,
+      "sugar_g": 20
+    },
+    {
+      "name": "ข้าวผัดกุ้งสูตรร้านอาหาร #482",
+      "carb_g": 13,
+      "carb_unit": 0.87,
+      "calories": 319,
+      "sugar_g": 2
+    },
+    {
+      "name": "ผัดไทยใส่ผักเพิ่ม #483",
+      "carb_g": 7,
+      "carb_unit": 0.47,
+      "calories": 270,
+      "sugar_g": 23
+    },
+    {
+      "name": "ปลาเผาหวานน้อย #484",
+      "carb_g": 13,
+      "carb_unit": 0.87,
+      "calories": 276,
+      "sugar_g": 7
+    },
+    {
+      "name": "ผัดไทยอกไก่ #485",
+      "carb_g": 26,
+      "carb_unit": 1.73,
+      "calories": 96,
+      "sugar_g": 17
+    },
+    {
+      "name": "โจ๊กสูตรสุขภาพ #486",
+      "carb_g": 34,
+      "carb_unit": 2.27,
+      "calories": 371,
+      "sugar_g": 24
+    },
+    {
+      "name": "ไข่ดาวใส่ไข่ #487",
+      "carb_g": 54,
+      "carb_unit": 3.6,
+      "calories": 449,
+      "sugar_g": 4
+    },
+    {
+      "name": "ต้มยำสูตรร้านอาหาร #488",
+      "carb_g": 12,
+      "carb_unit": 0.8,
+      "calories": 163,
+      "sugar_g": 6
+    },
+    {
+      "name": "แกงพะแนงจานใหญ่ #489",
+      "carb_g": 52,
+      "carb_unit": 3.47,
+      "calories": 320,
+      "sugar_g": 20
+    },
+    {
+      "name": "ผัดไทยไม่ใส่น้ำตาล #490",
+      "carb_g": 15,
+      "carb_unit": 1.0,
+      "calories": 241,
+      "sugar_g": 6
+    },
+    {
+      "name": "หมูย่างใส่ผักเพิ่ม #491",
+      "carb_g": 12,
+      "carb_unit": 0.8,
+      "calories": 155,
+      "sugar_g": 24
+    },
+    {
+      "name": "ข้าวหน้าไก่ไม่มัน #492",
+      "carb_g": 41,
+      "carb_unit": 2.73,
+      "calories": 88,
+      "sugar_g": 13
+    },
+    {
+      "name": "ต้มจืดอกไก่ #493",
+      "carb_g": 59,
+      "carb_unit": 3.93,
+      "calories": 325,
+      "sugar_g": 11
+    },
+    {
+      "name": "ข้าวไข่เจียวสูตรร้านอาหาร #494",
+      "carb_g": 10,
+      "carb_unit": 0.67,
+      "calories": 73,
+      "sugar_g": 5
+    },
+    {
+      "name": "ส้มตำสูตรสุขภาพ #495",
+      "carb_g": 56,
+      "carb_unit": 3.73,
+      "calories": 278,
+      "sugar_g": 13
+    },
+    {
+      "name": "ยำมาม่าคลีน #496",
+      "carb_g": 40,
+      "carb_unit": 2.67,
+      "calories": 224,
+      "sugar_g": 24
+    },
+    {
+      "name": "ราดหน้าจานใหญ่ #497",
+      "carb_g": 12,
+      "carb_unit": 0.8,
+      "calories": 121,
+      "sugar_g": 2
+    },
+    {
+      "name": "ข้าวไก่อบคลีน #498",
+      "carb_g": 48,
+      "carb_unit": 3.2,
+      "calories": 242,
+      "sugar_g": 19
+    },
+    {
+      "name": "ก๋วยเตี๋ยวใส่ไข่ #499",
+      "carb_g": 5,
+      "carb_unit": 0.33,
+      "calories": 396,
+      "sugar_g": 24
+    },
+    {
+      "name": "ปลาทอดหมูไม่ติดมัน #500",
+      "carb_g": 57,
+      "carb_unit": 3.8,
+      "calories": 155,
+      "sugar_g": 17
+    },
+    {
+      "name": "ข้าวหมูกรอบสูตรผู้ป่วยเบาหวาน #501",
+      "carb_g": 40,
+      "carb_unit": 2.67,
+      "calories": 473,
+      "sugar_g": 0
+    },
+    {
+      "name": "ต้มยำหมูไม่ติดมัน #502",
+      "carb_g": 36,
+      "carb_unit": 2.4,
+      "calories": 131,
+      "sugar_g": 24
+    },
+    {
+      "name": "ปลาทอดโซเดียมต่ำ #503",
+      "carb_g": 30,
+      "carb_unit": 2.0,
+      "calories": 67,
+      "sugar_g": 16
+    },
+    {
+      "name": "ข้าวหน้าไก่ใส่ผักเพิ่ม #504",
+      "carb_g": 43,
+      "carb_unit": 2.87,
+      "calories": 362,
+      "sugar_g": 17
+    },
+    {
+      "name": "ข้าวผัดหมูอกไก่ #505",
+      "carb_g": 41,
+      "carb_unit": 2.73,
+      "calories": 390,
+      "sugar_g": 24
+    },
+    {
+      "name": "โจ๊กคลีน #506",
+      "carb_g": 11,
+      "carb_unit": 0.73,
+      "calories": 323,
+      "sugar_g": 4
+    },
+    {
+      "name": "ข้าวผัดสูตรสุขภาพ #507",
+      "carb_g": 38,
+      "carb_unit": 2.53,
+      "calories": 401,
+      "sugar_g": 8
+    },
+    {
+      "name": "ข้าวหมูแดงโซเดียมต่ำ #508",
+      "carb_g": 24,
+      "carb_unit": 1.6,
+      "calories": 90,
+      "sugar_g": 23
+    },
+    {
+      "name": "แกงพะแนงสูตรสุขภาพ #509",
+      "carb_g": 43,
+      "carb_unit": 2.87,
+      "calories": 474,
+      "sugar_g": 21
+    },
+    {
+      "name": "สุกี้สูตรร้านอาหาร #510",
+      "carb_g": 22,
+      "carb_unit": 1.47,
+      "calories": 457,
+      "sugar_g": 19
+    },
+    {
+      "name": "ข้าวหมูแดงใส่ผักเพิ่ม #511",
+      "carb_g": 27,
+      "carb_unit": 1.8,
+      "calories": 87,
+      "sugar_g": 2
+    },
+    {
+      "name": "ข้าวไก่อบสตรีทฟู้ด #512",
+      "carb_g": 23,
+      "carb_unit": 1.53,
+      "calories": 459,
+      "sugar_g": 6
+    },
+    {
+      "name": "แกงจืดคลีน #513",
+      "carb_g": 29,
+      "carb_unit": 1.93,
+      "calories": 215,
+      "sugar_g": 4
+    },
+    {
+      "name": "แกงป่าจานใหญ่ #514",
+      "carb_g": 28,
+      "carb_unit": 1.87,
+      "calories": 242,
+      "sugar_g": 10
+    },
+    {
+      "name": "ข้าวผัดหมูสูตรสุขภาพ #515",
+      "carb_g": 48,
+      "carb_unit": 3.2,
+      "calories": 164,
+      "sugar_g": 10
+    },
+    {
+      "name": "ข้าวไก่อบอกไก่ #516",
+      "carb_g": 10,
+      "carb_unit": 0.67,
+      "calories": 308,
+      "sugar_g": 6
+    },
+    {
+      "name": "แกงเขียวหวานลดคาร์บ #517",
+      "carb_g": 5,
+      "carb_unit": 0.33,
+      "calories": 303,
+      "sugar_g": 23
+    },
+    {
+      "name": "ก๋วยเตี๋ยวต้มยำสตรีทฟู้ด #518",
+      "carb_g": 47,
+      "carb_unit": 3.13,
+      "calories": 210,
+      "sugar_g": 6
+    },
+    {
+      "name": "ราดหน้าใส่ผักเพิ่ม #519",
+      "carb_g": 22,
+      "carb_unit": 1.47,
+      "calories": 433,
+      "sugar_g": 3
+    },
+    {
+      "name": "ข้าวผัดไก่คลีน #520",
+      "carb_g": 44,
+      "carb_unit": 2.93,
+      "calories": 185,
+      "sugar_g": 14
+    },
+    {
+      "name": "ตำไทยอกไก่ #521",
+      "carb_g": 45,
+      "carb_unit": 3.0,
+      "calories": 305,
+      "sugar_g": 23
+    },
+    {
+      "name": "ข้าวผัดข้าวกล้อง #522",
+      "carb_g": 15,
+      "carb_unit": 1.0,
+      "calories": 365,
+      "sugar_g": 11
+    },
+    {
+      "name": "ผัดซีอิ๊วเพิ่มผัก #523",
+      "carb_g": 22,
+      "carb_unit": 1.47,
+      "calories": 490,
+      "sugar_g": 6
+    },
+    {
+      "name": "ต้มจืดโซเดียมต่ำ #524",
+      "carb_g": 36,
+      "carb_unit": 2.4,
+      "calories": 272,
+      "sugar_g": 24
+    },
+    {
+      "name": "ข้าวกะเพราไม่ใส่น้ำตาล #525",
+      "carb_g": 34,
+      "carb_unit": 2.27,
+      "calories": 470,
+      "sugar_g": 4
+    },
+    {
+      "name": "ไก่ทอดข้าวกล้อง #526",
+      "carb_g": 39,
+      "carb_unit": 2.6,
+      "calories": 270,
+      "sugar_g": 18
+    },
+    {
+      "name": "ลาบไม่ใส่น้ำตาล #527",
+      "carb_g": 53,
+      "carb_unit": 3.53,
+      "calories": 221,
+      "sugar_g": 2
+    },
+    {
+      "name": "ไข่ดาวสูตรผู้ป่วยเบาหวาน #528",
+      "carb_g": 41,
+      "carb_unit": 2.73,
+      "calories": 188,
+      "sugar_g": 5
+    },
+    {
+      "name": "ข้าวหมูแดงไม่ใส่ผงชูรส #529",
+      "carb_g": 7,
+      "carb_unit": 0.47,
+      "calories": 253,
+      "sugar_g": 19
+    },
+    {
+      "name": "ผัดไทยใส่ไข่ #530",
+      "carb_g": 11,
+      "carb_unit": 0.73,
+      "calories": 235,
+      "sugar_g": 21
+    },
+    {
+      "name": "ต้มยำสูตรร้านอาหาร #531",
+      "carb_g": 11,
+      "carb_unit": 0.73,
+      "calories": 372,
+      "sugar_g": 1
+    },
+    {
+      "name": "ข้าวต้มไม่ใส่น้ำตาล #532",
+      "carb_g": 6,
+      "carb_unit": 0.4,
+      "calories": 429,
+      "sugar_g": 24
+    },
+    {
+      "name": "ข้าวคลุกกะปิสตรีทฟู้ด #533",
+      "carb_g": 47,
+      "carb_unit": 3.13,
+      "calories": 240,
+      "sugar_g": 11
+    },
+    {
+      "name": "แกงป่าอกไก่ #534",
+      "carb_g": 58,
+      "carb_unit": 3.87,
+      "calories": 83,
+      "sugar_g": 19
+    },
+    {
+      "name": "ข้าวไก่อบสตรีทฟู้ด #535",
+      "carb_g": 21,
+      "carb_unit": 1.4,
+      "calories": 496,
+      "sugar_g": 17
+    },
+    {
+      "name": "โจ๊กจานใหญ่ #536",
+      "carb_g": 47,
+      "carb_unit": 3.13,
+      "calories": 418,
+      "sugar_g": 24
+    },
+    {
+      "name": "ไก่ย่างสูตรร้านอาหาร #537",
+      "carb_g": 59,
+      "carb_unit": 3.93,
+      "calories": 333,
+      "sugar_g": 20
+    },
+    {
+      "name": "ข้าวคลุกกะปิสูตรร้านอาหาร #538",
+      "carb_g": 5,
+      "carb_unit": 0.33,
+      "calories": 140,
+      "sugar_g": 13
+    },
+    {
+      "name": "ยำปลากระป๋องพิเศษ #539",
+      "carb_g": 11,
+      "carb_unit": 0.73,
+      "calories": 349,
+      "sugar_g": 6
+    },
+    {
+      "name": "ต้มยำใส่ผักเพิ่ม #540",
+      "carb_g": 29,
+      "carb_unit": 1.93,
+      "calories": 482,
+      "sugar_g": 1
+    },
+    {
+      "name": "แกงส้มใส่ผักเพิ่ม #541",
+      "carb_g": 9,
+      "carb_unit": 0.6,
+      "calories": 226,
+      "sugar_g": 5
+    },
+    {
+      "name": "ตำไทยใส่ไข่ #542",
+      "carb_g": 26,
+      "carb_unit": 1.73,
+      "calories": 494,
+      "sugar_g": 24
+    },
+    {
+      "name": "ไก่ทอดหมูไม่ติดมัน #543",
+      "carb_g": 26,
+      "carb_unit": 1.73,
+      "calories": 62,
+      "sugar_g": 25
+    },
+    {
+      "name": "หมูทอดไม่ใส่ผงชูรส #544",
+      "carb_g": 46,
+      "carb_unit": 3.07,
+      "calories": 173,
+      "sugar_g": 2
+    },
+    {
+      "name": "ข้าวผัดหมูสูตรผู้ป่วยเบาหวาน #545",
+      "carb_g": 9,
+      "carb_unit": 0.6,
+      "calories": 151,
+      "sugar_g": 12
+    },
+    {
+      "name": "ข้าวผัดกุ้งจานใหญ่ #546",
+      "carb_g": 60,
+      "carb_unit": 4.0,
+      "calories": 373,
+      "sugar_g": 25
+    },
+    {
+      "name": "ไก่ย่างไม่มัน #547",
+      "carb_g": 28,
+      "carb_unit": 1.87,
+      "calories": 409,
+      "sugar_g": 19
+    },
+    {
+      "name": "ข้าวไข่เจียวใส่ไข่ #548",
+      "carb_g": 31,
+      "carb_unit": 2.07,
+      "calories": 437,
+      "sugar_g": 15
+    },
+    {
+      "name": "ข้าวกะเพราหมูไม่ติดมัน #549",
+      "carb_g": 5,
+      "carb_unit": 0.33,
+      "calories": 441,
+      "sugar_g": 9
+    },
+    {
+      "name": "ข้าวหมูกรอบใส่ผักเพิ่ม #550",
+      "carb_g": 36,
+      "carb_unit": 2.4,
+      "calories": 320,
+      "sugar_g": 15
+    },
+    {
+      "name": "ข้าวไข่เจียวลดคาร์บ #551",
+      "carb_g": 31,
+      "carb_unit": 2.07,
+      "calories": 457,
+      "sugar_g": 13
+    },
+    {
+      "name": "ข้าวผัดคลีน #552",
+      "carb_g": 28,
+      "carb_unit": 1.87,
+      "calories": 270,
+      "sugar_g": 10
+    },
+    {
+      "name": "ข้าวมันไก่หวานน้อย #553",
+      "carb_g": 41,
+      "carb_unit": 2.73,
+      "calories": 181,
+      "sugar_g": 7
+    },
+    {
+      "name": "ต้มจืดใส่ไข่ #554",
+      "carb_g": 10,
+      "carb_unit": 0.67,
+      "calories": 208,
+      "sugar_g": 18
+    },
+    {
+      "name": "หมูทอดลดคาร์บ #555",
+      "carb_g": 54,
+      "carb_unit": 3.6,
+      "calories": 219,
+      "sugar_g": 1
+    },
+    {
+      "name": "ข้าวหน้าเป็ดอกไก่ #556",
+      "carb_g": 54,
+      "carb_unit": 3.6,
+      "calories": 222,
+      "sugar_g": 24
+    },
+    {
+      "name": "ปลานึ่งหวานน้อย #557",
+      "carb_g": 21,
+      "carb_unit": 1.4,
+      "calories": 316,
+      "sugar_g": 15
+    },
+    {
+      "name": "ข้าวมันไก่โซเดียมต่ำ #558",
+      "carb_g": 22,
+      "carb_unit": 1.47,
+      "calories": 64,
+      "sugar_g": 24
+    },
+    {
+      "name": "สุกี้สูตรร้านอาหาร #559",
+      "carb_g": 57,
+      "carb_unit": 3.8,
+      "calories": 161,
+      "sugar_g": 23
+    },
+    {
+      "name": "แกงพะแนงพิเศษ #560",
+      "carb_g": 59,
+      "carb_unit": 3.93,
+      "calories": 366,
+      "sugar_g": 23
+    },
+    {
+      "name": "ตำปูปลาร้าใส่ไข่ #561",
+      "carb_g": 22,
+      "carb_unit": 1.47,
+      "calories": 288,
+      "sugar_g": 19
+    },
+    {
+      "name": "โจ๊กโซเดียมต่ำ #562",
+      "carb_g": 60,
+      "carb_unit": 4.0,
+      "calories": 303,
+      "sugar_g": 2
+    },
+    {
+      "name": "แกงป่าสูตรผู้ป่วยเบาหวาน #563",
+      "carb_g": 45,
+      "carb_unit": 3.0,
+      "calories": 327,
+      "sugar_g": 16
+    },
+    {
+      "name": "ตำปูปลาร้าสูตรร้านอาหาร #564",
+      "carb_g": 16,
+      "carb_unit": 1.07,
+      "calories": 496,
+      "sugar_g": 2
+    },
+    {
+      "name": "ข้าวหน้าไก่ใส่ไข่ #565",
+      "carb_g": 8,
+      "carb_unit": 0.53,
+      "calories": 73,
+      "sugar_g": 0
+    },
+    {
+      "name": "ข้าวหน้าไก่ไม่ใส่ผงชูรส #566",
+      "carb_g": 46,
+      "carb_unit": 3.07,
+      "calories": 277,
+      "sugar_g": 15
+    },
+    {
+      "name": "ต้มจืดสูตรผู้ป่วยเบาหวาน #567",
+      "carb_g": 12,
+      "carb_unit": 0.8,
+      "calories": 227,
+      "sugar_g": 2
+    },
+    {
+      "name": "แกงส้มข้าวกล้อง #568",
+      "carb_g": 24,
+      "carb_unit": 1.6,
+      "calories": 198,
+      "sugar_g": 3
+    },
+    {
+      "name": "แกงส้มลดคาร์บ #569",
+      "carb_g": 26,
+      "carb_unit": 1.73,
+      "calories": 340,
+      "sugar_g": 19
+    },
+    {
+      "name": "แกงป่าสูตรผู้ป่วยเบาหวาน #570",
+      "carb_g": 13,
+      "carb_unit": 0.87,
+      "calories": 319,
+      "sugar_g": 5
+    },
+    {
+      "name": "ไข่ดาวสูตรสุขภาพ #571",
+      "carb_g": 10,
+      "carb_unit": 0.67,
+      "calories": 120,
+      "sugar_g": 4
+    },
+    {
+      "name": "ข้าวหมูแดงไม่ใส่ผงชูรส #572",
+      "carb_g": 19,
+      "carb_unit": 1.27,
+      "calories": 336,
+      "sugar_g": 2
+    },
+    {
+      "name": "ข้าวหมูทอดกระเทียมโซเดียมต่ำ #573",
+      "carb_g": 39,
+      "carb_unit": 2.6,
+      "calories": 128,
+      "sugar_g": 20
+    },
+    {
+      "name": "ต้มจืดสูตรผู้ป่วยเบาหวาน #574",
+      "carb_g": 34,
+      "carb_unit": 2.27,
+      "calories": 255,
+      "sugar_g": 12
+    },
+    {
+      "name": "ส้มตำใส่ไข่ #575",
+      "carb_g": 54,
+      "carb_unit": 3.6,
+      "calories": 422,
+      "sugar_g": 9
+    },
+    {
+      "name": "ข้าวกะเพราไม่ใส่น้ำตาล #576",
+      "carb_g": 32,
+      "carb_unit": 2.13,
+      "calories": 487,
+      "sugar_g": 23
+    },
+    {
+      "name": "ยำมาม่าหวานน้อย #577",
+      "carb_g": 11,
+      "carb_unit": 0.73,
+      "calories": 162,
+      "sugar_g": 21
+    },
+    {
+      "name": "ปลาเผาลดคาร์บ #578",
+      "carb_g": 24,
+      "carb_unit": 1.6,
+      "calories": 172,
+      "sugar_g": 17
+    },
+    {
+      "name": "ลาบหวานน้อย #579",
+      "carb_g": 29,
+      "carb_unit": 1.93,
+      "calories": 134,
+      "sugar_g": 10
+    },
+    {
+      "name": "แกงส้มใส่ผักเพิ่ม #580",
+      "carb_g": 37,
+      "carb_unit": 2.47,
+      "calories": 183,
+      "sugar_g": 5
+    },
+    {
+      "name": "ข้าวผัดหมูคลีน #581",
+      "carb_g": 52,
+      "carb_unit": 3.47,
+      "calories": 453,
+      "sugar_g": 12
+    },
+    {
+      "name": "โจ๊กใส่ผักเพิ่ม #582",
+      "carb_g": 60,
+      "carb_unit": 4.0,
+      "calories": 232,
+      "sugar_g": 20
+    },
+    {
+      "name": "ยำปลากระป๋องอกไก่ #583",
+      "carb_g": 60,
+      "carb_unit": 4.0,
+      "calories": 101,
+      "sugar_g": 18
+    },
+    {
+      "name": "ข้าวหมูทอดกระเทียมหมูไม่ติดมัน #584",
+      "carb_g": 13,
+      "carb_unit": 0.87,
+      "calories": 444,
+      "sugar_g": 18
+    },
+    {
+      "name": "ไข่ดาวอกไก่ #585",
+      "carb_g": 51,
+      "carb_unit": 3.4,
+      "calories": 481,
+      "sugar_g": 11
+    },
+    {
+      "name": "ตำไทยคลีน #586",
+      "carb_g": 26,
+      "carb_unit": 1.73,
+      "calories": 163,
+      "sugar_g": 3
+    },
+    {
+      "name": "แกงเผ็ดไม่มัน #587",
+      "carb_g": 37,
+      "carb_unit": 2.47,
+      "calories": 129,
+      "sugar_g": 15
+    },
+    {
+      "name": "แกงพะแนงคลีน #588",
+      "carb_g": 53,
+      "carb_unit": 3.53,
+      "calories": 442,
+      "sugar_g": 3
+    },
+    {
+      "name": "ข้าวผัดไก่ใส่ไข่ #589",
+      "carb_g": 58,
+      "carb_unit": 3.87,
+      "calories": 255,
+      "sugar_g": 1
+    },
+    {
+      "name": "ต้มจืดจานใหญ่ #590",
+      "carb_g": 37,
+      "carb_unit": 2.47,
+      "calories": 230,
+      "sugar_g": 13
+    },
+    {
+      "name": "ข้าวผัดหมูเพิ่มผัก #591",
+      "carb_g": 26,
+      "carb_unit": 1.73,
+      "calories": 315,
+      "sugar_g": 24
+    },
+    {
+      "name": "ไข่ต้มใส่ไข่ #592",
+      "carb_g": 13,
+      "carb_unit": 0.87,
+      "calories": 280,
+      "sugar_g": 11
+    },
+    {
+      "name": "ตำแตงไม่ใส่ผงชูรส #593",
+      "carb_g": 48,
+      "carb_unit": 3.2,
+      "calories": 211,
+      "sugar_g": 24
+    },
+    {
+      "name": "ไข่ต้มไม่ใส่ผงชูรส #594",
+      "carb_g": 31,
+      "carb_unit": 2.07,
+      "calories": 118,
+      "sugar_g": 19
+    },
+    {
+      "name": "ยำปลากระป๋องข้าวกล้อง #595",
+      "carb_g": 8,
+      "carb_unit": 0.53,
+      "calories": 431,
+      "sugar_g": 1
+    },
+    {
+      "name": "ลาบลดคาร์บ #596",
+      "carb_g": 22,
+      "carb_unit": 1.47,
+      "calories": 223,
+      "sugar_g": 7
+    },
+    {
+      "name": "ปลาทอดสูตรผู้ป่วยเบาหวาน #597",
+      "carb_g": 57,
+      "carb_unit": 3.8,
+      "calories": 395,
+      "sugar_g": 21
+    },
+    {
+      "name": "ยำปลากระป๋องลดคาร์บ #598",
+      "carb_g": 46,
+      "carb_unit": 3.07,
+      "calories": 361,
+      "sugar_g": 25
+    },
+    {
+      "name": "แกงป่าเพิ่มผัก #599",
+      "carb_g": 49,
+      "carb_unit": 3.27,
+      "calories": 458,
+      "sugar_g": 22
+    },
+    {
+      "name": "แกงเขียวหวานไม่ใส่ผงชูรส #600",
+      "carb_g": 11,
+      "carb_unit": 0.73,
+      "calories": 433,
+      "sugar_g": 15
+    },
+    {
+      "name": "ก๋วยเตี๋ยวเรือข้าวกล้อง #601",
+      "carb_g": 22,
+      "carb_unit": 1.47,
+      "calories": 367,
+      "sugar_g": 19
+    },
+    {
+      "name": "หมูทอดไม่ใส่ผงชูรส #602",
+      "carb_g": 24,
+      "carb_unit": 1.6,
+      "calories": 249,
+      "sugar_g": 14
+    },
+    {
+      "name": "ข้าวหมูทอดกระเทียมหมูไม่ติดมัน #603",
+      "carb_g": 32,
+      "carb_unit": 2.13,
+      "calories": 111,
+      "sugar_g": 19
+    },
+    {
+      "name": "น้ำตกจานใหญ่ #604",
+      "carb_g": 35,
+      "carb_unit": 2.33,
+      "calories": 340,
+      "sugar_g": 0
+    },
+    {
+      "name": "โจ๊กลดคาร์บ #605",
+      "carb_g": 57,
+      "carb_unit": 3.8,
+      "calories": 95,
+      "sugar_g": 17
+    },
+    {
+      "name": "แกงจืดโซเดียมต่ำ #606",
+      "carb_g": 51,
+      "carb_unit": 3.4,
+      "calories": 361,
+      "sugar_g": 12
+    },
+    {
+      "name": "แกงป่าไม่ใส่ผงชูรส #607",
+      "carb_g": 58,
+      "carb_unit": 3.87,
+      "calories": 456,
+      "sugar_g": 22
+    },
+    {
+      "name": "ไก่ย่างไม่ใส่น้ำตาล #608",
+      "carb_g": 48,
+      "carb_unit": 3.2,
+      "calories": 405,
+      "sugar_g": 4
+    },
+    {
+      "name": "ข้าวหมูทอดกระเทียมอกไก่ #609",
+      "carb_g": 38,
+      "carb_unit": 2.53,
+      "calories": 289,
+      "sugar_g": 15
+    },
+    {
+      "name": "ข้าวหน้าไก่สูตรร้านอาหาร #610",
+      "carb_g": 22,
+      "carb_unit": 1.47,
+      "calories": 213,
+      "sugar_g": 10
+    },
+    {
+      "name": "ปลาทอดสตรีทฟู้ด #611",
+      "carb_g": 53,
+      "carb_unit": 3.53,
+      "calories": 276,
+      "sugar_g": 1
+    },
+    {
+      "name": "โจ๊กโซเดียมต่ำ #612",
+      "carb_g": 60,
+      "carb_unit": 4.0,
+      "calories": 342,
+      "sugar_g": 18
+    },
+    {
+      "name": "ข้าวหน้าไก่สูตรสุขภาพ #613",
+      "carb_g": 37,
+      "carb_unit": 2.47,
+      "calories": 64,
+      "sugar_g": 18
+    },
+    {
+      "name": "ก๋วยเตี๋ยวเรือข้าวกล้อง #614",
+      "carb_g": 27,
+      "carb_unit": 1.8,
+      "calories": 98,
+      "sugar_g": 23
+    },
+    {
+      "name": "ข้าวคลุกกะปิข้าวกล้อง #615",
+      "carb_g": 44,
+      "carb_unit": 2.93,
+      "calories": 136,
+      "sugar_g": 8
+    },
+    {
+      "name": "ไข่ต้มใส่ผักเพิ่ม #616",
+      "carb_g": 24,
+      "carb_unit": 1.6,
+      "calories": 485,
+      "sugar_g": 13
+    },
+    {
+      "name": "ข้าวผัดกุ้งหมูไม่ติดมัน #617",
+      "carb_g": 24,
+      "carb_unit": 1.6,
+      "calories": 336,
+      "sugar_g": 14
+    },
+    {
+      "name": "ข้าวผัดไก่โซเดียมต่ำ #618",
+      "carb_g": 33,
+      "carb_unit": 2.2,
+      "calories": 98,
+      "sugar_g": 21
+    },
+    {
+      "name": "ปลาเผาสูตรร้านอาหาร #619",
+      "carb_g": 13,
+      "carb_unit": 0.87,
+      "calories": 67,
+      "sugar_g": 8
+    },
+    {
+      "name": "ข้าวผัดไก่หมูไม่ติดมัน #620",
+      "carb_g": 28,
+      "carb_unit": 1.87,
+      "calories": 194,
+      "sugar_g": 23
+    },
+    {
+      "name": "ก๋วยเตี๋ยวต้มยำลดคาร์บ #621",
+      "carb_g": 21,
+      "carb_unit": 1.4,
+      "calories": 78,
+      "sugar_g": 1
+    },
+    {
+      "name": "ไข่ดาวหวานน้อย #622",
+      "carb_g": 20,
+      "carb_unit": 1.33,
+      "calories": 178,
+      "sugar_g": 9
+    },
+    {
+      "name": "ข้าวมันไก่สตรีทฟู้ด #623",
+      "carb_g": 57,
+      "carb_unit": 3.8,
+      "calories": 456,
+      "sugar_g": 2
+    },
+    {
+      "name": "ข้าวมันไก่ข้าวกล้อง #624",
+      "carb_g": 35,
+      "carb_unit": 2.33,
+      "calories": 462,
+      "sugar_g": 3
+    },
+    {
+      "name": "ปลาเผาหวานน้อย #625",
+      "carb_g": 24,
+      "carb_unit": 1.6,
+      "calories": 114,
+      "sugar_g": 17
+    },
+    {
+      "name": "ข้าวหน้าเป็ดจานใหญ่ #626",
+      "carb_g": 47,
+      "carb_unit": 3.13,
+      "calories": 268,
+      "sugar_g": 12
+    },
+    {
+      "name": "ผัดซีอิ๊วใส่ผักเพิ่ม #627",
+      "carb_g": 47,
+      "carb_unit": 3.13,
+      "calories": 301,
+      "sugar_g": 9
+    },
+    {
+      "name": "ยำมาม่าสูตรร้านอาหาร #628",
+      "carb_g": 32,
+      "carb_unit": 2.13,
+      "calories": 323,
+      "sugar_g": 11
+    },
+    {
+      "name": "หมูย่างไม่มัน #629",
+      "carb_g": 17,
+      "carb_unit": 1.13,
+      "calories": 421,
+      "sugar_g": 1
+    },
+    {
+      "name": "ข้าวผัดปูไม่มัน #630",
+      "carb_g": 31,
+      "carb_unit": 2.07,
+      "calories": 271,
+      "sugar_g": 3
+    },
+    {
+      "name": "ข้าวหน้าไก่พิเศษ #631",
+      "carb_g": 43,
+      "carb_unit": 2.87,
+      "calories": 490,
+      "sugar_g": 11
+    },
+    {
+      "name": "ข้าวไก่อบโซเดียมต่ำ #632",
+      "carb_g": 47,
+      "carb_unit": 3.13,
+      "calories": 157,
+      "sugar_g": 20
+    },
+    {
+      "name": "ก๋วยเตี๋ยวเรือใส่ไข่ #633",
+      "carb_g": 46,
+      "carb_unit": 3.07,
+      "calories": 442,
+      "sugar_g": 1
+    },
+    {
+      "name": "ผัดไทยไม่มัน #634",
+      "carb_g": 27,
+      "carb_unit": 1.8,
+      "calories": 70,
+      "sugar_g": 23
+    },
+    {
+      "name": "ข้าวผัดปูเพิ่มผัก #635",
+      "carb_g": 21,
+      "carb_unit": 1.4,
+      "calories": 166,
+      "sugar_g": 5
+    },
+    {
+      "name": "สุกี้อกไก่ #636",
+      "carb_g": 57,
+      "carb_unit": 3.8,
+      "calories": 382,
+      "sugar_g": 19
+    },
+    {
+      "name": "ก๋วยเตี๋ยวเรือข้าวกล้อง #637",
+      "carb_g": 57,
+      "carb_unit": 3.8,
+      "calories": 458,
+      "sugar_g": 4
+    },
+    {
+      "name": "ข้าวผัดไก่ลดคาร์บ #638",
+      "carb_g": 53,
+      "carb_unit": 3.53,
+      "calories": 289,
+      "sugar_g": 13
+    },
+    {
+      "name": "ก๋วยเตี๋ยวใส่ไข่ #639",
+      "carb_g": 21,
+      "carb_unit": 1.4,
+      "calories": 357,
+      "sugar_g": 12
+    },
+    {
+      "name": "น้ำตกสูตรผู้ป่วยเบาหวาน #640",
+      "carb_g": 30,
+      "carb_unit": 2.0,
+      "calories": 173,
+      "sugar_g": 18
+    },
+    {
+      "name": "ข้าวหมูทอดกระเทียมพิเศษ #641",
+      "carb_g": 43,
+      "carb_unit": 2.87,
+      "calories": 411,
+      "sugar_g": 8
+    },
+    {
+      "name": "ข้าวหน้าเป็ดไม่ใส่ผงชูรส #642",
+      "carb_g": 43,
+      "carb_unit": 2.87,
+      "calories": 293,
+      "sugar_g": 22
+    },
+    {
+      "name": "ข้าวหน้าไก่จานใหญ่ #643",
+      "carb_g": 49,
+      "carb_unit": 3.27,
+      "calories": 448,
+      "sugar_g": 20
+    },
+    {
+      "name": "ข้าวผัดหมูสูตรร้านอาหาร #644",
+      "carb_g": 15,
+      "carb_unit": 1.0,
+      "calories": 210,
+      "sugar_g": 21
+    },
+    {
+      "name": "หมูทอดข้าวกล้อง #645",
+      "carb_g": 27,
+      "carb_unit": 1.8,
+      "calories": 338,
+      "sugar_g": 17
+    },
+    {
+      "name": "ข้าวผัดกุ้งไม่ใส่ผงชูรส #646",
+      "carb_g": 48,
+      "carb_unit": 3.2,
+      "calories": 257,
+      "sugar_g": 12
+    },
+    {
+      "name": "แกงเขียวหวานพิเศษ #647",
+      "carb_g": 13,
+      "carb_unit": 0.87,
+      "calories": 438,
+      "sugar_g": 2
+    },
+    {
+      "name": "ข้าวหมูกรอบใส่ไข่ #648",
+      "carb_g": 34,
+      "carb_unit": 2.27,
+      "calories": 410,
+      "sugar_g": 15
+    },
+    {
+      "name": "ราดหน้าไม่ใส่ผงชูรส #649",
+      "carb_g": 35,
+      "carb_unit": 2.33,
+      "calories": 274,
+      "sugar_g": 14
+    },
+    {
+      "name": "ตำไทยเพิ่มผัก #650",
+      "carb_g": 54,
+      "carb_unit": 3.6,
+      "calories": 325,
+      "sugar_g": 25
+    },
+    {
+      "name": "ข้าวหน้าเป็ดอกไก่ #651",
+      "carb_g": 9,
+      "carb_unit": 0.6,
+      "calories": 402,
+      "sugar_g": 5
+    },
+    {
+      "name": "ปลานึ่งอกไก่ #652",
+      "carb_g": 8,
+      "carb_unit": 0.53,
+      "calories": 402,
+      "sugar_g": 5
+    },
+    {
+      "name": "ปลาเผาจานใหญ่ #653",
+      "carb_g": 59,
+      "carb_unit": 3.93,
+      "calories": 236,
+      "sugar_g": 4
+    },
+    {
+      "name": "แกงเผ็ดอกไก่ #654",
+      "carb_g": 36,
+      "carb_unit": 2.4,
+      "calories": 345,
+      "sugar_g": 6
+    },
+    {
+      "name": "ข้าวคลุกกะปิพิเศษ #655",
+      "carb_g": 6,
+      "carb_unit": 0.4,
+      "calories": 164,
+      "sugar_g": 16
+    },
+    {
+      "name": "ข้าวหน้าเป็ดโซเดียมต่ำ #656",
+      "carb_g": 18,
+      "carb_unit": 1.2,
+      "calories": 431,
+      "sugar_g": 21
+    },
+    {
+      "name": "ลาบข้าวกล้อง #657",
+      "carb_g": 13,
+      "carb_unit": 0.87,
+      "calories": 294,
+      "sugar_g": 5
+    },
+    {
+      "name": "ตำแตงจานใหญ่ #658",
+      "carb_g": 29,
+      "carb_unit": 1.93,
+      "calories": 189,
+      "sugar_g": 20
+    },
+    {
+      "name": "ผัดไทยไม่ใส่ผงชูรส #659",
+      "carb_g": 16,
+      "carb_unit": 1.07,
+      "calories": 151,
+      "sugar_g": 18
+    },
+    {
+      "name": "สุกี้โซเดียมต่ำ #660",
+      "carb_g": 28,
+      "carb_unit": 1.87,
+      "calories": 181,
+      "sugar_g": 20
+    },
+    {
+      "name": "ข้าวหน้าเป็ดไม่ใส่น้ำตาล #661",
+      "carb_g": 15,
+      "carb_unit": 1.0,
+      "calories": 329,
+      "sugar_g": 4
+    },
+    {
+      "name": "ต้มยำไม่ใส่ผงชูรส #662",
+      "carb_g": 60,
+      "carb_unit": 4.0,
+      "calories": 350,
+      "sugar_g": 24
+    },
+    {
+      "name": "ข้าวหมูกรอบใส่ผักเพิ่ม #663",
+      "carb_g": 18,
+      "carb_unit": 1.2,
+      "calories": 483,
+      "sugar_g": 12
+    },
+    {
+      "name": "หมูทอดคลีน #664",
+      "carb_g": 30,
+      "carb_unit": 2.0,
+      "calories": 308,
+      "sugar_g": 24
+    },
+    {
+      "name": "น้ำตกไม่มัน #665",
+      "carb_g": 8,
+      "carb_unit": 0.53,
+      "calories": 266,
+      "sugar_g": 24
+    },
+    {
+      "name": "ปลาเผาจานใหญ่ #666",
+      "carb_g": 36,
+      "carb_unit": 2.4,
+      "calories": 172,
+      "sugar_g": 11
+    },
+    {
+      "name": "ก๋วยเตี๋ยวต้มยำอกไก่ #667",
+      "carb_g": 18,
+      "carb_unit": 1.2,
+      "calories": 473,
+      "sugar_g": 25
+    },
+    {
+      "name": "แกงส้มไม่ใส่ผงชูรส #668",
+      "carb_g": 20,
+      "carb_unit": 1.33,
+      "calories": 230,
+      "sugar_g": 5
+    },
+    {
+      "name": "ก๋วยเตี๋ยวใส่ผักเพิ่ม #669",
+      "carb_g": 43,
+      "carb_unit": 2.87,
+      "calories": 87,
+      "sugar_g": 10
+    },
+    {
+      "name": "ข้าวหมูกรอบสูตรสุขภาพ #670",
+      "carb_g": 40,
+      "carb_unit": 2.67,
+      "calories": 177,
+      "sugar_g": 22
+    },
+    {
+      "name": "แกงป่าคลีน #671",
+      "carb_g": 34,
+      "carb_unit": 2.27,
+      "calories": 323,
+      "sugar_g": 9
+    },
+    {
+      "name": "ข้าวผัดคลีน #672",
+      "carb_g": 26,
+      "carb_unit": 1.73,
+      "calories": 341,
+      "sugar_g": 10
+    },
+    {
+      "name": "ปลานึ่งไม่ใส่ผงชูรส #673",
+      "carb_g": 33,
+      "carb_unit": 2.2,
+      "calories": 398,
+      "sugar_g": 22
+    },
+    {
+      "name": "ข้าวหน้าเป็ดสูตรสุขภาพ #674",
+      "carb_g": 11,
+      "carb_unit": 0.73,
+      "calories": 121,
+      "sugar_g": 17
+    },
+    {
+      "name": "ก๋วยเตี๋ยวหมูไม่ติดมัน #675",
+      "carb_g": 29,
+      "carb_unit": 1.93,
+      "calories": 225,
+      "sugar_g": 7
+    },
+    {
+      "name": "ผัดซีอิ๊วใส่ไข่ #676",
+      "carb_g": 46,
+      "carb_unit": 3.07,
+      "calories": 227,
+      "sugar_g": 17
+    },
+    {
+      "name": "ข้าวผัดไก่สูตรร้านอาหาร #677",
+      "carb_g": 12,
+      "carb_unit": 0.8,
+      "calories": 338,
+      "sugar_g": 8
+    },
+    {
+      "name": "ข้าวหมูทอดกระเทียมจานใหญ่ #678",
+      "carb_g": 6,
+      "carb_unit": 0.4,
+      "calories": 363,
+      "sugar_g": 6
+    },
+    {
+      "name": "ข้าวต้มจานใหญ่ #679",
+      "carb_g": 50,
+      "carb_unit": 3.33,
+      "calories": 216,
+      "sugar_g": 16
+    },
+    {
+      "name": "ตำไทยไม่ใส่น้ำตาล #680",
+      "carb_g": 21,
+      "carb_unit": 1.4,
+      "calories": 217,
+      "sugar_g": 19
+    },
+    {
+      "name": "หมูทอดพิเศษ #681",
+      "carb_g": 37,
+      "carb_unit": 2.47,
+      "calories": 235,
+      "sugar_g": 25
+    },
+    {
+      "name": "น้ำตกใส่ไข่ #682",
+      "carb_g": 14,
+      "carb_unit": 0.93,
+      "calories": 173,
+      "sugar_g": 4
+    },
+    {
+      "name": "ตำแตงไม่ใส่ผงชูรส #683",
+      "carb_g": 15,
+      "carb_unit": 1.0,
+      "calories": 289,
+      "sugar_g": 5
+    },
+    {
+      "name": "ข้าวผัดหมูสตรีทฟู้ด #684",
+      "carb_g": 11,
+      "carb_unit": 0.73,
+      "calories": 469,
+      "sugar_g": 1
+    },
+    {
+      "name": "ข้าวไก่อบไม่ใส่น้ำตาล #685",
+      "carb_g": 17,
+      "carb_unit": 1.13,
+      "calories": 463,
+      "sugar_g": 13
+    },
+    {
+      "name": "ไก่ย่างคลีน #686",
+      "carb_g": 9,
+      "carb_unit": 0.6,
+      "calories": 69,
+      "sugar_g": 1
+    },
+    {
+      "name": "ข้าวไข่เจียวไม่มัน #687",
+      "carb_g": 24,
+      "carb_unit": 1.6,
+      "calories": 430,
+      "sugar_g": 12
+    },
+    {
+      "name": "ตำปูปลาร้าไม่ใส่น้ำตาล #688",
+      "carb_g": 53,
+      "carb_unit": 3.53,
+      "calories": 121,
+      "sugar_g": 25
+    },
+    {
+      "name": "ข้าวผัดหมูไม่ใส่น้ำตาล #689",
+      "carb_g": 6,
+      "carb_unit": 0.4,
+      "calories": 150,
+      "sugar_g": 1
+    },
+    {
+      "name": "ลาบคลีน #690",
+      "carb_g": 23,
+      "carb_unit": 1.53,
+      "calories": 109,
+      "sugar_g": 11
+    },
+    {
+      "name": "ข้าวหมูแดงคลีน #691",
+      "carb_g": 32,
+      "carb_unit": 2.13,
+      "calories": 61,
+      "sugar_g": 11
+    },
+    {
+      "name": "ข้าวหมูทอดกระเทียมโซเดียมต่ำ #692",
+      "carb_g": 58,
+      "carb_unit": 3.87,
+      "calories": 150,
+      "sugar_g": 5
+    },
+    {
+      "name": "ส้มตำอกไก่ #693",
+      "carb_g": 60,
+      "carb_unit": 4.0,
+      "calories": 382,
+      "sugar_g": 17
+    },
+    {
+      "name": "ต้มยำสตรีทฟู้ด #694",
+      "carb_g": 16,
+      "carb_unit": 1.07,
+      "calories": 300,
+      "sugar_g": 12
+    },
+    {
+      "name": "ไข่พะโล้คลีน #695",
+      "carb_g": 21,
+      "carb_unit": 1.4,
+      "calories": 402,
+      "sugar_g": 11
+    },
+    {
+      "name": "ก๋วยเตี๋ยวไม่ใส่น้ำตาล #696",
+      "carb_g": 20,
+      "carb_unit": 1.33,
+      "calories": 261,
+      "sugar_g": 4
+    },
+    {
+      "name": "ต้มจืดสูตรผู้ป่วยเบาหวาน #697",
+      "carb_g": 19,
+      "carb_unit": 1.27,
+      "calories": 221,
+      "sugar_g": 19
+    },
+    {
+      "name": "ราดหน้าสตรีทฟู้ด #698",
+      "carb_g": 43,
+      "carb_unit": 2.87,
+      "calories": 280,
+      "sugar_g": 16
+    },
+    {
+      "name": "ข้าวหน้าเป็ดโซเดียมต่ำ #699",
+      "carb_g": 27,
+      "carb_unit": 1.8,
+      "calories": 201,
+      "sugar_g": 13
+    },
+    {
+      "name": "ตำปูปลาร้าหวานน้อย #700",
+      "carb_g": 22,
+      "carb_unit": 1.47,
+      "calories": 448,
+      "sugar_g": 8
+    },
+    {
+      "name": "ผัดซีอิ๊วสูตรผู้ป่วยเบาหวาน #701",
+      "carb_g": 18,
+      "carb_unit": 1.2,
+      "calories": 335,
+      "sugar_g": 22
+    },
+    {
+      "name": "แกงจืดคลีน #702",
+      "carb_g": 30,
+      "carb_unit": 2.0,
+      "calories": 113,
+      "sugar_g": 17
+    },
+    {
+      "name": "ลาบจานใหญ่ #703",
+      "carb_g": 31,
+      "carb_unit": 2.07,
+      "calories": 244,
+      "sugar_g": 22
+    },
+    {
+      "name": "ข้าวหมูแดงสตรีทฟู้ด #704",
+      "carb_g": 31,
+      "carb_unit": 2.07,
+      "calories": 195,
+      "sugar_g": 1
+    },
+    {
+      "name": "น้ำตกไม่ใส่น้ำตาล #705",
+      "carb_g": 38,
+      "carb_unit": 2.53,
+      "calories": 227,
+      "sugar_g": 3
+    },
+    {
+      "name": "ไก่ทอดพิเศษ #706",
+      "carb_g": 10,
+      "carb_unit": 0.67,
+      "calories": 396,
+      "sugar_g": 17
+    },
+    {
+      "name": "ข้าวผัดไม่ใส่ผงชูรส #707",
+      "carb_g": 39,
+      "carb_unit": 2.6,
+      "calories": 429,
+      "sugar_g": 20
+    },
+    {
+      "name": "ตำไทยไม่ใส่น้ำตาล #708",
+      "carb_g": 31,
+      "carb_unit": 2.07,
+      "calories": 293,
+      "sugar_g": 2
+    },
+    {
+      "name": "หมูย่างหวานน้อย #709",
+      "carb_g": 30,
+      "carb_unit": 2.0,
+      "calories": 452,
+      "sugar_g": 21
+    },
+    {
+      "name": "ยำปลากระป๋องจานใหญ่ #710",
+      "carb_g": 42,
+      "carb_unit": 2.8,
+      "calories": 149,
+      "sugar_g": 19
+    },
+    {
+      "name": "หมูทอดใส่ไข่ #711",
+      "carb_g": 7,
+      "carb_unit": 0.47,
+      "calories": 423,
+      "sugar_g": 12
+    },
+    {
+      "name": "ไก่ย่างพิเศษ #712",
+      "carb_g": 6,
+      "carb_unit": 0.4,
+      "calories": 74,
+      "sugar_g": 21
+    },
+    {
+      "name": "แกงป่าสตรีทฟู้ด #713",
+      "carb_g": 38,
+      "carb_unit": 2.53,
+      "calories": 80,
+      "sugar_g": 21
+    },
+    {
+      "name": "หมูย่างคลีน #714",
+      "carb_g": 16,
+      "carb_unit": 1.07,
+      "calories": 269,
+      "sugar_g": 4
+    },
+    {
+      "name": "ก๋วยเตี๋ยวเรือไม่ใส่น้ำตาล #715",
+      "carb_g": 48,
+      "carb_unit": 3.2,
+      "calories": 395,
+      "sugar_g": 1
+    },
+    {
+      "name": "ไข่ดาวใส่ไข่ #716",
+      "carb_g": 45,
+      "carb_unit": 3.0,
+      "calories": 160,
+      "sugar_g": 5
+    },
+    {
+      "name": "แกงจืดพิเศษ #717",
+      "carb_g": 44,
+      "carb_unit": 2.93,
+      "calories": 118,
+      "sugar_g": 24
+    },
+    {
+      "name": "ผัดไทยหมูไม่ติดมัน #718",
+      "carb_g": 42,
+      "carb_unit": 2.8,
+      "calories": 305,
+      "sugar_g": 6
+    },
+    {
+      "name": "ก๋วยเตี๋ยวเรือข้าวกล้อง #719",
+      "carb_g": 21,
+      "carb_unit": 1.4,
+      "calories": 357,
+      "sugar_g": 6
+    },
+    {
+      "name": "ข้าวผัดหมูลดคาร์บ #720",
+      "carb_g": 12,
+      "carb_unit": 0.8,
+      "calories": 128,
+      "sugar_g": 7
+    },
+    {
+      "name": "ไก่ย่างสูตรผู้ป่วยเบาหวาน #721",
+      "carb_g": 59,
+      "carb_unit": 3.93,
+      "calories": 420,
+      "sugar_g": 18
+    },
+    {
+      "name": "ข้าวผัดไก่ใส่ผักเพิ่ม #722",
+      "carb_g": 16,
+      "carb_unit": 1.07,
+      "calories": 305,
+      "sugar_g": 0
+    },
+    {
+      "name": "ยำมาม่าอกไก่ #723",
+      "carb_g": 12,
+      "carb_unit": 0.8,
+      "calories": 375,
+      "sugar_g": 24
+    },
+    {
+      "name": "ข้าวผัดไม่ใส่ผงชูรส #724",
+      "carb_g": 23,
+      "carb_unit": 1.53,
+      "calories": 268,
+      "sugar_g": 13
+    },
+    {
+      "name": "ต้มยำโซเดียมต่ำ #725",
+      "carb_g": 52,
+      "carb_unit": 3.47,
+      "calories": 144,
+      "sugar_g": 4
+    },
+    {
+      "name": "ตำแตงพิเศษ #726",
+      "carb_g": 48,
+      "carb_unit": 3.2,
+      "calories": 407,
+      "sugar_g": 14
+    },
+    {
+      "name": "ข้าวหน้าเป็ดหมูไม่ติดมัน #727",
+      "carb_g": 7,
+      "carb_unit": 0.47,
+      "calories": 91,
+      "sugar_g": 13
+    },
+    {
+      "name": "ยำวุ้นเส้นจานใหญ่ #728",
+      "carb_g": 48,
+      "carb_unit": 3.2,
+      "calories": 287,
+      "sugar_g": 17
+    },
+    {
+      "name": "ข้าวผัดปูจานใหญ่ #729",
+      "carb_g": 45,
+      "carb_unit": 3.0,
+      "calories": 391,
+      "sugar_g": 2
+    },
+    {
+      "name": "ยำปลากระป๋องหวานน้อย #730",
+      "carb_g": 47,
+      "carb_unit": 3.13,
+      "calories": 299,
+      "sugar_g": 11
+    },
+    {
+      "name": "ต้มยำสูตรร้านอาหาร #731",
+      "carb_g": 32,
+      "carb_unit": 2.13,
+      "calories": 214,
+      "sugar_g": 17
+    },
+    {
+      "name": "ไข่พะโล้ใส่ไข่ #732",
+      "carb_g": 13,
+      "carb_unit": 0.87,
+      "calories": 89,
+      "sugar_g": 0
+    },
+    {
+      "name": "ราดหน้าไม่ใส่น้ำตาล #733",
+      "carb_g": 59,
+      "carb_unit": 3.93,
+      "calories": 382,
+      "sugar_g": 25
+    },
+    {
+      "name": "ข้าวต้มสูตรสุขภาพ #734",
+      "carb_g": 54,
+      "carb_unit": 3.6,
+      "calories": 199,
+      "sugar_g": 24
+    },
+    {
+      "name": "ส้มตำจานใหญ่ #735",
+      "carb_g": 44,
+      "carb_unit": 2.93,
+      "calories": 192,
+      "sugar_g": 2
+    },
+    {
+      "name": "แกงป่าหมูไม่ติดมัน #736",
+      "carb_g": 32,
+      "carb_unit": 2.13,
+      "calories": 144,
+      "sugar_g": 6
+    },
+    {
+      "name": "ไก่ย่างใส่ไข่ #737",
+      "carb_g": 58,
+      "carb_unit": 3.87,
+      "calories": 108,
+      "sugar_g": 21
+    },
+    {
+      "name": "โจ๊กอกไก่ #738",
+      "carb_g": 39,
+      "carb_unit": 2.6,
+      "calories": 302,
+      "sugar_g": 7
+    },
+    {
+      "name": "ข้าวผัดหมูคลีน #739",
+      "carb_g": 59,
+      "carb_unit": 3.93,
+      "calories": 360,
+      "sugar_g": 13
+    },
+    {
+      "name": "น้ำตกหมูไม่ติดมัน #740",
+      "carb_g": 37,
+      "carb_unit": 2.47,
+      "calories": 367,
+      "sugar_g": 10
+    },
+    {
+      "name": "ข้าวหน้าไก่หมูไม่ติดมัน #741",
+      "carb_g": 20,
+      "carb_unit": 1.33,
+      "calories": 239,
+      "sugar_g": 4
+    },
+    {
+      "name": "ผัดซีอิ๊วไม่ใส่ผงชูรส #742",
+      "carb_g": 59,
+      "carb_unit": 3.93,
+      "calories": 92,
+      "sugar_g": 2
+    },
+    {
+      "name": "ข้าวหน้าไก่สูตรร้านอาหาร #743",
+      "carb_g": 9,
+      "carb_unit": 0.6,
+      "calories": 241,
+      "sugar_g": 4
+    },
+    {
+      "name": "ไข่ต้มลดคาร์บ #744",
+      "carb_g": 40,
+      "carb_unit": 2.67,
+      "calories": 164,
+      "sugar_g": 19
+    },
+    {
+      "name": "ข้าวหน้าเป็ดโซเดียมต่ำ #745",
+      "carb_g": 16,
+      "carb_unit": 1.07,
+      "calories": 254,
+      "sugar_g": 5
+    },
+    {
+      "name": "ข้าวหมูกรอบอกไก่ #746",
+      "carb_g": 17,
+      "carb_unit": 1.13,
+      "calories": 285,
+      "sugar_g": 9
+    },
+    {
+      "name": "ข้าวหน้าเป็ดเพิ่มผัก #747",
+      "carb_g": 50,
+      "carb_unit": 3.33,
+      "calories": 183,
+      "sugar_g": 5
+    },
+    {
+      "name": "ผัดซีอิ๊วสูตรร้านอาหาร #748",
+      "carb_g": 14,
+      "carb_unit": 0.93,
+      "calories": 212,
+      "sugar_g": 12
+    },
+    {
+      "name": "สุกี้จานใหญ่ #749",
+      "carb_g": 26,
+      "carb_unit": 1.73,
+      "calories": 383,
+      "sugar_g": 3
+    },
+    {
+      "name": "โจ๊กหวานน้อย #750",
+      "carb_g": 30,
+      "carb_unit": 2.0,
+      "calories": 218,
+      "sugar_g": 11
+    },
+    {
+      "name": "ลาบพิเศษ #751",
+      "carb_g": 18,
+      "carb_unit": 1.2,
+      "calories": 372,
+      "sugar_g": 21
+    },
+    {
+      "name": "แกงป่าจานใหญ่ #752",
+      "carb_g": 42,
+      "carb_unit": 2.8,
+      "calories": 375,
+      "sugar_g": 3
+    },
+    {
+      "name": "ปลาทอดจานใหญ่ #753",
+      "carb_g": 15,
+      "carb_unit": 1.0,
+      "calories": 195,
+      "sugar_g": 19
+    },
+    {
+      "name": "ไข่ต้มใส่ผักเพิ่ม #754",
+      "carb_g": 26,
+      "carb_unit": 1.73,
+      "calories": 183,
+      "sugar_g": 16
+    },
+    {
+      "name": "แกงจืดข้าวกล้อง #755",
+      "carb_g": 49,
+      "carb_unit": 3.27,
+      "calories": 432,
+      "sugar_g": 17
+    },
+    {
+      "name": "ข้าวหน้าไก่คลีน #756",
+      "carb_g": 32,
+      "carb_unit": 2.13,
+      "calories": 128,
+      "sugar_g": 11
+    },
+    {
+      "name": "แกงเขียวหวานใส่ผักเพิ่ม #757",
+      "carb_g": 56,
+      "carb_unit": 3.73,
+      "calories": 461,
+      "sugar_g": 24
+    },
+    {
+      "name": "ไก่ทอดไม่มัน #758",
+      "carb_g": 28,
+      "carb_unit": 1.87,
+      "calories": 64,
+      "sugar_g": 24
+    },
+    {
+      "name": "แกงเขียวหวานข้าวกล้อง #759",
+      "carb_g": 8,
+      "carb_unit": 0.53,
+      "calories": 326,
+      "sugar_g": 15
+    },
+    {
+      "name": "ไข่พะโล้เพิ่มผัก #760",
+      "carb_g": 53,
+      "carb_unit": 3.53,
+      "calories": 454,
+      "sugar_g": 18
+    },
+    {
+      "name": "หมูทอดใส่ผักเพิ่ม #761",
+      "carb_g": 54,
+      "carb_unit": 3.6,
+      "calories": 358,
+      "sugar_g": 7
+    },
+    {
+      "name": "ข้าวต้มหมูไม่ติดมัน #762",
+      "carb_g": 18,
+      "carb_unit": 1.2,
+      "calories": 437,
+      "sugar_g": 11
+    },
+    {
+      "name": "ข้าวไข่เจียวลดคาร์บ #763",
+      "carb_g": 41,
+      "carb_unit": 2.73,
+      "calories": 97,
+      "sugar_g": 22
+    },
+    {
+      "name": "ยำวุ้นเส้นหมูไม่ติดมัน #764",
+      "carb_g": 47,
+      "carb_unit": 3.13,
+      "calories": 114,
+      "sugar_g": 11
+    },
+    {
+      "name": "สุกี้ใส่ผักเพิ่ม #765",
+      "carb_g": 5,
+      "carb_unit": 0.33,
+      "calories": 123,
+      "sugar_g": 0
+    },
+    {
+      "name": "แกงจืดลดคาร์บ #766",
+      "carb_g": 59,
+      "carb_unit": 3.93,
+      "calories": 465,
+      "sugar_g": 2
+    },
+    {
+      "name": "ไข่พะโล้อกไก่ #767",
+      "carb_g": 15,
+      "carb_unit": 1.0,
+      "calories": 135,
+      "sugar_g": 5
+    },
+    {
+      "name": "ข้าวผัดหมูเพิ่มผัก #768",
+      "carb_g": 22,
+      "carb_unit": 1.47,
+      "calories": 74,
+      "sugar_g": 22
+    },
+    {
+      "name": "ตำแตงสตรีทฟู้ด #769",
+      "carb_g": 35,
+      "carb_unit": 2.33,
+      "calories": 99,
+      "sugar_g": 4
+    },
+    {
+      "name": "ข้าวหมูทอดกระเทียมไม่ใส่น้ำตาล #770",
+      "carb_g": 12,
+      "carb_unit": 0.8,
+      "calories": 97,
+      "sugar_g": 9
+    },
+    {
+      "name": "ข้าวผัดปูหมูไม่ติดมัน #771",
+      "carb_g": 60,
+      "carb_unit": 4.0,
+      "calories": 298,
+      "sugar_g": 9
+    },
+    {
+      "name": "แกงเผ็ดโซเดียมต่ำ #772",
+      "carb_g": 44,
+      "carb_unit": 2.93,
+      "calories": 257,
+      "sugar_g": 10
+    },
+    {
+      "name": "ต้มจืดหวานน้อย #773",
+      "carb_g": 19,
+      "carb_unit": 1.27,
+      "calories": 380,
+      "sugar_g": 3
+    },
+    {
+      "name": "ข้าวหมูทอดกระเทียมจานใหญ่ #774",
+      "carb_g": 16,
+      "carb_unit": 1.07,
+      "calories": 341,
+      "sugar_g": 7
+    },
+    {
+      "name": "ข้าวต้มไม่ใส่น้ำตาล #775",
+      "carb_g": 14,
+      "carb_unit": 0.93,
+      "calories": 73,
+      "sugar_g": 23
+    },
+    {
+      "name": "ข้าวต้มหวานน้อย #776",
+      "carb_g": 25,
+      "carb_unit": 1.67,
+      "calories": 392,
+      "sugar_g": 6
+    },
+    {
+      "name": "ลาบเพิ่มผัก #777",
+      "carb_g": 42,
+      "carb_unit": 2.8,
+      "calories": 488,
+      "sugar_g": 1
+    },
+    {
+      "name": "ส้มตำหวานน้อย #778",
+      "carb_g": 49,
+      "carb_unit": 3.27,
+      "calories": 226,
+      "sugar_g": 21
+    },
+    {
+      "name": "ตำไทยไม่ใส่น้ำตาล #779",
+      "carb_g": 15,
+      "carb_unit": 1.0,
+      "calories": 365,
+      "sugar_g": 11
+    },
+    {
+      "name": "ปลาเผาใส่ไข่ #780",
+      "carb_g": 23,
+      "carb_unit": 1.53,
+      "calories": 100,
+      "sugar_g": 8
+    },
+    {
+      "name": "ข้าวผัดหมูใส่ผักเพิ่ม #781",
+      "carb_g": 56,
+      "carb_unit": 3.73,
+      "calories": 133,
+      "sugar_g": 4
+    },
+    {
+      "name": "แกงเขียวหวานจานใหญ่ #782",
+      "carb_g": 25,
+      "carb_unit": 1.67,
+      "calories": 335,
+      "sugar_g": 21
+    },
+    {
+      "name": "ไข่ต้มสตรีทฟู้ด #783",
+      "carb_g": 9,
+      "carb_unit": 0.6,
+      "calories": 298,
+      "sugar_g": 17
+    },
+    {
+      "name": "โจ๊กไม่ใส่ผงชูรส #784",
+      "carb_g": 59,
+      "carb_unit": 3.93,
+      "calories": 218,
+      "sugar_g": 0
+    },
+    {
+      "name": "ข้าวกะเพราใส่ผักเพิ่ม #785",
+      "carb_g": 37,
+      "carb_unit": 2.47,
+      "calories": 380,
+      "sugar_g": 22
+    },
+    {
+      "name": "ก๋วยเตี๋ยวหมูไม่ติดมัน #786",
+      "carb_g": 31,
+      "carb_unit": 2.07,
+      "calories": 328,
+      "sugar_g": 3
+    },
+    {
+      "name": "แกงส้มโซเดียมต่ำ #787",
+      "carb_g": 20,
+      "carb_unit": 1.33,
+      "calories": 257,
+      "sugar_g": 4
+    },
+    {
+      "name": "ยำมาม่าหวานน้อย #788",
+      "carb_g": 5,
+      "carb_unit": 0.33,
+      "calories": 255,
+      "sugar_g": 12
+    },
+    {
+      "name": "แกงป่าหมูไม่ติดมัน #789",
+      "carb_g": 9,
+      "carb_unit": 0.6,
+      "calories": 397,
+      "sugar_g": 17
+    },
+    {
+      "name": "สุกี้จานใหญ่ #790",
+      "carb_g": 59,
+      "carb_unit": 3.93,
+      "calories": 260,
+      "sugar_g": 1
+    },
+    {
+      "name": "ข้าวผัดสูตรสุขภาพ #791",
+      "carb_g": 15,
+      "carb_unit": 1.0,
+      "calories": 283,
+      "sugar_g": 5
+    },
+    {
+      "name": "ไก่ย่างพิเศษ #792",
+      "carb_g": 21,
+      "carb_unit": 1.4,
+      "calories": 432,
+      "sugar_g": 9
+    },
+    {
+      "name": "ข้าวหมูแดงหวานน้อย #793",
+      "carb_g": 39,
+      "carb_unit": 2.6,
+      "calories": 83,
+      "sugar_g": 1
+    },
+    {
+      "name": "แกงเผ็ดคลีน #794",
+      "carb_g": 38,
+      "carb_unit": 2.53,
+      "calories": 298,
+      "sugar_g": 2
+    },
+    {
+      "name": "สุกี้ใส่ผักเพิ่ม #795",
+      "carb_g": 60,
+      "carb_unit": 4.0,
+      "calories": 252,
+      "sugar_g": 1
+    },
+    {
+      "name": "ตำปูปลาร้าข้าวกล้อง #796",
+      "carb_g": 5,
+      "carb_unit": 0.33,
+      "calories": 89,
+      "sugar_g": 25
+    },
+    {
+      "name": "ส้มตำลดคาร์บ #797",
+      "carb_g": 30,
+      "carb_unit": 2.0,
+      "calories": 323,
+      "sugar_g": 13
+    },
+    {
+      "name": "ก๋วยเตี๋ยวเรือจานใหญ่ #798",
+      "carb_g": 22,
+      "carb_unit": 1.47,
+      "calories": 203,
+      "sugar_g": 1
+    },
+    {
+      "name": "ก๋วยเตี๋ยวข้าวกล้อง #799",
+      "carb_g": 9,
+      "carb_unit": 0.6,
+      "calories": 447,
+      "sugar_g": 6
+    },
+    {
+      "name": "ก๋วยเตี๋ยวเรือหมูไม่ติดมัน #800",
+      "carb_g": 49,
+      "carb_unit": 3.27,
+      "calories": 111,
+      "sugar_g": 13
+    },
+    {
+      "name": "ข้าวไข่เจียวจานใหญ่ #801",
+      "carb_g": 18,
+      "carb_unit": 1.2,
+      "calories": 155,
+      "sugar_g": 4
+    },
+    {
+      "name": "น้ำตกจานใหญ่ #802",
+      "carb_g": 34,
+      "carb_unit": 2.27,
+      "calories": 414,
+      "sugar_g": 15
+    },
+    {
+      "name": "แกงเขียวหวานไม่ใส่ผงชูรส #803",
+      "carb_g": 32,
+      "carb_unit": 2.13,
+      "calories": 238,
+      "sugar_g": 11
+    },
+    {
+      "name": "ผัดไทยไม่ใส่น้ำตาล #804",
+      "carb_g": 51,
+      "carb_unit": 3.4,
+      "calories": 282,
+      "sugar_g": 24
+    },
+    {
+      "name": "ข้าวหมูกรอบใส่ไข่ #805",
+      "carb_g": 27,
+      "carb_unit": 1.8,
+      "calories": 139,
+      "sugar_g": 9
+    },
+    {
+      "name": "ไก่ย่างข้าวกล้อง #806",
+      "carb_g": 56,
+      "carb_unit": 3.73,
+      "calories": 492,
+      "sugar_g": 9
+    },
+    {
+      "name": "ปลานึ่งพิเศษ #807",
+      "carb_g": 51,
+      "carb_unit": 3.4,
+      "calories": 200,
+      "sugar_g": 7
+    },
+    {
+      "name": "น้ำตกไม่มัน #808",
+      "carb_g": 52,
+      "carb_unit": 3.47,
+      "calories": 64,
+      "sugar_g": 9
+    },
+    {
+      "name": "ส้มตำสูตรผู้ป่วยเบาหวาน #809",
+      "carb_g": 57,
+      "carb_unit": 3.8,
+      "calories": 390,
+      "sugar_g": 10
+    },
+    {
+      "name": "ปลานึ่งอกไก่ #810",
+      "carb_g": 39,
+      "carb_unit": 2.6,
+      "calories": 421,
+      "sugar_g": 5
+    },
+    {
+      "name": "ตำไทยสตรีทฟู้ด #811",
+      "carb_g": 33,
+      "carb_unit": 2.2,
+      "calories": 278,
+      "sugar_g": 24
+    },
+    {
+      "name": "ข้าวหมูกรอบไม่ใส่ผงชูรส #812",
+      "carb_g": 26,
+      "carb_unit": 1.73,
+      "calories": 128,
+      "sugar_g": 24
+    },
+    {
+      "name": "ผัดซีอิ๊วไม่ใส่ผงชูรส #813",
+      "carb_g": 56,
+      "carb_unit": 3.73,
+      "calories": 391,
+      "sugar_g": 10
+    },
+    {
+      "name": "ข้าวหมูทอดกระเทียมคลีน #814",
+      "carb_g": 38,
+      "carb_unit": 2.53,
+      "calories": 240,
+      "sugar_g": 19
+    },
+    {
+      "name": "ต้มยำสูตรสุขภาพ #815",
+      "carb_g": 37,
+      "carb_unit": 2.47,
+      "calories": 242,
+      "sugar_g": 25
+    },
+    {
+      "name": "ข้าวผัดไม่มัน #816",
+      "carb_g": 54,
+      "carb_unit": 3.6,
+      "calories": 132,
+      "sugar_g": 3
+    },
+    {
+      "name": "ข้าวหมูแดงอกไก่ #817",
+      "carb_g": 14,
+      "carb_unit": 0.93,
+      "calories": 433,
+      "sugar_g": 7
+    },
+    {
+      "name": "ยำวุ้นเส้นหมูไม่ติดมัน #818",
+      "carb_g": 39,
+      "carb_unit": 2.6,
+      "calories": 402,
+      "sugar_g": 23
+    },
+    {
+      "name": "ผัดซีอิ๊วโซเดียมต่ำ #819",
+      "carb_g": 28,
+      "carb_unit": 1.87,
+      "calories": 484,
+      "sugar_g": 8
+    },
+    {
+      "name": "ไก่ทอดหวานน้อย #820",
+      "carb_g": 41,
+      "carb_unit": 2.73,
+      "calories": 340,
+      "sugar_g": 3
+    },
+    {
+      "name": "ส้มตำไม่ใส่น้ำตาล #821",
+      "carb_g": 27,
+      "carb_unit": 1.8,
+      "calories": 489,
+      "sugar_g": 15
+    },
+    {
+      "name": "แกงเขียวหวานไม่ใส่ผงชูรส #822",
+      "carb_g": 26,
+      "carb_unit": 1.73,
+      "calories": 456,
+      "sugar_g": 15
+    },
+    {
+      "name": "ข้าวผัดปูหมูไม่ติดมัน #823",
+      "carb_g": 60,
+      "carb_unit": 4.0,
+      "calories": 281,
+      "sugar_g": 0
+    },
+    {
+      "name": "ข้าวหน้าเป็ดไม่ใส่ผงชูรส #824",
+      "carb_g": 55,
+      "carb_unit": 3.67,
+      "calories": 97,
+      "sugar_g": 3
+    },
+    {
+      "name": "ปลาทอดสูตรผู้ป่วยเบาหวาน #825",
+      "carb_g": 24,
+      "carb_unit": 1.6,
+      "calories": 164,
+      "sugar_g": 4
+    },
+    {
+      "name": "ไข่พะโล้ใส่ผักเพิ่ม #826",
+      "carb_g": 42,
+      "carb_unit": 2.8,
+      "calories": 215,
+      "sugar_g": 20
+    },
+    {
+      "name": "ตำไทยหมูไม่ติดมัน #827",
+      "carb_g": 60,
+      "carb_unit": 4.0,
+      "calories": 198,
+      "sugar_g": 12
+    },
+    {
+      "name": "ข้าวไข่เจียวไม่ใส่น้ำตาล #828",
+      "carb_g": 11,
+      "carb_unit": 0.73,
+      "calories": 411,
+      "sugar_g": 4
+    },
+    {
+      "name": "ตำไทยเพิ่มผัก #829",
+      "carb_g": 48,
+      "carb_unit": 3.2,
+      "calories": 213,
+      "sugar_g": 22
+    },
+    {
+      "name": "ตำไทยจานใหญ่ #830",
+      "carb_g": 33,
+      "carb_unit": 2.2,
+      "calories": 290,
+      "sugar_g": 17
+    },
+    {
+      "name": "โจ๊กสูตรร้านอาหาร #831",
+      "carb_g": 20,
+      "carb_unit": 1.33,
+      "calories": 85,
+      "sugar_g": 22
+    },
+    {
+      "name": "โจ๊กสูตรผู้ป่วยเบาหวาน #832",
+      "carb_g": 9,
+      "carb_unit": 0.6,
+      "calories": 315,
+      "sugar_g": 5
+    },
+    {
+      "name": "ข้าวไก่ทอดไม่ใส่ผงชูรส #833",
+      "carb_g": 7,
+      "carb_unit": 0.47,
+      "calories": 472,
+      "sugar_g": 11
+    },
+    {
+      "name": "ข้าวผัดสูตรร้านอาหาร #834",
+      "carb_g": 53,
+      "carb_unit": 3.53,
+      "calories": 381,
+      "sugar_g": 1
+    },
+    {
+      "name": "ข้าวไข่เจียวสตรีทฟู้ด #835",
+      "carb_g": 7,
+      "carb_unit": 0.47,
+      "calories": 210,
+      "sugar_g": 1
+    },
+    {
+      "name": "ตำไทยลดคาร์บ #836",
+      "carb_g": 54,
+      "carb_unit": 3.6,
+      "calories": 72,
+      "sugar_g": 15
+    },
+    {
+      "name": "โจ๊กสูตรร้านอาหาร #837",
+      "carb_g": 29,
+      "carb_unit": 1.93,
+      "calories": 434,
+      "sugar_g": 22
+    },
+    {
+      "name": "ก๋วยเตี๋ยวเรือจานใหญ่ #838",
+      "carb_g": 60,
+      "carb_unit": 4.0,
+      "calories": 464,
+      "sugar_g": 19
+    },
+    {
+      "name": "ก๋วยเตี๋ยวเรือไม่ใส่ผงชูรส #839",
+      "carb_g": 10,
+      "carb_unit": 0.67,
+      "calories": 453,
+      "sugar_g": 3
+    },
+    {
+      "name": "แกงป่าข้าวกล้อง #840",
+      "carb_g": 44,
+      "carb_unit": 2.93,
+      "calories": 250,
+      "sugar_g": 25
+    },
+    {
+      "name": "หมูทอดลดคาร์บ #841",
+      "carb_g": 52,
+      "carb_unit": 3.47,
+      "calories": 79,
+      "sugar_g": 0
+    },
+    {
+      "name": "ข้าวหน้าเป็ดพิเศษ #842",
+      "carb_g": 33,
+      "carb_unit": 2.2,
+      "calories": 250,
+      "sugar_g": 9
+    },
+    {
+      "name": "แกงจืดสูตรผู้ป่วยเบาหวาน #843",
+      "carb_g": 41,
+      "carb_unit": 2.73,
+      "calories": 288,
+      "sugar_g": 2
+    },
+    {
+      "name": "ข้าวหน้าไก่ไม่มัน #844",
+      "carb_g": 53,
+      "carb_unit": 3.53,
+      "calories": 323,
+      "sugar_g": 9
+    },
+    {
+      "name": "ข้าวมันไก่สูตรผู้ป่วยเบาหวาน #845",
+      "carb_g": 52,
+      "carb_unit": 3.47,
+      "calories": 339,
+      "sugar_g": 25
+    },
+    {
+      "name": "ข้าวหน้าเป็ดเพิ่มผัก #846",
+      "carb_g": 13,
+      "carb_unit": 0.87,
+      "calories": 236,
+      "sugar_g": 10
+    },
+    {
+      "name": "ไข่ดาวหมูไม่ติดมัน #847",
+      "carb_g": 28,
+      "carb_unit": 1.87,
+      "calories": 160,
+      "sugar_g": 16
+    },
+    {
+      "name": "ปลาเผาโซเดียมต่ำ #848",
+      "carb_g": 51,
+      "carb_unit": 3.4,
+      "calories": 372,
+      "sugar_g": 24
+    },
+    {
+      "name": "ไข่ดาวลดคาร์บ #849",
+      "carb_g": 15,
+      "carb_unit": 1.0,
+      "calories": 160,
+      "sugar_g": 0
+    },
+    {
+      "name": "ข้าวผัดไม่ใส่ผงชูรส #850",
+      "carb_g": 60,
+      "carb_unit": 4.0,
+      "calories": 211,
+      "sugar_g": 21
+    },
+    {
+      "name": "ข้าวหน้าไก่ไม่ใส่ผงชูรส #851",
+      "carb_g": 32,
+      "carb_unit": 2.13,
+      "calories": 249,
+      "sugar_g": 23
+    },
+    {
+      "name": "ข้าวต้มพิเศษ #852",
+      "carb_g": 38,
+      "carb_unit": 2.53,
+      "calories": 275,
+      "sugar_g": 7
+    },
+    {
+      "name": "ข้าวผัดใส่ไข่ #853",
+      "carb_g": 13,
+      "carb_unit": 0.87,
+      "calories": 498,
+      "sugar_g": 21
+    },
+    {
+      "name": "ไข่พะโล้หมูไม่ติดมัน #854",
+      "carb_g": 50,
+      "carb_unit": 3.33,
+      "calories": 492,
+      "sugar_g": 0
+    },
+    {
+      "name": "แกงเขียวหวานจานใหญ่ #855",
+      "carb_g": 8,
+      "carb_unit": 0.53,
+      "calories": 124,
+      "sugar_g": 16
+    },
+    {
+      "name": "ข้าวไก่ทอดใส่ไข่ #856",
+      "carb_g": 52,
+      "carb_unit": 3.47,
+      "calories": 410,
+      "sugar_g": 6
+    },
+    {
+      "name": "ข้าวไข่เจียวหวานน้อย #857",
+      "carb_g": 37,
+      "carb_unit": 2.47,
+      "calories": 424,
+      "sugar_g": 13
+    },
+    {
+      "name": "ยำมาม่าข้าวกล้อง #858",
+      "carb_g": 34,
+      "carb_unit": 2.27,
+      "calories": 197,
+      "sugar_g": 10
+    },
+    {
+      "name": "ข้าวต้มคลีน #859",
+      "carb_g": 58,
+      "carb_unit": 3.87,
+      "calories": 486,
+      "sugar_g": 7
+    },
+    {
+      "name": "ข้าวผัดหมูสูตรผู้ป่วยเบาหวาน #860",
+      "carb_g": 11,
+      "carb_unit": 0.73,
+      "calories": 123,
+      "sugar_g": 17
+    },
+    {
+      "name": "ไก่ทอดข้าวกล้อง #861",
+      "carb_g": 54,
+      "carb_unit": 3.6,
+      "calories": 491,
+      "sugar_g": 6
+    },
+    {
+      "name": "ปลาทอดหมูไม่ติดมัน #862",
+      "carb_g": 47,
+      "carb_unit": 3.13,
+      "calories": 363,
+      "sugar_g": 25
+    },
+    {
+      "name": "ผัดไทยโซเดียมต่ำ #863",
+      "carb_g": 22,
+      "carb_unit": 1.47,
+      "calories": 85,
+      "sugar_g": 15
+    },
+    {
+      "name": "ข้าวผัดปูสตรีทฟู้ด #864",
+      "carb_g": 51,
+      "carb_unit": 3.4,
+      "calories": 84,
+      "sugar_g": 11
+    },
+    {
+      "name": "ข้าวไก่ทอดเพิ่มผัก #865",
+      "carb_g": 30,
+      "carb_unit": 2.0,
+      "calories": 238,
+      "sugar_g": 15
+    },
+    {
+      "name": "แกงพะแนงไม่มัน #866",
+      "carb_g": 46,
+      "carb_unit": 3.07,
+      "calories": 405,
+      "sugar_g": 21
+    },
+    {
+      "name": "ข้าวผัดไก่เพิ่มผัก #867",
+      "carb_g": 49,
+      "carb_unit": 3.27,
+      "calories": 387,
+      "sugar_g": 2
+    },
+    {
+      "name": "สุกี้จานใหญ่ #868",
+      "carb_g": 23,
+      "carb_unit": 1.53,
+      "calories": 60,
+      "sugar_g": 21
+    },
+    {
+      "name": "สุกี้เพิ่มผัก #869",
+      "carb_g": 43,
+      "carb_unit": 2.87,
+      "calories": 230,
+      "sugar_g": 17
+    },
+    {
+      "name": "ตำปูปลาร้าสูตรร้านอาหาร #870",
+      "carb_g": 27,
+      "carb_unit": 1.8,
+      "calories": 138,
+      "sugar_g": 1
+    },
+    {
+      "name": "แกงป่าคลีน #871",
+      "carb_g": 52,
+      "carb_unit": 3.47,
+      "calories": 109,
+      "sugar_g": 12
+    },
+    {
+      "name": "ส้มตำสูตรผู้ป่วยเบาหวาน #872",
+      "carb_g": 26,
+      "carb_unit": 1.73,
+      "calories": 485,
+      "sugar_g": 15
+    },
+    {
+      "name": "แกงเขียวหวานพิเศษ #873",
+      "carb_g": 44,
+      "carb_unit": 2.93,
+      "calories": 430,
+      "sugar_g": 18
+    },
+    {
+      "name": "ยำปลากระป๋องใส่ผักเพิ่ม #874",
+      "carb_g": 54,
+      "carb_unit": 3.6,
+      "calories": 160,
+      "sugar_g": 11
+    },
+    {
+      "name": "ข้าวผัดปูคลีน #875",
+      "carb_g": 58,
+      "carb_unit": 3.87,
+      "calories": 127,
+      "sugar_g": 0
+    },
+    {
+      "name": "ข้าวผัดหมูโซเดียมต่ำ #876",
+      "carb_g": 41,
+      "carb_unit": 2.73,
+      "calories": 432,
+      "sugar_g": 0
+    },
+    {
+      "name": "ลาบสตรีทฟู้ด #877",
+      "carb_g": 17,
+      "carb_unit": 1.13,
+      "calories": 79,
+      "sugar_g": 17
+    },
+    {
+      "name": "หมูย่างสตรีทฟู้ด #878",
+      "carb_g": 47,
+      "carb_unit": 3.13,
+      "calories": 462,
+      "sugar_g": 2
+    },
+    {
+      "name": "ตำไทยจานใหญ่ #879",
+      "carb_g": 18,
+      "carb_unit": 1.2,
+      "calories": 103,
+      "sugar_g": 5
+    },
+    {
+      "name": "ข้าวไข่เจียวสูตรผู้ป่วยเบาหวาน #880",
+      "carb_g": 11,
+      "carb_unit": 0.73,
+      "calories": 148,
+      "sugar_g": 4
+    },
+    {
+      "name": "ข้าวมันไก่ไม่มัน #881",
+      "carb_g": 37,
+      "carb_unit": 2.47,
+      "calories": 236,
+      "sugar_g": 18
+    },
+    {
+      "name": "ไข่พะโล้ไม่มัน #882",
+      "carb_g": 15,
+      "carb_unit": 1.0,
+      "calories": 295,
+      "sugar_g": 1
+    },
+    {
+      "name": "แกงจืดใส่ผักเพิ่ม #883",
+      "carb_g": 40,
+      "carb_unit": 2.67,
+      "calories": 398,
+      "sugar_g": 9
+    },
+    {
+      "name": "ตำปูปลาร้าจานใหญ่ #884",
+      "carb_g": 29,
+      "carb_unit": 1.93,
+      "calories": 336,
+      "sugar_g": 24
+    },
+    {
+      "name": "ข้าวต้มสตรีทฟู้ด #885",
+      "carb_g": 47,
+      "carb_unit": 3.13,
+      "calories": 280,
+      "sugar_g": 0
+    },
+    {
+      "name": "ผัดไทยใส่ผักเพิ่ม #886",
+      "carb_g": 57,
+      "carb_unit": 3.8,
+      "calories": 388,
+      "sugar_g": 19
+    },
+    {
+      "name": "น้ำตกไม่มัน #887",
+      "carb_g": 57,
+      "carb_unit": 3.8,
+      "calories": 381,
+      "sugar_g": 3
+    },
+    {
+      "name": "แกงพะแนงไม่มัน #888",
+      "carb_g": 29,
+      "carb_unit": 1.93,
+      "calories": 437,
+      "sugar_g": 20
+    },
+    {
+      "name": "ข้าวผัดกุ้งไม่ใส่น้ำตาล #889",
+      "carb_g": 42,
+      "carb_unit": 2.8,
+      "calories": 213,
+      "sugar_g": 21
+    },
+    {
+      "name": "ก๋วยเตี๋ยวเรือพิเศษ #890",
+      "carb_g": 30,
+      "carb_unit": 2.0,
+      "calories": 274,
+      "sugar_g": 2
+    },
+    {
+      "name": "ข้าวผัดปูคลีน #891",
+      "carb_g": 50,
+      "carb_unit": 3.33,
+      "calories": 445,
+      "sugar_g": 15
+    },
+    {
+      "name": "ยำปลากระป๋องไม่ใส่น้ำตาล #892",
+      "carb_g": 51,
+      "carb_unit": 3.4,
+      "calories": 329,
+      "sugar_g": 3
+    },
+    {
+      "name": "แกงเขียวหวานหมูไม่ติดมัน #893",
+      "carb_g": 41,
+      "carb_unit": 2.73,
+      "calories": 63,
+      "sugar_g": 6
+    },
+    {
+      "name": "ข้าวหมูทอดกระเทียมสูตรผู้ป่วยเบาหวาน #894",
+      "carb_g": 53,
+      "carb_unit": 3.53,
+      "calories": 107,
+      "sugar_g": 5
+    },
+    {
+      "name": "ข้าวต้มสูตรร้านอาหาร #895",
+      "carb_g": 39,
+      "carb_unit": 2.6,
+      "calories": 136,
+      "sugar_g": 15
+    },
+    {
+      "name": "ข้าวกะเพราลดคาร์บ #896",
+      "carb_g": 59,
+      "carb_unit": 3.93,
+      "calories": 64,
+      "sugar_g": 18
+    },
+    {
+      "name": "แกงพะแนงไม่ใส่น้ำตาล #897",
+      "carb_g": 54,
+      "carb_unit": 3.6,
+      "calories": 457,
+      "sugar_g": 21
+    },
+    {
+      "name": "ปลาทอดไม่ใส่น้ำตาล #898",
+      "carb_g": 6,
+      "carb_unit": 0.4,
+      "calories": 292,
+      "sugar_g": 1
+    },
+    {
+      "name": "ข้าวกะเพราใส่ไข่ #899",
+      "carb_g": 53,
+      "carb_unit": 3.53,
+      "calories": 317,
+      "sugar_g": 22
+    },
+    {
+      "name": "ราดหน้าใส่ไข่ #900",
+      "carb_g": 9,
+      "carb_unit": 0.6,
+      "calories": 144,
+      "sugar_g": 7
+    },
+    {
+      "name": "ข้าวหน้าเป็ดพิเศษ #901",
+      "carb_g": 50,
+      "carb_unit": 3.33,
+      "calories": 155,
+      "sugar_g": 1
+    },
+    {
+      "name": "ข้าวไก่อบไม่ใส่น้ำตาล #902",
+      "carb_g": 16,
+      "carb_unit": 1.07,
+      "calories": 113,
+      "sugar_g": 24
+    },
+    {
+      "name": "ลาบโซเดียมต่ำ #903",
+      "carb_g": 33,
+      "carb_unit": 2.2,
+      "calories": 406,
+      "sugar_g": 25
+    },
+    {
+      "name": "ข้าวผัดปูลดคาร์บ #904",
+      "carb_g": 20,
+      "carb_unit": 1.33,
+      "calories": 147,
+      "sugar_g": 24
+    },
+    {
+      "name": "ยำมาม่าใส่ผักเพิ่ม #905",
+      "carb_g": 18,
+      "carb_unit": 1.2,
+      "calories": 230,
+      "sugar_g": 3
+    },
+    {
+      "name": "ปลาทอดโซเดียมต่ำ #906",
+      "carb_g": 40,
+      "carb_unit": 2.67,
+      "calories": 482,
+      "sugar_g": 1
+    },
+    {
+      "name": "ต้มยำใส่ไข่ #907",
+      "carb_g": 40,
+      "carb_unit": 2.67,
+      "calories": 332,
+      "sugar_g": 13
+    },
+    {
+      "name": "โจ๊กเพิ่มผัก #908",
+      "carb_g": 5,
+      "carb_unit": 0.33,
+      "calories": 465,
+      "sugar_g": 21
+    },
+    {
+      "name": "ไก่ย่างสตรีทฟู้ด #909",
+      "carb_g": 52,
+      "carb_unit": 3.47,
+      "calories": 119,
+      "sugar_g": 20
+    },
+    {
+      "name": "ผัดไทยโซเดียมต่ำ #910",
+      "carb_g": 26,
+      "carb_unit": 1.73,
+      "calories": 104,
+      "sugar_g": 12
+    },
+    {
+      "name": "ตำแตงพิเศษ #911",
+      "carb_g": 59,
+      "carb_unit": 3.93,
+      "calories": 376,
+      "sugar_g": 17
+    },
+    {
+      "name": "ก๋วยเตี๋ยวหมูไม่ติดมัน #912",
+      "carb_g": 21,
+      "carb_unit": 1.4,
+      "calories": 96,
+      "sugar_g": 3
+    },
+    {
+      "name": "แกงป่าสูตรผู้ป่วยเบาหวาน #913",
+      "carb_g": 22,
+      "carb_unit": 1.47,
+      "calories": 496,
+      "sugar_g": 9
+    },
+    {
+      "name": "ราดหน้าไม่มัน #914",
+      "carb_g": 14,
+      "carb_unit": 0.93,
+      "calories": 274,
+      "sugar_g": 20
+    },
+    {
+      "name": "ยำวุ้นเส้นสตรีทฟู้ด #915",
+      "carb_g": 17,
+      "carb_unit": 1.13,
+      "calories": 184,
+      "sugar_g": 1
+    },
+    {
+      "name": "ลาบใส่ไข่ #916",
+      "carb_g": 22,
+      "carb_unit": 1.47,
+      "calories": 181,
+      "sugar_g": 2
+    },
+    {
+      "name": "ข้าวต้มสูตรร้านอาหาร #917",
+      "carb_g": 30,
+      "carb_unit": 2.0,
+      "calories": 373,
+      "sugar_g": 20
+    },
+    {
+      "name": "ข้าวผัดกุ้งไม่มัน #918",
+      "carb_g": 7,
+      "carb_unit": 0.47,
+      "calories": 217,
+      "sugar_g": 15
+    },
+    {
+      "name": "ข้าวมันไก่สตรีทฟู้ด #919",
+      "carb_g": 47,
+      "carb_unit": 3.13,
+      "calories": 81,
+      "sugar_g": 19
+    },
+    {
+      "name": "ไก่ย่างสูตรสุขภาพ #920",
+      "carb_g": 45,
+      "carb_unit": 3.0,
+      "calories": 119,
+      "sugar_g": 21
+    },
+    {
+      "name": "แกงจืดไม่ใส่น้ำตาล #921",
+      "carb_g": 39,
+      "carb_unit": 2.6,
+      "calories": 190,
+      "sugar_g": 16
+    },
+    {
+      "name": "ข้าวไข่เจียวไม่มัน #922",
+      "carb_g": 23,
+      "carb_unit": 1.53,
+      "calories": 90,
+      "sugar_g": 6
+    },
+    {
+      "name": "ตำแตงสูตรสุขภาพ #923",
+      "carb_g": 50,
+      "carb_unit": 3.33,
+      "calories": 435,
+      "sugar_g": 21
+    },
+    {
+      "name": "ยำปลากระป๋องไม่ใส่ผงชูรส #924",
+      "carb_g": 52,
+      "carb_unit": 3.47,
+      "calories": 148,
+      "sugar_g": 12
+    },
+    {
+      "name": "แกงเขียวหวานสูตรผู้ป่วยเบาหวาน #925",
+      "carb_g": 23,
+      "carb_unit": 1.53,
+      "calories": 260,
+      "sugar_g": 12
+    },
+    {
+      "name": "แกงเผ็ดอกไก่ #926",
+      "carb_g": 39,
+      "carb_unit": 2.6,
+      "calories": 179,
+      "sugar_g": 22
+    },
+    {
+      "name": "ยำมาม่าสตรีทฟู้ด #927",
+      "carb_g": 50,
+      "carb_unit": 3.33,
+      "calories": 148,
+      "sugar_g": 13
+    },
+    {
+      "name": "ราดหน้าใส่ผักเพิ่ม #928",
+      "carb_g": 58,
+      "carb_unit": 3.87,
+      "calories": 245,
+      "sugar_g": 9
+    },
+    {
+      "name": "ข้าวหน้าไก่ไม่ใส่ผงชูรส #929",
+      "carb_g": 19,
+      "carb_unit": 1.27,
+      "calories": 188,
+      "sugar_g": 13
+    },
+    {
+      "name": "ข้าวมันไก่โซเดียมต่ำ #930",
+      "carb_g": 55,
+      "carb_unit": 3.67,
+      "calories": 419,
+      "sugar_g": 6
+    },
+    {
+      "name": "ข้าวหมูแดงสูตรสุขภาพ #931",
+      "carb_g": 48,
+      "carb_unit": 3.2,
+      "calories": 353,
+      "sugar_g": 18
+    },
+    {
+      "name": "ข้าวคลุกกะปิไม่ใส่น้ำตาล #932",
+      "carb_g": 51,
+      "carb_unit": 3.4,
+      "calories": 318,
+      "sugar_g": 9
+    },
+    {
+      "name": "ข้าวกะเพราสูตรร้านอาหาร #933",
+      "carb_g": 16,
+      "carb_unit": 1.07,
+      "calories": 61,
+      "sugar_g": 22
+    },
+    {
+      "name": "ไก่ทอดไม่ใส่น้ำตาล #934",
+      "carb_g": 24,
+      "carb_unit": 1.6,
+      "calories": 384,
+      "sugar_g": 2
+    },
+    {
+      "name": "โจ๊กลดคาร์บ #935",
+      "carb_g": 59,
+      "carb_unit": 3.93,
+      "calories": 497,
+      "sugar_g": 4
+    },
+    {
+      "name": "ข้าวไก่อบไม่ใส่ผงชูรส #936",
+      "carb_g": 10,
+      "carb_unit": 0.67,
+      "calories": 411,
+      "sugar_g": 14
+    },
+    {
+      "name": "ข้าวมันไก่หมูไม่ติดมัน #937",
+      "carb_g": 22,
+      "carb_unit": 1.47,
+      "calories": 329,
+      "sugar_g": 19
+    },
+    {
+      "name": "ข้าวมันไก่สตรีทฟู้ด #938",
+      "carb_g": 11,
+      "carb_unit": 0.73,
+      "calories": 198,
+      "sugar_g": 14
+    },
+    {
+      "name": "ส้มตำคลีน #939",
+      "carb_g": 38,
+      "carb_unit": 2.53,
+      "calories": 448,
+      "sugar_g": 13
+    },
+    {
+      "name": "ข้าวผัดหมูไม่ใส่ผงชูรส #940",
+      "carb_g": 29,
+      "carb_unit": 1.93,
+      "calories": 362,
+      "sugar_g": 7
+    },
+    {
+      "name": "ข้าวไก่อบหวานน้อย #941",
+      "carb_g": 31,
+      "carb_unit": 2.07,
+      "calories": 249,
+      "sugar_g": 5
+    },
+    {
+      "name": "ข้าวผัดหมูไม่ติดมัน #942",
+      "carb_g": 52,
+      "carb_unit": 3.47,
+      "calories": 354,
+      "sugar_g": 5
+    },
+    {
+      "name": "หมูทอดสูตรสุขภาพ #943",
+      "carb_g": 5,
+      "carb_unit": 0.33,
+      "calories": 159,
+      "sugar_g": 5
+    },
+    {
+      "name": "ยำวุ้นเส้นไม่ใส่ผงชูรส #944",
+      "carb_g": 41,
+      "carb_unit": 2.73,
+      "calories": 76,
+      "sugar_g": 9
+    },
+    {
+      "name": "ข้าวหมูแดงคลีน #945",
+      "carb_g": 21,
+      "carb_unit": 1.4,
+      "calories": 68,
+      "sugar_g": 16
+    },
+    {
+      "name": "แกงส้มไม่ใส่น้ำตาล #946",
+      "carb_g": 11,
+      "carb_unit": 0.73,
+      "calories": 394,
+      "sugar_g": 0
+    },
+    {
+      "name": "ข้าวกะเพราสูตรสุขภาพ #947",
+      "carb_g": 60,
+      "carb_unit": 4.0,
+      "calories": 65,
+      "sugar_g": 19
+    },
+    {
+      "name": "ข้าวไก่ทอดข้าวกล้อง #948",
+      "carb_g": 38,
+      "carb_unit": 2.53,
+      "calories": 203,
+      "sugar_g": 12
+    },
+    {
+      "name": "ผัดซีอิ๊วคลีน #949",
+      "carb_g": 46,
+      "carb_unit": 3.07,
+      "calories": 257,
+      "sugar_g": 4
+    },
+    {
+      "name": "ต้มยำจานใหญ่ #950",
+      "carb_g": 16,
+      "carb_unit": 1.07,
+      "calories": 313,
+      "sugar_g": 10
+    },
+    {
+      "name": "ข้าวต้มข้าวกล้อง #951",
+      "carb_g": 14,
+      "carb_unit": 0.93,
+      "calories": 189,
+      "sugar_g": 0
+    },
+    {
+      "name": "ไก่ทอดเพิ่มผัก #952",
+      "carb_g": 37,
+      "carb_unit": 2.47,
+      "calories": 142,
+      "sugar_g": 5
+    },
+    {
+      "name": "ไข่พะโล้ข้าวกล้อง #953",
+      "carb_g": 35,
+      "carb_unit": 2.33,
+      "calories": 312,
+      "sugar_g": 10
+    },
+    {
+      "name": "หมูทอดหวานน้อย #954",
+      "carb_g": 24,
+      "carb_unit": 1.6,
+      "calories": 413,
+      "sugar_g": 19
+    },
+    {
+      "name": "ต้มจืดหวานน้อย #955",
+      "carb_g": 17,
+      "carb_unit": 1.13,
+      "calories": 364,
+      "sugar_g": 13
+    },
+    {
+      "name": "ก๋วยเตี๋ยวต้มยำเพิ่มผัก #956",
+      "carb_g": 20,
+      "carb_unit": 1.33,
+      "calories": 184,
+      "sugar_g": 16
+    },
+    {
+      "name": "ข้าวต้มหมูไม่ติดมัน #957",
+      "carb_g": 35,
+      "carb_unit": 2.33,
+      "calories": 309,
+      "sugar_g": 3
+    },
+    {
+      "name": "แกงจืดไม่ใส่น้ำตาล #958",
+      "carb_g": 58,
+      "carb_unit": 3.87,
+      "calories": 408,
+      "sugar_g": 25
+    },
+    {
+      "name": "ข้าวไก่ทอดไม่ใส่น้ำตาล #959",
+      "carb_g": 58,
+      "carb_unit": 3.87,
+      "calories": 275,
+      "sugar_g": 16
+    },
+    {
+      "name": "ยำวุ้นเส้นสูตรผู้ป่วยเบาหวาน #960",
+      "carb_g": 43,
+      "carb_unit": 2.87,
+      "calories": 226,
+      "sugar_g": 4
+    },
+    {
+      "name": "ไข่พะโล้สตรีทฟู้ด #961",
+      "carb_g": 27,
+      "carb_unit": 1.8,
+      "calories": 385,
+      "sugar_g": 11
+    },
+    {
+      "name": "โจ๊กไม่ใส่ผงชูรส #962",
+      "carb_g": 9,
+      "carb_unit": 0.6,
+      "calories": 96,
+      "sugar_g": 22
+    },
+    {
+      "name": "ไก่ทอดคลีน #963",
+      "carb_g": 26,
+      "carb_unit": 1.73,
+      "calories": 155,
+      "sugar_g": 1
+    },
+    {
+      "name": "แกงป่าไม่ใส่น้ำตาล #964",
+      "carb_g": 46,
+      "carb_unit": 3.07,
+      "calories": 499,
+      "sugar_g": 21
+    },
+    {
+      "name": "ข้าวผัดกุ้งสตรีทฟู้ด #965",
+      "carb_g": 46,
+      "carb_unit": 3.07,
+      "calories": 366,
+      "sugar_g": 21
+    },
+    {
+      "name": "ข้าวหน้าเป็ดอกไก่ #966",
+      "carb_g": 15,
+      "carb_unit": 1.0,
+      "calories": 429,
+      "sugar_g": 3
+    },
+    {
+      "name": "ข้าวผัดปูจานใหญ่ #967",
+      "carb_g": 6,
+      "carb_unit": 0.4,
+      "calories": 182,
+      "sugar_g": 22
+    },
+    {
+      "name": "ข้าวผัดกุ้งเพิ่มผัก #968",
+      "carb_g": 38,
+      "carb_unit": 2.53,
+      "calories": 249,
+      "sugar_g": 15
+    },
+    {
+      "name": "ปลาทอดเพิ่มผัก #969",
+      "carb_g": 5,
+      "carb_unit": 0.33,
+      "calories": 124,
+      "sugar_g": 21
+    },
+    {
+      "name": "ผัดซีอิ๊วสูตรสุขภาพ #970",
+      "carb_g": 46,
+      "carb_unit": 3.07,
+      "calories": 285,
+      "sugar_g": 15
+    },
+    {
+      "name": "ตำไทยเพิ่มผัก #971",
+      "carb_g": 32,
+      "carb_unit": 2.13,
+      "calories": 158,
+      "sugar_g": 23
+    },
+    {
+      "name": "แกงป่าเพิ่มผัก #972",
+      "carb_g": 20,
+      "carb_unit": 1.33,
+      "calories": 168,
+      "sugar_g": 4
+    },
+    {
+      "name": "ข้าวกะเพราพิเศษ #973",
+      "carb_g": 60,
+      "carb_unit": 4.0,
+      "calories": 88,
+      "sugar_g": 17
+    },
+    {
+      "name": "ตำปูปลาร้าใส่ไข่ #974",
+      "carb_g": 7,
+      "carb_unit": 0.47,
+      "calories": 113,
+      "sugar_g": 14
+    },
+    {
+      "name": "ต้มยำโซเดียมต่ำ #975",
+      "carb_g": 11,
+      "carb_unit": 0.73,
+      "calories": 101,
+      "sugar_g": 8
+    },
+    {
+      "name": "ข้าวต้มข้าวกล้อง #976",
+      "carb_g": 52,
+      "carb_unit": 3.47,
+      "calories": 164,
+      "sugar_g": 20
+    },
+    {
+      "name": "ข้าวผัดปูไม่ใส่น้ำตาล #977",
+      "carb_g": 20,
+      "carb_unit": 1.33,
+      "calories": 232,
+      "sugar_g": 23
+    },
+    {
+      "name": "ไข่พะโล้ลดคาร์บ #978",
+      "carb_g": 8,
+      "carb_unit": 0.53,
+      "calories": 119,
+      "sugar_g": 9
+    },
+    {
+      "name": "ข้าวผัดไก่สตรีทฟู้ด #979",
+      "carb_g": 46,
+      "carb_unit": 3.07,
+      "calories": 102,
+      "sugar_g": 10
+    },
+    {
+      "name": "ข้าวกะเพราข้าวกล้อง #980",
+      "carb_g": 44,
+      "carb_unit": 2.93,
+      "calories": 257,
+      "sugar_g": 3
+    },
+    {
+      "name": "น้ำตกไม่ใส่น้ำตาล #981",
+      "carb_g": 34,
+      "carb_unit": 2.27,
+      "calories": 410,
+      "sugar_g": 10
+    },
+    {
+      "name": "โจ๊กเพิ่มผัก #982",
+      "carb_g": 42,
+      "carb_unit": 2.8,
+      "calories": 493,
+      "sugar_g": 7
+    },
+    {
+      "name": "ยำมาม่าสูตรผู้ป่วยเบาหวาน #983",
+      "carb_g": 6,
+      "carb_unit": 0.4,
+      "calories": 237,
+      "sugar_g": 19
+    },
+    {
+      "name": "ตำแตงไม่มัน #984",
+      "carb_g": 25,
+      "carb_unit": 1.67,
+      "calories": 350,
+      "sugar_g": 7
+    },
+    {
+      "name": "แกงป่าหวานน้อย #985",
+      "carb_g": 18,
+      "carb_unit": 1.2,
+      "calories": 253,
+      "sugar_g": 17
+    },
+    {
+      "name": "แกงเผ็ดจานใหญ่ #986",
+      "carb_g": 37,
+      "carb_unit": 2.47,
+      "calories": 124,
+      "sugar_g": 21
+    },
+    {
+      "name": "ปลาทอดหวานน้อย #987",
+      "carb_g": 10,
+      "carb_unit": 0.67,
+      "calories": 349,
+      "sugar_g": 0
+    },
+    {
+      "name": "ข้าวไก่อบคลีน #988",
+      "carb_g": 59,
+      "carb_unit": 3.93,
+      "calories": 425,
+      "sugar_g": 13
+    },
+    {
+      "name": "ปลาทอดสูตรสุขภาพ #989",
+      "carb_g": 5,
+      "carb_unit": 0.33,
+      "calories": 277,
+      "sugar_g": 8
+    },
+    {
+      "name": "ก๋วยเตี๋ยวต้มยำเพิ่มผัก #990",
+      "carb_g": 48,
+      "carb_unit": 3.2,
+      "calories": 471,
+      "sugar_g": 8
+    },
+    {
+      "name": "แกงส้มใส่ไข่ #991",
+      "carb_g": 9,
+      "carb_unit": 0.6,
+      "calories": 363,
+      "sugar_g": 8
+    },
+    {
+      "name": "ต้มยำใส่ผักเพิ่ม #992",
+      "carb_g": 23,
+      "carb_unit": 1.53,
+      "calories": 87,
+      "sugar_g": 11
+    },
+    {
+      "name": "ข้าวผัดหมูหมูไม่ติดมัน #993",
+      "carb_g": 52,
+      "carb_unit": 3.47,
+      "calories": 115,
+      "sugar_g": 4
+    },
+    {
+      "name": "ข้าวหมูกรอบพิเศษ #994",
+      "carb_g": 57,
+      "carb_unit": 3.8,
+      "calories": 335,
+      "sugar_g": 15
+    },
+    {
+      "name": "ไข่ดาวสูตรสุขภาพ #995",
+      "carb_g": 40,
+      "carb_unit": 2.67,
+      "calories": 422,
+      "sugar_g": 19
+    },
+    {
+      "name": "แกงส้มพิเศษ #996",
+      "carb_g": 24,
+      "carb_unit": 1.6,
+      "calories": 328,
+      "sugar_g": 15
+    },
+    {
+      "name": "ก๋วยเตี๋ยวต้มยำพิเศษ #997",
+      "carb_g": 54,
+      "carb_unit": 3.6,
+      "calories": 105,
+      "sugar_g": 9
+    },
+    {
+      "name": "ข้าวผัดไก่อกไก่ #998",
+      "carb_g": 6,
+      "carb_unit": 0.4,
+      "calories": 199,
+      "sugar_g": 7
+    },
+    {
+      "name": "ยำปลากระป๋องสตรีทฟู้ด #999",
+      "carb_g": 13,
+      "carb_unit": 0.87,
+      "calories": 486,
+      "sugar_g": 16
+    },
+    {
+      "name": "สุกี้ลดคาร์บ #1000",
+      "carb_g": 17,
+      "carb_unit": 1.13,
+      "calories": 188,
+      "sugar_g": 21
+    }
+  ]
+}
