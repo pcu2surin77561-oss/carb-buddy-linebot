@@ -7,7 +7,6 @@ const { middleware, Client } = require('@line/bot-sdk');
 const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require('@google/generative-ai');
 const path = require('path');
 
-// นำเข้าฟังก์ชันจาก sheetHelper.js
 const { getPatientHealthReport, getRegisteredUser, registerNewUser, saveFoodLog } = require('./sheetHelper');
 
 // =====================================
@@ -137,6 +136,16 @@ function detectThaiFoods(text) {
         }
     }
     return foundFoods;
+}
+
+// 🌟 ฟังก์ชัน decode ชื่ออาหาร
+function decodeFoodName(encodedStr) {
+    try {
+        if (!encodedStr) return "AI_Analyzed";
+        return decodeURIComponent(encodedStr);
+    } catch (e) {
+        return "ไม่ทราบชื่ออาหาร";
+    }
 }
 
 // =====================================
@@ -327,8 +336,8 @@ async function handleEvent(event) {
             const estimatedCarb = parseFloat(data.get('c'));
             const actualCarb = parseFloat((estimatedCarb * portion).toFixed(1));
             
-            // ✅ ดึงค่าชื่ออาหารจาก Payload 
-            const foodName = data.get('f') || 'AI_Analyzed';
+            // ✅ ดึงค่าชื่ออาหารจาก Payload และทำการ Decode
+            const foodName = decodeFoodName(data.get('f'));
             
             const now = new Date();
             const dateStr = now.toLocaleDateString('th-TH', {timeZone: 'Asia/Bangkok'});
@@ -344,7 +353,7 @@ async function handleEvent(event) {
                 time: timeStr,
                 userId: userId,
                 cid: userInfo.cid,
-                food: foodName, 
+                food: foodName, // ใช้ชื่ออาหารจริงที่ decode แล้ว
                 carb: estimatedCarb,
                 portion: portion,
                 actual_carb: actualCarb,
@@ -604,7 +613,6 @@ async function handleEvent(event) {
                 userCarbContext = `ข้อมูลเพิ่มเติม: นักเรียนท่านนี้มีโควตาคาร์บจำกัดอยู่ที่ "มื้อละ ${userInfo.carbPerMeal} คาร์บ" โปรดแนะนำเพิ่มเติมว่าอาหารในภาพนี้เกินโควตาหรือไม่`;
             }
 
-            // 🌟 บังคับให้ AI เพิ่ม [TOTAL_CARB: x] เพื่อนำไปสร้างปุ่ม
             const prompt = `
                 คุณคือ "ผู้ช่วย AI โรงเรียนเบาหวาน" ผู้เชี่ยวชาญด้านโภชนาการ
                 หากเป็นภาพผลตรวจสุขภาพ: สรุปค่าที่สำคัญ(โดยเฉพาะเบาหวาน), บอกว่าปกติหรือไม่, ให้คำแนะนำ
@@ -636,7 +644,6 @@ async function handleEvent(event) {
             }
 
             const detectedFoods = detectThaiFoods(text);
-            // ✅ ดึงชื่ออาหาร เพื่อฝังไปในปุ่ม (จำกัดความยาวเพื่อป้องกัน Error)
             const foodNameToSave = detectedFoods.length > 0 ? detectedFoods[0] : "AI Analyzed";
 
             if (detectedFoods.length > 0) {
@@ -652,7 +659,6 @@ async function handleEvent(event) {
             }
 
             if (estimatedCarb > 0) {
-                // ✅ เข้ารหัสชื่ออาหารเพื่อซ่อนไปกับปุ่ม (ตัดความยาวไม่ให้ payload เกิน 300 ตัวอักษร)
                 const safeFoodName = encodeURIComponent(foodNameToSave.substring(0, 50));
                 
                 const quickReply = {
@@ -662,7 +668,6 @@ async function handleEvent(event) {
                             action: {
                                 type: "postback",
                                 label: "😋 กินหมด 100%",
-                                // ❌ เอา &img=... ออกแล้ว
                                 data: `action=logfood&p=1&c=${estimatedCarb}&f=${safeFoodName}`,
                                 displayText: "ฉันกินหมดจานเลยครับ/ค่ะ"
                             }
@@ -672,7 +677,6 @@ async function handleEvent(event) {
                             action: {
                                 type: "postback",
                                 label: "🌗 กินครึ่งเดียว 50%",
-                                // ❌ เอา &img=... ออกแล้ว
                                 data: `action=logfood&p=0.5&c=${estimatedCarb}&f=${safeFoodName}`,
                                 displayText: "ฉันกินไปแค่ครึ่งเดียวครับ/ค่ะ"
                             }
@@ -682,7 +686,6 @@ async function handleEvent(event) {
                             action: {
                                 type: "postback",
                                 label: "❌ ถ่ายเฉยๆ",
-                                // ❌ เอา &img=... ออกแล้ว
                                 data: `action=logfood&p=0&c=${estimatedCarb}&f=${safeFoodName}`,
                                 displayText: "แค่ถ่ายรูปมาถามเฉยๆ ไม่ได้กินครับ"
                             }
@@ -720,15 +723,4 @@ async function handleEvent(event) {
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
     console.log(`Webhook server listening on port ${port}`);
-}); 
-จะเพิ่มโค้ดนี้ตรงไหน เพื่อที่จะได้ส่งไปที่  Google sheet ตรง status: statusStr,
-image_url: data.image || '-',
-note: data.note || '-' 
-
-function decodeFoodName(encodedStr) {
-  try {
-    return decodeURIComponent(encodedStr);
-  } catch (e) {
-    return "ไม่ทราบชื่ออาหาร";
-  }
-}
+}); ให้มีเมนูดูคาร์บวันนี้ด้วย และ ขอโค้ดที่สมบูรณ์แล้ว
