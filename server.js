@@ -85,7 +85,7 @@ const thaiFoodDB = {
     "ปลาทอด": {kcal:420, carb:10, sugar:1, fat:28, sodium:700},
     "ปลานึ่งมะนาว": {kcal:260, carb:5, sugar:3, fat:10, sodium:850},
     "ปลาราดพริก": {kcal:380, carb:25, sugar:12, fat:20, sodium:900},
-    "ปลาสามรส": {kcal:450, carb:35, margin:18, fat:24, sodium:950},
+    "ปลาสามรส": {kcal:450, carb:35, sugar:18, fat:24, sodium:950},
     "ข้าวหมูทอด": {kcal:650, carb:70, sugar:3, fat:32, sodium:950},
     "ข้าวไก่ทอด": {kcal:680, carb:75, sugar:3, fat:34, sodium:1000},
     "ข้าวไข่เจียว": {kcal:550, carb:65, sugar:2, fat:26, sodium:800},
@@ -139,7 +139,7 @@ function detectThaiFoods(text) {
 }
 
 // =====================================
-// 🔥 3. ฟังก์ชัน Auto-Discovery รุ่นของ AI (หาชื่อโมเดลอัตโนมัติ)
+// 🔥 3. ฟังก์ชัน Auto-Discovery รุ่นของ AI
 // =====================================
 let availableGeminiModels = [];
 
@@ -155,7 +155,6 @@ async function discoverGeminiModels() {
         }
 
         if (data.models) {
-            // คัดกรองเอารุ่นที่รองรับการ Generate ข้อความได้
             availableGeminiModels = data.models
                 .filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent'))
                 .map(m => m.name.replace('models/', ''));
@@ -169,25 +168,20 @@ async function discoverGeminiModels() {
 // รันคำสั่งนี้ทันทีที่เปิด Server
 discoverGeminiModels();
 
-
 // =====================================
 // 🔥 4. ฟังก์ชัน AI แบบฉลาด (สลับรุ่นอัตโนมัติจากรุ่นที่มีอยู่)
 // =====================================
 async function callGeminiWithFallback(prompt, imageParts = []) {
-    
-    // ถ้ายังตรวจสอบรายชื่อไม่เสร็จ ให้ใช้ค่า Default ไปก่อน
     let modelsToTry = availableGeminiModels.length > 0 
         ? [...availableGeminiModels] 
         : ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro-vision", "gemini-pro"];
 
-    // ถ้ารูปแบบคำสั่งมี "รูปภาพ" ต้องกรองเอารุ่นที่รองรับรูปภาพ
     if (imageParts.length > 0) {
         modelsToTry = modelsToTry.filter(m => 
             m.includes('flash') || m.includes('vision') || m === 'gemini-1.5-pro'
         );
     }
 
-    // จัดลำดับความน่าใช้ (เอารุ่นใหม่สุดและเก่งสุดขึ้นก่อน)
     const priority = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro-vision", "gemini-pro"];
     modelsToTry.sort((a, b) => {
         let indexA = priority.findIndex(p => a.includes(p));
@@ -197,7 +191,6 @@ async function callGeminiWithFallback(prompt, imageParts = []) {
         return indexA - indexB;
     });
 
-    // ถ้าโดนกรองจนไม่เหลืออะไรเลย ให้ลองใช้รุ่นสุดท้าย
     if (modelsToTry.length === 0) {
         modelsToTry = ["gemini-pro"];
     }
@@ -215,7 +208,6 @@ async function callGeminiWithFallback(prompt, imageParts = []) {
 
     let lastError;
 
-    // ลูปทดสอบโมเดลจนกว่าจะสำเร็จ
     for (const modelName of modelsToTry) {
         try {
             const model = genAI.getGenerativeModel({ model: modelName, safetySettings });
@@ -240,7 +232,14 @@ app.get('/', (req, res) => {
 });
 
 // =====================================
-// 6. Endpoint /webhook สำหรับ LINE
+// 🌟 6. Route สำหรับ UptimeRobot / Cron-job เอาไว้ปลุกเซิร์ฟเวอร์
+// =====================================
+app.get('/ping', (req, res) => {
+    res.status(200).send("Carb Buddy LINE Bot is awake and running!");
+});
+
+// =====================================
+// 7. Endpoint /webhook สำหรับ LINE
 // =====================================
 app.post('/webhook', middleware(config), (req, res) => {
     res.status(200).send('OK');
@@ -253,12 +252,12 @@ app.post('/webhook', middleware(config), (req, res) => {
 });
 
 // =====================================
-// 7. ตั้งค่า Middleware ให้อ่าน JSON ได้ (สำหรับ API ของ LIFF)
+// 8. ตั้งค่า Middleware ให้อ่าน JSON ได้ (สำหรับ API ของ LIFF)
 // =====================================
 app.use(express.json());
 
 // =====================================
-// 8. API สำหรับรับข้อมูลลงทะเบียนจาก LIFF (แบบปลอดภัย)
+// 9. API สำหรับรับข้อมูลลงทะเบียนจาก LIFF (แบบปลอดภัย)
 // =====================================
 app.post('/api/register', async (req, res) => {
     try {
@@ -290,7 +289,7 @@ app.post('/api/register', async (req, res) => {
 });
 
 // =====================================
-// 9. API สำหรับดึงข้อมูลเก่าไปโชว์ที่หน้าเว็บ LIFF (index.html)
+// 10. API สำหรับดึงข้อมูลเก่าไปโชว์ที่หน้าเว็บ LIFF (index.html)
 // =====================================
 app.get('/api/getUser', async (req, res) => {
     const userId = req.query.userId;
@@ -305,7 +304,7 @@ app.get('/api/getUser', async (req, res) => {
 });
 
 // =====================================
-// 10. ฟังก์ชันจัดการ Event ของ LINE
+// 11. ฟังก์ชันจัดการ Event ของ LINE
 // =====================================
 async function handleEvent(event) {
     if (event.type !== 'message') return Promise.resolve(null);
@@ -597,7 +596,7 @@ async function handleEvent(event) {
 }
 
 // =====================================
-// 11. สตาร์ทเซิร์ฟเวอร์
+// 12. สตาร์ทเซิร์ฟเวอร์
 // =====================================
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
