@@ -38,7 +38,7 @@ const thaiFoodDB = {
     "ข้าวขาหมู": {kcal:750, carb:75, sugar:5, fat:40, sodium:1300},
     "ข้าวหมูแดง": {kcal:720, carb:85, sugar:15, fat:30, sodium:1100},
     "ข้าวหน้าเป็ด": {kcal:720, carb:80, sugar:12, fat:34, sodium:1100},
-    "ผัดซีอิ๊ว": {kcal:680, carb:85, margin:10, fat:24, sodium:1200},
+    "ผัดซีอิ๊ว": {kcal:680, carb:85, sugar:10, fat:24, sodium:1200},
     "ราดหน้า": {kcal:620, carb:80, sugar:8, fat:20, sodium:1100},
     "ข้าวผัด": {kcal:600, carb:75, sugar:5, fat:22, sodium:1000},
     "ผัดพริกแกง": {kcal:520, carb:60, sugar:5, fat:28, sodium:900},
@@ -139,10 +139,13 @@ function detectThaiFoods(text) {
 }
 
 // =====================================
-// 3. ฟังก์ชัน Auto-Fallback AI
+// 🔥 3. ฟังก์ชัน Auto-Fallback (แก้ปัญหา 404 Not Found)
 // =====================================
 async function callGeminiWithFallback(prompt, imageParts = []) {
-    const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+    // แยกชุดสำรอง: ถ้ามีรูปภาพ ให้ใช้ตระกูล vision / flash, ถ้าข้อความล้วนใช้ pro ได้
+    const modelsToTry = imageParts.length > 0 
+        ? ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-1.5-pro", "gemini-pro-vision"]
+        : ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-1.5-pro", "gemini-pro"];
     
     const safetySettings = [
         {
