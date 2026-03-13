@@ -6,57 +6,66 @@ const express = require('express');
 const { middleware, Client } = require('@line/bot-sdk');
 const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require('@google/generative-ai');
 const path = require('path');
-const crypto = require("crypto"); // 🌟 นำเข้า crypto สำหรับเข้ารหัสและทำ Hash
+const crypto = require("crypto"); 
 
-// 1️⃣ แก้ BUG fetch is not defined และ 3️⃣ ติดตั้ง sharp สำหรับ resize รูป 6️⃣ Rate limit
 const fetch = require('node-fetch');
 const sharp = require('sharp');
 const rateLimit = require('express-rate-limit');
 
-// 🌟 นำเข้าฟังก์ชันทั้งหมด รวมถึง getTodayCarbTotal
-const { getPatientHealthReport, getRegisteredUser, registerNewUser, saveFoodLog, getTodayCarbTotal } = require('./sheetHelper');
+// 🌟 นำเข้าฟังก์ชันทั้งหมด รวมถึง saveLog
+const { 
+    getPatientHealthReport, 
+    getRegisteredUser, 
+    registerNewUser, 
+    saveFoodLog, 
+    getTodayCarbTotal,
+    saveLog 
+} = require('./sheetHelper');
 
-// 7️⃣ สร้าง Cache เก็บผลลัพธ์อาหารเพื่อลดการเรียก AI ซ้ำซ้อน (Layer 1)
 const foodCache = new Map();
 
-// 🔟 Production logging
-function logEvent(userId, action, data) {
-    console.log(JSON.stringify({
-        time: new Date(),
-        userId,
-        action,
-        data
-    }));
+// 🌟 🔟 ฟังก์ชันบันทึก Log แบบ Hospital Grade
+async function logEvent(userId, action, data) {
+    // ปรับเวลาให้เป็นโซนไทยเพื่อให้อ่านง่าย
+    const now = new Date();
+    const timeString = now.toLocaleString('th-TH', {timeZone: 'Asia/Bangkok'});
+    
+    const log = {
+        time: timeString,
+        userId: userId || "unknown",
+        action: action,
+        data: String(data)
+    };
+
+    console.log(JSON.stringify(log));
+
+    try {
+        await saveLog(log);
+    } catch (err) {
+        console.error("Log error:", err);
+    }
 }
 
-// 🌟 ระบบป้องกัน AI Abuse (จำกัดการส่งรูปภาพ)
 const userUsage = new Map();
 function canUseAI(userId) {
     const count = userUsage.get(userId) || 0;
-    if (count > 20) {
-        return false;
-    }
+    if (count > 20) return false;
     userUsage.set(userId, count + 1);
     return true;
 }
 
-// =====================================
-// 1. ตั้งค่า Keys และ Tokens
-// =====================================
 const config = {
     channelAccessToken: process.env.LINE_ACCESS_TOKEN,
     channelSecret: process.env.LINE_CHANNEL_SECRET
 };
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const API_SECRET = process.env.API_SECRET || "default_api_secret_key"; 
-// 🌟 กำหนดความยาว 32 ตัวอักษรสำหรับ aes-256-cbc เสมอ
 const SECRET = process.env.CID_SECRET || "12345678901234567890123456789012"; 
 
 const lineClient = new Client(config);
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const app = express();
 
-// 🌟 ฟังก์ชันเข้ารหัส CID (Hospital standard)
 function encryptCID(cid) {
     const cipher = crypto.createCipheriv(
         "aes-256-cbc",
@@ -68,9 +77,6 @@ function encryptCID(cid) {
     return encrypted;
 }
 
-// =====================================
-// 2. Thai Food Nutrition Database (Layer 2)
-// =====================================
 const thaiFoodDB = {
     "ผัดกะเพรา": {kcal:580, carb:65, sugar:7, fat:24, sodium:1400},
     "ข้าวมันไก่": {kcal:700, carb:80, sugar:4, fat:28, sodium:1200},
@@ -131,7 +137,7 @@ const thaiFoodDB = {
     "ปลาทอด": {kcal:420, carb:10, sugar:1, fat:28, sodium:700},
     "ปลานึ่งมะนาว": {kcal:260, carb:5, sugar:3, fat:10, sodium:850},
     "ปลาราดพริก": {kcal:380, carb:25, sugar:12, fat:20, sodium:900},
-    "ปลาสามรส": {kcal:450, carb:35, sugar:18, fat:24, sodium:950}, 
+    "ปลาสามรส": {kcal:450, carb:35, sugar:18, fat:24, sodium:950},
     "ข้าวหมูทอด": {kcal:650, carb:70, sugar:3, fat:32, sodium:950},
     "ข้าวไก่ทอด": {kcal:680, carb:75, sugar:3, fat:34, sodium:1000},
     "ข้าวไข่เจียว": {kcal:550, carb:65, sugar:2, fat:26, sodium:800},
@@ -184,7 +190,6 @@ function detectThaiFoods(text) {
     return foundFoods;
 }
 
-// 🌟 ฟังก์ชัน decode ชื่ออาหาร
 function decodeFoodName(encodedStr) {
     try {
         if (!encodedStr) return "AI_Analyzed";
@@ -194,7 +199,6 @@ function decodeFoodName(encodedStr) {
     }
 }
 
-// 🌟 Layer 3: Local Heuristic - ฟังก์ชันแยกอาหารหลายอย่างจาก AI
 function extractFoodsFromAI(text) {
     const foods = [];
     const lines = text.split("\n");
@@ -207,7 +211,6 @@ function extractFoodsFromAI(text) {
     return foods;
 }
 
-// 🌟 Layer 3: Local Heuristic - ฟังก์ชันวิเคราะห์ปริมาณข้าว
 function detectRicePortion(text) {
     const riceMatch = text.match(/ข้าวสวย\s*[:\-]?\s*([0-9.]+)/);
     if (riceMatch) {
@@ -216,7 +219,6 @@ function detectRicePortion(text) {
     return 0;
 }
 
-// 🌟 ฟังก์ชันคำนวณโภชนาการกลาง (เพื่อให้สมุดพก และ หลอดคาร์บ มีเลขเป๊ะตรงกัน 100%)
 function calculateUserNutrition(userInfo) {
     if (!userInfo) return null;
     let age = 0;
@@ -265,9 +267,6 @@ function calculateUserNutrition(userInfo) {
     };
 }
 
-// =====================================
-// 🔥 3. ฟังก์ชัน Auto-Discovery รุ่นของ AI
-// =====================================
 let availableGeminiModels = [];
 
 async function discoverGeminiModels() {
@@ -294,9 +293,6 @@ async function discoverGeminiModels() {
 }
 discoverGeminiModels();
 
-// =====================================
-// 🔥 4. ฟังก์ชัน AI แบบฉลาด (สลับรุ่นอัตโนมัติจากรุ่นที่มีอยู่)
-// =====================================
 async function callGeminiWithFallback(prompt, imageParts = []) {
     let modelsToTry = availableGeminiModels.length > 0 
         ? [...availableGeminiModels] 
@@ -350,29 +346,21 @@ async function callGeminiWithFallback(prompt, imageParts = []) {
     throw new Error(`ไม่สามารถเชื่อมต่อ AI ได้เลย ล่าสุด Error: ${lastError.message}`);
 }
 
-// 6️⃣ ป้องกัน AI Spam ด้วย Rate Limit
 const apiLimiter = rateLimit({
-    windowMs: 60 * 1000, // 1 นาที
-    max: 30 // จำกัดที่ 30 requests ต่อนาที
+    windowMs: 60 * 1000, 
+    max: 30 
 });
 
 app.use('/webhook', apiLimiter);
 
-// =====================================
-// 5. Route สำหรับแสดงหน้าเว็บลงทะเบียน (index.html)
-// =====================================
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// =====================================
-// 🌟 6. Route สำหรับ UptimeRobot / Cron-job เอาไว้ปลุกเซิร์ฟเวอร์
-// =====================================
 app.get('/ping', (req, res) => {
     res.status(200).send("Carb Buddy LINE Bot is awake and running!");
 });
 
-// 9️⃣ Health check route
 app.get('/health', (req, res) => {
     res.json({
         status: "ok",
@@ -381,26 +369,18 @@ app.get('/health', (req, res) => {
     });
 });
 
-// =====================================
-// 7. Endpoint /webhook สำหรับ LINE
-// =====================================
 app.post('/webhook', middleware(config), (req, res) => {
     res.status(200).send('OK');
 
     Promise
-        // 5️⃣ แก้ไขปัญหา LINE Webhook crash โดยใช้ allSettled
         .allSettled(req.body.events.map(handleEvent))
         .catch((err) => {
             console.error("Background Event Error:", err);
         });
 });
 
-// =====================================
-// 8. ตั้งค่า Middleware ให้อ่าน JSON ได้ (สำหรับ API ของ LIFF)
-// =====================================
 app.use(express.json());
 
-// 🌟 Security Risk 1: API /api/getUser Authentication
 app.get('/api/getUser', async (req, res) => {
     const apiKey = req.headers['x-api-key'];
     if(apiKey !== API_SECRET){
@@ -420,9 +400,6 @@ app.get('/api/getUser', async (req, res) => {
     }
 });
 
-// =====================================
-// 9. API สำหรับรับข้อมูลลงทะเบียนจาก LIFF (แบบปลอดภัย)
-// =====================================
 app.post('/api/register', async (req, res) => {
     try {
         const {
@@ -434,7 +411,6 @@ app.post('/api/register', async (req, res) => {
             return res.status(400).json({ error: "ข้อมูลไม่ครบถ้วน" });
         }
 
-        // 🌟 Security Risk 2: Encrypt CID ก่อนบันทึก
         const encryptedCID = encryptCID(cid);
 
         const result = await registerNewUser(
@@ -443,28 +419,28 @@ app.post('/api/register', async (req, res) => {
         );
 
         if (result === "success") {
+            // 🌟 Log การลงทะเบียนผู้ใช้ใหม่
+            logEvent(userId, "register", "new_user");
             await lineClient.pushMessage(userId, { type: 'text', text: `✅ ลงทะเบียนสำเร็จ!\n\n📌 แนะนำให้ทานคาร์บมื้อละ: ${carbPerMeal} คาร์บ\n(พิมพ์ "ดูสมุดพก" เพื่อดูผลการวิเคราะห์เต็มรูปแบบครับ)` });
         } else if (result === "updated") {
+            // 🌟 Log การอัปเดตข้อมูล
+            logEvent(userId, "update_profile", "updated_user");
             await lineClient.pushMessage(userId, { type: 'text', text: `🔄 อัปเดตข้อมูลสุขภาพสำเร็จ!\n\n📌 โควตาคาร์บใหม่ของคุณคือ: ${carbPerMeal} คาร์บ/มื้อ\n(คาร์บ 1 ส่วน = ข้าวสวย 1 ทัพพี) 🍚` });
         }
 
         res.json({ status: "ok", result: result });
     } catch (error) {
+        // 🌟 Log error API
+        logEvent(req.body.userId || "unknown", "error", error.message);
         console.error("Register API Error:", error);
         res.status(500).json({ error: "Server Error" });
     }
 });
 
-// =====================================
-// 11. ฟังก์ชันจัดการ Event ของ LINE
-// =====================================
 async function handleEvent(event) {
     if (event.type !== 'message' && event.type !== 'postback') return Promise.resolve(null);
     const userId = event.source.userId;
 
-    // -----------------------------------------
-    // 🌟 11.1 จัดการ Postback (เมื่อผู้ใช้กดปุ่ม Quick Reply)
-    // -----------------------------------------
     if (event.type === 'postback') {
         const data = new URLSearchParams(event.postback.data);
         
@@ -498,6 +474,9 @@ async function handleEvent(event) {
                 food: foodName, carb: estimatedCarb, portion: portion,
                 actual_carb: actualCarb, status: statusStr, note: 'บันทึกผ่าน Quick Reply'
             }).catch(console.error);
+
+            // 🌟 6️⃣ บันทึก Log การบันทึกอาหาร
+            logEvent(userId, "log_food", String(actualCarb) + " carb");
 
             const nutrition = calculateUserNutrition(userInfo);
             const dailyLimit = nutrition.dailyCarbExchange; 
@@ -550,20 +529,20 @@ async function handleEvent(event) {
                 return await lineClient.pushMessage(userId, flex);
             } catch (err) {
                 console.error("Flex Message Error:", err);
+                logEvent(userId, "error", "Flex Message Error in Postback");
                 return lineClient.pushMessage(userId, { type: 'text', text: `✅ บันทึกอาหารสำเร็จ!\n\n📊 วันนี้กินไป ${todayCarb}/${dailyLimit} คาร์บ\n🟢 เหลือกินได้อีก: ${remain} คาร์บ` });
             }
         }
         return Promise.resolve(null);
     }
 
-    // -----------------------------------------
-    // 11.2 จัดการข้อความ (Text)
-    // -----------------------------------------
     if (event.message.type === 'text') {
         const text = event.message.text.trim();
 
-        // 🌟 7️⃣ คำสั่ง "ดูคาร์บวันนี้"
         if (text === 'ดูคาร์บวันนี้') {
+            // 🌟 6️⃣ บันทึก Log ดูคาร์บ
+            logEvent(userId, "view_carb_today", "view");
+
             const userInfo = await getRegisteredUser(userId);
             if (!userInfo) return lineClient.pushMessage(userId, { type: 'text', text: '🔒 กรุณาลงทะเบียนก่อนครับ' });
 
@@ -616,6 +595,7 @@ async function handleEvent(event) {
                 return await lineClient.pushMessage(userId, flex);
             } catch (err) {
                 console.error("Flex Message Error:", err);
+                logEvent(userId, "error", "Flex Message Error in view_carb_today");
                 return lineClient.pushMessage(userId, { type: 'text', text: `📊 สรุปคาร์บวันนี้\nกินไปแล้ว: ${todayCarb}/${dailyLimit} คาร์บ\n🟢 เหลือกินได้อีก: ${remain} คาร์บ` });
             }
         }
@@ -626,7 +606,6 @@ async function handleEvent(event) {
                 return lineClient.pushMessage(userId, { type: 'text', text: '⚠️ ข้อมูลไม่ครบถ้วน แนะนำให้ทำรายการผ่านเมนูลงทะเบียนครับ' });
             }
             
-            // 🌟 Security Risk 2: Encrypt CID ก่อนบันทึก
             const encryptedCID = encryptCID(parts[1].trim());
 
             const result = await registerNewUser(
@@ -635,23 +614,29 @@ async function handleEvent(event) {
             );
             
             if (result === "success") {
+                logEvent(userId, "register_text", "new_user");
                 return lineClient.pushMessage(userId, { type: 'text', text: `✅ ลงทะเบียนสำเร็จ!\nระบบได้ประเมินสุขภาพและโควตาอาหารให้คุณเรียบร้อยแล้ว\n\n📌 แนะนำให้ทานคาร์บมื้อละ: ${parts[8].trim()} คาร์บ\n(พิมพ์ "ดูสมุดพก" เพื่อดูผลการวิเคราะห์เต็มรูปแบบครับ)` });
             } else if (result === "updated") {
+                logEvent(userId, "update_profile_text", "updated_user");
                 return lineClient.pushMessage(userId, { type: 'text', text: `🔄 อัปเดตข้อมูลสุขภาพสำเร็จ!\n\n📌 โควตาคาร์บใหม่ของคุณคือ: ${parts[8].trim()} คาร์บ/มื้อ\n(คาร์บ 1 ส่วน = ข้าวสวย 1 ทัพพี) 🍚` });
             } else {
+                logEvent(userId, "error", "Failed to register via text");
                 return lineClient.pushMessage(userId, { type: 'text', text: '🛠️ เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่ภายหลัง' });
             }
         }
 
         if (text === 'อ่านผลสุขภาพ / ผลแลป') {
+            logEvent(userId, "view_menu", "อ่านผลสุขภาพ");
             return lineClient.pushMessage(userId, { type: 'text', text: '📄 โปรดถ่ายรูปใบรายงานผลตรวจเลือด ส่งมาที่นี่ได้เลยครับ/ค่ะ ผู้ช่วย AI จะช่วยแปลผลให้เข้าใจง่ายๆ ครับ 🩺' });
         }
 
         if (text === 'สแกนอาหารด้วย AI') {
+            logEvent(userId, "view_menu", "สแกนอาหารด้วย AI");
             return lineClient.pushMessage(userId, { type: 'text', text: '📸 กรุณาส่งรูปภาพมื้ออาหารที่ชัดเจนมาได้เลยครับ/ค่ะ AI จะช่วยประเมินการนับคาร์บให้ครับ 🍲' });
         }
 
         if (text === 'คลังความรู้เบาหวาน') {
+            logEvent(userId, "view_menu", "คลังความรู้เบาหวาน");
             const lessonFlex = {
               type: "flex",
               altText: "คลังความรู้โรคเบาหวาน 6 บทเรียน",
@@ -695,6 +680,9 @@ async function handleEvent(event) {
         }
 
         if (text === 'ดูสมุดพก') {
+            // 🌟 6️⃣ บันทึก Log เมื่อผู้ใช้เปิดดูสมุดพก
+            logEvent(userId, "view_health", "report");
+
             const userInfo = await getRegisteredUser(userId);
 
             if (!userInfo) {
@@ -797,6 +785,7 @@ async function handleEvent(event) {
 
             } catch (error) {
                 console.error("Error generating health report:", error);
+                logEvent(userId, "error", "Health report generation failed");
                 return lineClient.pushMessage(userId, { type: 'text', text: 'ขออภัยครับ เกิดข้อผิดพลาดในการดึงข้อมูลสมุดพก 🙏' });
             }
         }
@@ -811,6 +800,7 @@ async function handleEvent(event) {
         
         // 🌟 Security Risk 3: AI Abuse limit
         if (!canUseAI(userId)) {
+            logEvent(userId, "error", "AI Rate limit exceeded");
             return lineClient.pushMessage(userId, { type: 'text', text: '⚠️ ขออภัยครับ คุณใช้งานระบบวิเคราะห์ภาพเกินโควตาที่กำหนดไว้ชั่วคราว โปรดลองใหม่ภายหลังครับ' });
         }
         
@@ -835,6 +825,7 @@ async function handleEvent(event) {
             // 🌟 1️⃣ Layer 1: Cache check ด้วย SHA-256 ป้องกัน Hash ชนกัน
             const imageHash = crypto.createHash("sha256").update(base64Image).digest("hex");
             if (foodCache.has(imageHash)) {
+                logEvent(userId, "scan_food_cache", "Cache hit");
                 return lineClient.pushMessage(userId, { type: "text", text: foodCache.get(imageHash) });
             }
             
@@ -922,6 +913,9 @@ async function handleEvent(event) {
             
             const foodNameToSave = detectedFoods.length > 0 ? detectedFoods.join(', ') : "AI Analyzed";
 
+            // 🌟 6️⃣ บันทึก Log การสแกนอาหาร
+            logEvent(userId, "scan_food", foodNameToSave);
+
             if (detectedFoods.length > 0) {
                 finalText += `\n\n📊 ข้อมูลโภชนาการมาตรฐาน (ต่อ 1 เสิร์ฟปกติ):`;
                 detectedFoods.forEach(food => {
@@ -989,6 +983,7 @@ async function handleEvent(event) {
 
         } catch (error) {
             console.error("Error processing image:", error);
+            logEvent(userId, "error", error.message);
             return lineClient.pushMessage(userId, {
                 type: 'text',
                 text: 'ขออภัยครับ/ค่ะ ระบบวิเคราะห์ภาพมีปัญหาชั่วคราว กรุณาลองส่งรูปใหม่อีกครั้งในภายหลังนะคะ 🛠️'
