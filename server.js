@@ -7,7 +7,7 @@ const { middleware, Client } = require('@line/bot-sdk');
 const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require('@google/generative-ai');
 const path = require('path');
 
-// 🌟 นำเข้าฟังก์ชันทั้งหมด รวมถึง getTodayCarbTotal
+// 🌟 นำเข้าฟังก์ชันจาก sheetHelper.js
 const { getPatientHealthReport, getRegisteredUser, registerNewUser, saveFoodLog, getTodayCarbTotal } = require('./sheetHelper');
 
 // =====================================
@@ -317,12 +317,11 @@ app.get('/api/getUser', async (req, res) => {
 // 11. ฟังก์ชันจัดการ Event ของ LINE
 // =====================================
 async function handleEvent(event) {
-    // 🌟 ดักรับทั้ง message และ postback
     if (event.type !== 'message' && event.type !== 'postback') return Promise.resolve(null);
     const userId = event.source.userId;
 
     // -----------------------------------------
-    // 🌟 11.1 จัดการ Postback (เมื่อผู้ใช้กดปุ่ม Quick Reply)
+    // 🌟 11.1 จัดการ Postback (เมื่อผู้ใช้กดปุ่ม Quick Reply กินหมด/ครึ่งเดียว)
     // -----------------------------------------
     if (event.type === 'postback') {
         const data = new URLSearchParams(event.postback.data);
@@ -370,10 +369,13 @@ async function handleEvent(event) {
             const dailyLimit = (parseFloat(userInfo.carbPerMeal) || 3) * 3;
             const remain = Math.max(0, parseFloat((dailyLimit - todayCarb).toFixed(1)));
 
-            let warningText = "";
             let percent = Math.min(100, Math.round((todayCarb / dailyLimit) * 100));
+            // 🌟 สำคัญมาก: LINE Flex ห้ามตั้งค่า width เป็น "0%" เด็ดขาด
+            let displayPercent = Math.max(1, percent);
+
             let barColor = "#2ECC71"; // เขียว
             let headerColor = "#27AE60";
+            let warningText = "";
 
             if (percent > 80) barColor = "#F39C12"; // ส้ม
             if (todayCarb > dailyLimit) {
@@ -389,7 +391,7 @@ async function handleEvent(event) {
                 { "type": "text", "text": `กินวันนี้รวม ${todayCarb} / ${dailyLimit} คาร์บ`, "margin": "md", "weight": "bold" },
                 {
                     "type": "box", "layout": "vertical", "margin": "md", "height": "12px", "backgroundColor": "#eeeeee", "cornerRadius": "6px",
-                    "contents": [ { "type": "box", "layout": "vertical", "width": `${percent}%`, "backgroundColor": barColor, "height": "12px" } ]
+                    "contents": [ { "type": "box", "layout": "vertical", "width": `${displayPercent}%`, "backgroundColor": barColor, "height": "12px" } ]
                 },
                 { "type": "text", "text": `🟢 เหลือกินได้อีก ${remain} คาร์บ`, "margin": "md", "size": "sm", "color": "#555555" }
             ];
@@ -411,7 +413,12 @@ async function handleEvent(event) {
                 }
             };
 
-            return lineClient.pushMessage(userId, flex);
+            try {
+                return await lineClient.pushMessage(userId, flex);
+            } catch (err) {
+                console.error("Flex Message Error:", err);
+                return lineClient.pushMessage(userId, { type: 'text', text: `✅ บันทึกอาหารสำเร็จ!\n\n📊 วันนี้กินไป ${todayCarb}/${dailyLimit} คาร์บ\n🟢 เหลือกินได้อีก: ${remain} คาร์บ` });
+            }
         }
         return Promise.resolve(null);
     }
@@ -420,7 +427,7 @@ async function handleEvent(event) {
     // 11.2 จัดการข้อความ (Text)
     // -----------------------------------------
     if (event.message.type === 'text') {
-        const text = event.message.text;
+        const text = event.message.text.trim();
 
         // 🌟 7️⃣ คำสั่ง "ดูคาร์บวันนี้"
         if (text === 'ดูคาร์บวันนี้') {
@@ -432,6 +439,8 @@ async function handleEvent(event) {
             const remain = Math.max(0, parseFloat((dailyLimit - todayCarb).toFixed(1)));
 
             let percent = Math.min(100, Math.round((todayCarb / dailyLimit) * 100));
+            let displayPercent = Math.max(1, percent); // 🌟 ป้องกัน LINE Error width 0%
+
             let barColor = "#2ECC71"; 
             let headerColor = "#27AE60";
             let warningText = "";
@@ -447,7 +456,7 @@ async function handleEvent(event) {
                 { "type": "text", "text": `กินวันนี้รวม ${todayCarb} / ${dailyLimit} คาร์บ`, "margin": "md", "weight": "bold", "size": "md" },
                 {
                     "type": "box", "layout": "vertical", "margin": "md", "height": "14px", "backgroundColor": "#eeeeee", "cornerRadius": "7px",
-                    "contents": [ { "type": "box", "layout": "vertical", "width": `${percent}%`, "backgroundColor": barColor, "height": "14px" } ]
+                    "contents": [ { "type": "box", "layout": "vertical", "width": `${displayPercent}%`, "backgroundColor": barColor, "height": "14px" } ]
                 },
                 { "type": "text", "text": `🟢 เหลือกินได้อีก ${remain} คาร์บ`, "margin": "md", "size": "sm", "color": "#555555" }
             ];
@@ -467,7 +476,13 @@ async function handleEvent(event) {
                     "body": { "type": "box", "layout": "vertical", "paddingAll": "lg", "contents": flexContents }
                 }
             };
-            return lineClient.pushMessage(userId, flex);
+            
+            try {
+                return await lineClient.pushMessage(userId, flex);
+            } catch (err) {
+                console.error("Flex Message Error:", err);
+                return lineClient.pushMessage(userId, { type: 'text', text: `📊 สรุปคาร์บวันนี้\nกินไปแล้ว: ${todayCarb}/${dailyLimit} คาร์บ\n🟢 เหลือกินได้อีก: ${remain} คาร์บ` });
+            }
         }
 
         if (text.startsWith('ลงทะเบียน ')) {
