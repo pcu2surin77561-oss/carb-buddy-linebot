@@ -85,7 +85,7 @@ const thaiFoodDB = {
     "ปลาทอด": {kcal:420, carb:10, sugar:1, fat:28, sodium:700},
     "ปลานึ่งมะนาว": {kcal:260, carb:5, sugar:3, fat:10, sodium:850},
     "ปลาราดพริก": {kcal:380, carb:25, sugar:12, fat:20, sodium:900},
-    "ปลาสามรส": {kcal:450, carb:35, sugar:18, fat:24, sodium:950},
+    "ปลาสามรส": {kcal:450, carb:35, margin:18, fat:24, sodium:950},
     "ข้าวหมูทอด": {kcal:650, carb:70, sugar:3, fat:32, sodium:950},
     "ข้าวไก่ทอด": {kcal:680, carb:75, sugar:3, fat:34, sodium:1000},
     "ข้าวไข่เจียว": {kcal:550, carb:65, sugar:2, fat:26, sodium:800},
@@ -139,14 +139,69 @@ function detectThaiFoods(text) {
 }
 
 // =====================================
-// 🔥 3. ฟังก์ชัน Auto-Fallback (แก้ปัญหา 404 Not Found)
+// 🔥 3. ฟังก์ชัน Auto-Discovery รุ่นของ AI (หาชื่อโมเดลอัตโนมัติ)
+// =====================================
+let availableGeminiModels = [];
+
+async function discoverGeminiModels() {
+    console.log("🔍 กำลังตรวจสอบรายชื่อโมเดล Gemini ที่ API Key ของคุณรองรับ...");
+    try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`);
+        const data = await response.json();
+
+        if (data.error) {
+            console.error("❌ API Key Error:", data.error.message);
+            return;
+        }
+
+        if (data.models) {
+            // คัดกรองเอารุ่นที่รองรับการ Generate ข้อความได้
+            availableGeminiModels = data.models
+                .filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent'))
+                .map(m => m.name.replace('models/', ''));
+            
+            console.log("✅ โมเดลที่พร้อมใช้งาน:", availableGeminiModels.join(', '));
+        }
+    } catch (error) {
+        console.error("❌ เกิดข้อผิดพลาดในการตรวจสอบโมเดล:", error.message);
+    }
+}
+// รันคำสั่งนี้ทันทีที่เปิด Server
+discoverGeminiModels();
+
+
+// =====================================
+// 🔥 4. ฟังก์ชัน AI แบบฉลาด (สลับรุ่นอัตโนมัติจากรุ่นที่มีอยู่)
 // =====================================
 async function callGeminiWithFallback(prompt, imageParts = []) {
-    // แยกชุดสำรอง: ถ้ามีรูปภาพ ให้ใช้ตระกูล vision / flash, ถ้าข้อความล้วนใช้ pro ได้
-    const modelsToTry = imageParts.length > 0 
-        ? ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-1.5-pro", "gemini-pro-vision"]
-        : ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-1.5-pro", "gemini-pro"];
     
+    // ถ้ายังตรวจสอบรายชื่อไม่เสร็จ ให้ใช้ค่า Default ไปก่อน
+    let modelsToTry = availableGeminiModels.length > 0 
+        ? [...availableGeminiModels] 
+        : ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro-vision", "gemini-pro"];
+
+    // ถ้ารูปแบบคำสั่งมี "รูปภาพ" ต้องกรองเอารุ่นที่รองรับรูปภาพ
+    if (imageParts.length > 0) {
+        modelsToTry = modelsToTry.filter(m => 
+            m.includes('flash') || m.includes('vision') || m === 'gemini-1.5-pro'
+        );
+    }
+
+    // จัดลำดับความน่าใช้ (เอารุ่นใหม่สุดและเก่งสุดขึ้นก่อน)
+    const priority = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro-vision", "gemini-pro"];
+    modelsToTry.sort((a, b) => {
+        let indexA = priority.findIndex(p => a.includes(p));
+        let indexB = priority.findIndex(p => b.includes(p));
+        indexA = indexA === -1 ? 99 : indexA;
+        indexB = indexB === -1 ? 99 : indexB;
+        return indexA - indexB;
+    });
+
+    // ถ้าโดนกรองจนไม่เหลืออะไรเลย ให้ลองใช้รุ่นสุดท้าย
+    if (modelsToTry.length === 0) {
+        modelsToTry = ["gemini-pro"];
+    }
+
     const safetySettings = [
         {
             category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
@@ -160,6 +215,7 @@ async function callGeminiWithFallback(prompt, imageParts = []) {
 
     let lastError;
 
+    // ลูปทดสอบโมเดลจนกว่าจะสำเร็จ
     for (const modelName of modelsToTry) {
         try {
             const model = genAI.getGenerativeModel({ model: modelName, safetySettings });
@@ -168,7 +224,7 @@ async function callGeminiWithFallback(prompt, imageParts = []) {
             console.log(`✅ ประมวลผลสำเร็จด้วยโมเดล: ${modelName}`);
             return result.response.text(); 
         } catch (error) {
-            console.warn(`⚠️ โมเดล ${modelName} ไม่สามารถใช้งานได้: ${error.message} (กำลังสลับไปโมเดลถัดไป...)`);
+            console.warn(`⚠️ โมเดล ${modelName} ไม่พร้อมใช้งาน: ${error.message} (กำลังสลับโมเดลถัดไป...)`);
             lastError = error;
         }
     }
@@ -177,15 +233,14 @@ async function callGeminiWithFallback(prompt, imageParts = []) {
 }
 
 // =====================================
-// 4. Route สำหรับแสดงหน้าเว็บลงทะเบียน (index.html)
+// 5. Route สำหรับแสดงหน้าเว็บลงทะเบียน (index.html)
 // =====================================
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // =====================================
-// 5. Endpoint /webhook สำหรับ LINE
-// ต้องใช้ middleware(config) เป็นตัวตรวจสอบ Signature ของ LINE (ต้องวางก่อน express.json)
+// 6. Endpoint /webhook สำหรับ LINE
 // =====================================
 app.post('/webhook', middleware(config), (req, res) => {
     res.status(200).send('OK');
@@ -198,13 +253,12 @@ app.post('/webhook', middleware(config), (req, res) => {
 });
 
 // =====================================
-// 6. ตั้งค่า Middleware ให้อ่าน JSON ได้ (สำหรับ API ของ LIFF)
-// วางไว้ใต้ webhook เพื่อไม่ให้กวนการตรวจสอบความปลอดภัยของ LINE
+// 7. ตั้งค่า Middleware ให้อ่าน JSON ได้ (สำหรับ API ของ LIFF)
 // =====================================
 app.use(express.json());
 
 // =====================================
-// 7. API สำหรับรับข้อมูลลงทะเบียนจาก LIFF (แบบปลอดภัย ไม่โชว์เลขบัตรในแชท)
+// 8. API สำหรับรับข้อมูลลงทะเบียนจาก LIFF (แบบปลอดภัย)
 // =====================================
 app.post('/api/register', async (req, res) => {
     try {
@@ -217,13 +271,11 @@ app.post('/api/register', async (req, res) => {
             return res.status(400).json({ error: "ข้อมูลไม่ครบถ้วน" });
         }
 
-        // บันทึกลง Google Sheet
         const result = await registerNewUser(
             userId, cid, birthday, gender, weight, height, 
             activityMultiplier, dietMultiplier, carbPerMeal
         );
 
-        // ส่งข้อความไปหาคนไข้ในแชท
         if (result === "success") {
             await lineClient.pushMessage(userId, { type: 'text', text: `✅ ลงทะเบียนสำเร็จ!\n\n📌 แนะนำให้ทานคาร์บมื้อละ: ${carbPerMeal} คาร์บ\n(พิมพ์ "ดูสมุดพก" เพื่อดูผลการวิเคราะห์เต็มรูปแบบครับ)` });
         } else if (result === "updated") {
@@ -238,7 +290,7 @@ app.post('/api/register', async (req, res) => {
 });
 
 // =====================================
-// 8. API สำหรับดึงข้อมูลเก่าไปโชว์ที่หน้าเว็บ LIFF (index.html)
+// 9. API สำหรับดึงข้อมูลเก่าไปโชว์ที่หน้าเว็บ LIFF (index.html)
 // =====================================
 app.get('/api/getUser', async (req, res) => {
     const userId = req.query.userId;
@@ -253,19 +305,15 @@ app.get('/api/getUser', async (req, res) => {
 });
 
 // =====================================
-// 9. ฟังก์ชันจัดการ Event ของ LINE
+// 10. ฟังก์ชันจัดการ Event ของ LINE
 // =====================================
 async function handleEvent(event) {
     if (event.type !== 'message') return Promise.resolve(null);
     const userId = event.source.userId;
 
-    // -----------------------------------------
-    // 9.1 จัดการข้อความ (Text)
-    // -----------------------------------------
     if (event.message.type === 'text') {
         const text = event.message.text;
 
-        // เผื่อคนไข้พิมพ์เอง (แบบเก่า) ยังสามารถใช้งานได้
         if (text.startsWith('ลงทะเบียน ')) {
             const parts = text.split(' ');
             if (parts.length < 9) {
@@ -293,7 +341,6 @@ async function handleEvent(event) {
             return lineClient.pushMessage(userId, { type: 'text', text: '📸 กรุณาส่งรูปภาพมื้ออาหารที่ชัดเจนมาได้เลยครับ/ค่ะ AI จะช่วยประเมินการนับคาร์บ (Carb Counting) และผลกระทบต่อน้ำตาลในเลือดให้ครับ 🍲' });
         }
 
-        // 🔥 ระบบคลังความรู้เบาหวาน
         if (text === 'คลังความรู้เบาหวาน') {
             const lessonFlex = {
               type: "flex",
@@ -337,7 +384,7 @@ async function handleEvent(event) {
             return lineClient.pushMessage(userId, lessonFlex);
         }
 
-        // 🔥 ระบบสมุดพก (Health Report & Nutrition Summary)
+        // 🔥 ระบบสมุดพก
         if (text === 'ดูสมุดพก') {
             const userInfo = await getRegisteredUser(userId);
 
@@ -350,9 +397,6 @@ async function handleEvent(event) {
             try {
                 const healthData = await getPatientHealthReport(userInfo.cid, userInfo.birthday);
 
-                // ==========================================
-                // 💡 การคำนวณโภชนาการสำหรับแสดงผลใน Flex Message
-                // ==========================================
                 let age = 0;
                 let birthYearMatch = userInfo.birthday.match(/\d{4}/);
                 if (birthYearMatch) {
@@ -366,32 +410,24 @@ async function handleEvent(event) {
                 const act = parseFloat(userInfo.activity) || 1.2;
                 const diet = parseFloat(userInfo.dietType) || 0.5;
 
-                // 1. หา BMR
                 let bmr = (userInfo.gender === 'ชาย') 
                     ? 66 + (13.7 * w) + (5 * h) - (6.8 * age) 
                     : 665 + (9.6 * w) + (1.8 * h) - (4.7 * age);
                 
-                // 2. หา TDEE
                 let tdee = bmr * act;
-                
-                // 3. หาเป้าหมายพลังงาน (Target Kcal)
                 let targetKcal = tdee;
                 let deficitText = "รักษาระดับพลังงานเพื่อสุขภาพที่สมดุล";
                 let showDeficit = false;
                 
-                // ถ้าเป็นโหมด Low Carb (ลดน้ำหนัก/คุมเบาหวาน)
                 if (diet <= 0.2) { 
                     targetKcal = tdee - 500;
-                    if (targetKcal < 1200) targetKcal = 1200; // ขั้นต่ำสุดเพื่อความปลอดภัย
+                    if (targetKcal < 1200) targetKcal = 1200; 
                     deficitText = "ลดพลังงานลง 500 กิโลแคลอรี เพื่อช่วยลดน้ำหนัก";
                     showDeficit = true;
                 }
 
-                // 4. หาคาร์บต่อวัน
                 let dailyCarbGrams = (targetKcal * diet) / 4;
                 let dailyCarbExchange = dailyCarbGrams / 15;
-                
-                // 5. คาร์บต่อมื้อ
                 let carbPerMeal = Math.round(dailyCarbExchange / 3);
                 if (carbPerMeal < 1) carbPerMeal = 1;
 
@@ -399,7 +435,6 @@ async function handleEvent(event) {
                 const patientName = healthData ? healthData.patientInfo.name : "นักเรียน (ไม่ระบุชื่อ)";
                 const patientDate = healthData ? healthData.patientInfo.date : "-";
 
-                // ให้ AI ช่วยวิเคราะห์
                 const prompt = `
                   คุณคือ "หมอ/ผู้ช่วย AI โรงเรียนเบาหวาน" ผู้เชี่ยวชาญด้านเบาหวานและโภชนาการ
                   ชื่อคนไข้: ${patientName}
@@ -417,9 +452,6 @@ async function handleEvent(event) {
 
                 const aiAnalysis = await callGeminiWithFallback(prompt);
 
-                // ==========================================
-                // 📦 สร้าง Flex Message ตามรูปแบบที่ต้องการ
-                // ==========================================
                 const flexMessage = {
                   type: "flex",
                   altText: "สมุดพกสุขภาพและเป้าหมายอาหารของคุณ",
@@ -436,8 +468,6 @@ async function handleEvent(event) {
                     "body": {
                       "type": "box", "layout": "vertical", "paddingAll": "20px",
                       "contents": [
-                        
-                        // 1. กล่องสรุป BMR / TDEE (เทาอ่อน)
                         {
                           "type": "box", "layout": "vertical", "margin": "md",
                           "contents": [
@@ -452,24 +482,17 @@ async function handleEvent(event) {
                           ],
                           "backgroundColor": "#F4F6F6", "paddingAll": "15px", "cornerRadius": "8px"
                         },
-
-                        // 2. ข้อมูลเป้าหมายและคาร์บรายวัน (ตัวอักษรน้ำเงิน/แดง ตามตัวอย่าง)
                         {
                           "type": "box", "layout": "vertical", "margin": "lg",
                           "contents": [
                             { "type": "text", "text": `พลังงานที่ควรได้รับ(กิโลแคลอรี/วัน): ${Math.round(targetKcal).toLocaleString()}`, "color": "#0000FF", "size": "md", "weight": "bold" },
                             { "type": "text", "text": showDeficit ? deficitText : " ", "color": "#FF0000", "size": "xs", "margin": "sm", "wrap": true },
-                            
                             { "type": "separator", "margin": "md", "color": "#0000FF" },
-                            
                             { "type": "text", "text": `ปริมาณคาร์บที่แนะนำต่อวัน: ${dailyCarbExchange.toFixed(1)}`, "color": "#0000FF", "size": "md", "weight": "bold", "margin": "md" },
                             { "type": "text", "text": "รวมคาร์บจากทุกประเภท ทั้งกลุ่มข้าวแป้ง ผัก ผลไม้ และนม", "color": "#FF0000", "size": "xs", "margin": "sm", "wrap": true },
-
                             { "type": "separator", "margin": "md", "color": "#FF0000" }
                           ]
                         },
-
-                        // 3. กล่อง Highlight เป้าหมายต่อมื้อ (สีส้มอ่อน)
                         {
                           "type": "box", "layout": "vertical", "margin": "lg",
                           "contents": [
@@ -479,10 +502,7 @@ async function handleEvent(event) {
                           ],
                           "backgroundColor": "#FDEBD0", "paddingAll": "20px", "cornerRadius": "10px"
                         },
-                        
                         { "type": "separator", "margin": "xl" },
-
-                        // 4. ส่วนผลแล็บและคำแนะนำจาก AI
                         {
                           "type": "box", "layout": "vertical", "margin": "lg",
                           "contents": [
@@ -577,7 +597,7 @@ async function handleEvent(event) {
 }
 
 // =====================================
-// 10. สตาร์ทเซิร์ฟเวอร์
+// 11. สตาร์ทเซิร์ฟเวอร์
 // =====================================
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
