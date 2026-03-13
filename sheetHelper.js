@@ -150,4 +150,34 @@ async function getTodayCarbTotal(userId) {
     }
 }
 
-module.exports = { getPatientHealthReport, getRegisteredUser, registerNewUser, saveFoodLog, getTodayCarbTotal };
+// 🌟 ฟังก์ชันบันทึก Log การใช้งานลง Google Sheet (แท็บ LOG)
+async function saveLog({ time, userId, action, data }) {
+    try {
+        await doc.loadInfo();
+        const sheet = doc.sheetsByTitle["LOG"];
+        if (!sheet) {
+            console.error("ไม่พบแท็บ LOG ใน Google Sheet");
+            return false;
+        }
+
+        await sheet.addRow({
+            time: time,
+            userId: userId,
+            action: action,
+            data: data
+        });
+        return true;
+    } catch (error) {
+        console.error("Error saving log to sheet:", error);
+        return false;
+    }
+}
+
+module.exports = { 
+    getPatientHealthReport, 
+    getRegisteredUser, 
+    registerNewUser, 
+    saveFoodLog, 
+    getTodayCarbTotal,
+    saveLog // ✅ Export saveLog
+};
