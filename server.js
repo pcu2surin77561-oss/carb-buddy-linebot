@@ -1,6 +1,5 @@
 // --- ไฟล์ server.js ---
 // ระบบ Webhook สำหรับ LINE OA: โรงเรียนเบาหวาน
-// วิเคราะห์ผลสุขภาพ + สแกนอาหาร AI + แสดงหน้าเว็บลงทะเบียน + คลังความรู้เบาหวาน
 
 const express = require('express');
 const { middleware, Client } = require('@line/bot-sdk');
@@ -86,7 +85,7 @@ const thaiFoodDB = {
     "ปลาทอด": {kcal:420, carb:10, sugar:1, fat:28, sodium:700},
     "ปลานึ่งมะนาว": {kcal:260, carb:5, sugar:3, fat:10, sodium:850},
     "ปลาราดพริก": {kcal:380, carb:25, sugar:12, fat:20, sodium:900},
-    "ปลาสามรส": {kcal:450, carb:35, sugar:18, fat:24, sodium:950},
+    "ปลาสามรส": {kcal:450, carb:35, margin:18, fat:24, sodium:950},
     "ข้าวหมูทอด": {kcal:650, carb:70, sugar:3, fat:32, sodium:950},
     "ข้าวไก่ทอด": {kcal:680, carb:75, sugar:3, fat:34, sodium:1000},
     "ข้าวไข่เจียว": {kcal:550, carb:65, sugar:2, fat:26, sodium:800},
@@ -147,6 +146,55 @@ function decodeFoodName(encodedStr) {
     } catch (e) {
         return "ไม่ทราบชื่ออาหาร";
     }
+}
+
+// 🌟 ฟังก์ชันคำนวณโภชนาการกลาง (เพื่อให้สมุดพก และ หลอดคาร์บ มีเลขเป๊ะตรงกัน 100%)
+function calculateUserNutrition(userInfo) {
+    if (!userInfo) return null;
+    let age = 0;
+    if (userInfo.birthday) {
+        let match = userInfo.birthday.match(/\d{4}/);
+        if (match) {
+            let y = parseInt(match[0]);
+            if (y > 2400) y -= 543;
+            age = new Date().getFullYear() - y;
+        }
+    }
+    const w = parseFloat(userInfo.weight) || 60;
+    const h = parseFloat(userInfo.height) || 160;
+    const act = parseFloat(userInfo.activity) || 1.2;
+    const diet = parseFloat(userInfo.dietType) || 0.5;
+
+    let bmr = (userInfo.gender === 'ชาย') 
+        ? 66 + (13.7 * w) + (5 * h) - (6.8 * age) 
+        : 665 + (9.6 * w) + (1.8 * h) - (4.7 * age);
+    
+    let tdee = bmr * act;
+    let targetKcal = tdee;
+    let deficitText = "รักษาระดับพลังงานเพื่อสุขภาพที่สมดุล";
+    let showDeficit = false;
+    
+    if (diet <= 0.2) { 
+        targetKcal = tdee - 500;
+        if (targetKcal < 1200) targetKcal = 1200; 
+        deficitText = "ลดพลังงานลง 500 กิโลแคลอรี เพื่อช่วยลดน้ำหนัก";
+        showDeficit = true;
+    }
+
+    let dailyCarbGrams = (targetKcal * diet) / 4;
+    let dailyCarbExchange = parseFloat((dailyCarbGrams / 15).toFixed(1)); 
+    let carbPerMeal = Math.round(dailyCarbExchange / 3);
+    if (carbPerMeal < 1) carbPerMeal = 1;
+
+    return { 
+        bmr: Math.round(bmr), 
+        tdee: Math.round(tdee), 
+        targetKcal: Math.round(targetKcal), 
+        dailyCarbExchange, 
+        carbPerMeal, 
+        deficitText, 
+        showDeficit 
+    };
 }
 
 // =====================================
@@ -317,7 +365,6 @@ app.get('/api/getUser', async (req, res) => {
 // 11. ฟังก์ชันจัดการ Event ของ LINE
 // =====================================
 async function handleEvent(event) {
-    // 🌟 ดักรับทั้ง message และ postback
     if (event.type !== 'message' && event.type !== 'postback') return Promise.resolve(null);
     const userId = event.source.userId;
 
@@ -360,20 +407,22 @@ async function handleEvent(event) {
                 actual_carb: actualCarb, status: statusStr, note: 'บันทึกผ่าน Quick Reply'
             }).catch(console.error);
 
-            // คำนวณคาร์บคงเหลือ และสร้าง Flex Message
-            const dailyLimit = (parseFloat(userInfo.carbPerMeal) || 3) * 3;
+            // ดึงสูตรคำนวณกลางมาใช้ (จะได้ตรงกับสมุดพกเป๊ะๆ)
+            const nutrition = calculateUserNutrition(userInfo);
+            const dailyLimit = nutrition.dailyCarbExchange; 
             const remain = Math.max(0, parseFloat((dailyLimit - todayCarb).toFixed(1)));
 
             let percent = Math.min(100, Math.round((todayCarb / dailyLimit) * 100));
-            let displayPercent = Math.max(1, percent); // ห้ามส่ง 0% ไปให้ LINE เด็ดขาด
+            // 🌟 สำคัญมาก: LINE Flex ห้ามตั้งค่า width เป็น "0%" เด็ดขาด
+            let displayPercent = Math.max(1, percent);
 
-            let barColor = "#2ECC71"; 
+            let barColor = "#2ECC71"; // เขียว
             let headerColor = "#27AE60";
             let warningText = "";
 
-            if (percent > 80) barColor = "#F39C12"; 
+            if (percent > 80) barColor = "#F39C12"; // ส้ม
             if (todayCarb > dailyLimit) {
-                barColor = "#E74C3C"; 
+                barColor = "#E74C3C"; // แดง
                 headerColor = "#E74C3C";
                 warningText = "⚠️ คุณกินคาร์บเกินโควตาแล้ววันนี้\nแนะนำลดข้าว แป้ง หรือของหวานในมื้อต่อไปนะครับ";
             }
@@ -385,7 +434,8 @@ async function handleEvent(event) {
                 { "type": "text", "text": `กินวันนี้รวม ${todayCarb} / ${dailyLimit} คาร์บ`, "margin": "md", "weight": "bold" },
                 {
                     "type": "box", "layout": "vertical", "margin": "md", "height": "12px", "backgroundColor": "#eeeeee", "cornerRadius": "6px",
-                    "contents": [ { "type": "box", "layout": "vertical", "width": `${displayPercent}%`, "backgroundColor": barColor, "height": "12px" } ]
+                    // เพิ่ม contents Filler เข้าไปเพื่อให้ถูกต้องตามกฎของ Flex Message
+                    "contents": [ { "type": "box", "layout": "vertical", "width": `${displayPercent}%`, "backgroundColor": barColor, "height": "12px", "contents": [{"type": "filler"}] } ]
                 },
                 { "type": "text", "text": `🟢 เหลือกินได้อีก ${remain} คาร์บ`, "margin": "md", "size": "sm", "color": "#555555" }
             ];
@@ -429,11 +479,15 @@ async function handleEvent(event) {
             if (!userInfo) return lineClient.pushMessage(userId, { type: 'text', text: '🔒 กรุณาลงทะเบียนก่อนครับ' });
 
             const todayCarb = await getTodayCarbTotal(userId);
-            const dailyLimit = (parseFloat(userInfo.carbPerMeal) || 3) * 3;
+            
+            // ดึงสูตรคำนวณกลางมาใช้
+            const nutrition = calculateUserNutrition(userInfo);
+            const dailyLimit = nutrition.dailyCarbExchange; 
             const remain = Math.max(0, parseFloat((dailyLimit - todayCarb).toFixed(1)));
 
             let percent = Math.min(100, Math.round((todayCarb / dailyLimit) * 100));
-            let displayPercent = Math.max(1, percent); // 🌟 ป้องกัน LINE Error width 0%
+            // ป้องกัน LINE Error width 0%
+            let displayPercent = Math.max(1, percent); 
 
             let barColor = "#2ECC71"; 
             let headerColor = "#27AE60";
@@ -450,7 +504,8 @@ async function handleEvent(event) {
                 { "type": "text", "text": `กินวันนี้รวม ${todayCarb} / ${dailyLimit} คาร์บ`, "margin": "md", "weight": "bold", "size": "md" },
                 {
                     "type": "box", "layout": "vertical", "margin": "md", "height": "14px", "backgroundColor": "#eeeeee", "cornerRadius": "7px",
-                    "contents": [ { "type": "box", "layout": "vertical", "width": `${displayPercent}%`, "backgroundColor": barColor, "height": "14px" } ]
+                    // เพิ่ม contents Filler เข้าไปเพื่อให้ถูกต้องตามกฎของ Flex Message
+                    "contents": [ { "type": "box", "layout": "vertical", "width": `${displayPercent}%`, "backgroundColor": barColor, "height": "14px", "contents": [{"type": "filler"}] } ]
                 },
                 { "type": "text", "text": `🟢 เหลือกินได้อีก ${remain} คาร์บ`, "margin": "md", "size": "sm", "color": "#555555" }
             ];
@@ -560,40 +615,7 @@ async function handleEvent(event) {
 
             try {
                 const healthData = await getPatientHealthReport(userInfo.cid, userInfo.birthday);
-
-                let age = 0;
-                let birthYearMatch = userInfo.birthday.match(/\d{4}/);
-                if (birthYearMatch) {
-                    let birthYear = parseInt(birthYearMatch[0]);
-                    if (birthYear > 2400) birthYear -= 543;
-                    age = new Date().getFullYear() - birthYear;
-                }
-
-                const w = parseFloat(userInfo.weight) || 60;
-                const h = parseFloat(userInfo.height) || 160;
-                const act = parseFloat(userInfo.activity) || 1.2;
-                const diet = parseFloat(userInfo.dietType) || 0.5;
-
-                let bmr = (userInfo.gender === 'ชาย') 
-                    ? 66 + (13.7 * w) + (5 * h) - (6.8 * age) 
-                    : 665 + (9.6 * w) + (1.8 * h) - (4.7 * age);
-                
-                let tdee = bmr * act;
-                let targetKcal = tdee;
-                let deficitText = "รักษาระดับพลังงานเพื่อสุขภาพที่สมดุล";
-                let showDeficit = false;
-                
-                if (diet <= 0.2) { 
-                    targetKcal = tdee - 500;
-                    if (targetKcal < 1200) targetKcal = 1200; 
-                    deficitText = "ลดพลังงานลง 500 กิโลแคลอรี เพื่อช่วยลดน้ำหนัก";
-                    showDeficit = true;
-                }
-
-                let dailyCarbGrams = (targetKcal * diet) / 4;
-                let dailyCarbExchange = dailyCarbGrams / 15;
-                let carbPerMeal = Math.round(dailyCarbExchange / 3);
-                if (carbPerMeal < 1) carbPerMeal = 1;
+                const nutrition = calculateUserNutrition(userInfo);
 
                 const labSummary = healthData ? healthData.labTextSummary : "ไม่มีข้อมูลผลแล็บในระบบ\n(อาจยังไม่ได้ตรวจ หรือเจ้าหน้าที่ยังไม่ได้บันทึกข้อมูล)";
                 const patientName = healthData ? healthData.patientInfo.name : "นักเรียน (ไม่ระบุชื่อ)";
@@ -603,14 +625,14 @@ async function handleEvent(event) {
                   คุณคือ "หมอ/ผู้ช่วย AI โรงเรียนเบาหวาน" ผู้เชี่ยวชาญด้านเบาหวานและโภชนาการ
                   ชื่อคนไข้: ${patientName}
                   
-                  เป้าหมายโภชนาการที่ระบบคำนวณไว้: ทานคาร์บไม่เกินมื้อละ ${carbPerMeal} คาร์บ (1 คาร์บ = ข้าว 1 ทัพพี)
+                  เป้าหมายโภชนาการที่ระบบคำนวณไว้: ทานคาร์บไม่เกินมื้อละ ${nutrition.carbPerMeal} คาร์บ (1 คาร์บ = ข้าว 1 ทัพพี)
                   
                   ผลการตรวจเลือดล่าสุด:
                   ${labSummary}
                   
                   คำสั่ง: กรุณาสรุปข้อมูลและแบ่งเป็น 2 ส่วน
                   1. 🩺 สรุปผลสุขภาพ: อธิบายค่าผลแล็บที่สำคัญแบบเข้าใจง่าย ค่าไหนดี ค่าไหนต้องระวัง (ถ้าไม่มีผลแล็บ ให้ข้ามส่วนนี้ไป)
-                  2. 💡 คำแนะนำโภชนาการ: แนะนำวิธีกินให้ตรงกับเป้าหมาย "ทานมื้อละ ${carbPerMeal} คาร์บ" ให้เป็นรูปธรรม
+                  2. 💡 คำแนะนำโภชนาการ: แนะนำวิธีกินให้ตรงกับเป้าหมาย "ทานมื้อละ ${nutrition.carbPerMeal} คาร์บ" ให้เป็นรูปธรรม
                   ตอบให้กระชับ เป็นมิตร ให้กำลังใจ และใช้ Emoji ประกอบให้อ่านง่าย
                 `;
 
@@ -637,11 +659,11 @@ async function handleEvent(event) {
                           "contents": [
                             { "type": "box", "layout": "baseline", "contents": [
                                 { "type": "text", "text": "BMR (kcal):", "color": "#17202A", "size": "sm", "flex": 2 },
-                                { "type": "text", "text": `${Math.round(bmr).toLocaleString()}`, "color": "#D35400", "size": "sm", "weight": "bold", "flex": 1 }
+                                { "type": "text", "text": `${nutrition.bmr.toLocaleString()}`, "color": "#D35400", "size": "sm", "weight": "bold", "flex": 1 }
                             ]},
                             { "type": "box", "layout": "baseline", "margin": "md", "contents": [
                                 { "type": "text", "text": "พลังงานที่ใช้/วัน (TDEE):", "color": "#17202A", "size": "sm", "flex": 2 },
-                                { "type": "text", "text": `${Math.round(tdee).toLocaleString()}`, "color": "#D35400", "size": "sm", "weight": "bold", "flex": 1 }
+                                { "type": "text", "text": `${nutrition.tdee.toLocaleString()}`, "color": "#D35400", "size": "sm", "weight": "bold", "flex": 1 }
                             ]}
                           ],
                           "backgroundColor": "#F4F6F6", "paddingAll": "15px", "cornerRadius": "8px"
@@ -649,10 +671,10 @@ async function handleEvent(event) {
                         {
                           "type": "box", "layout": "vertical", "margin": "lg",
                           "contents": [
-                            { "type": "text", "text": `พลังงานที่ควรได้รับ(กิโลแคลอรี/วัน): ${Math.round(targetKcal).toLocaleString()}`, "color": "#0000FF", "size": "md", "weight": "bold" },
-                            { "type": "text", "text": showDeficit ? deficitText : " ", "color": "#FF0000", "size": "xs", "margin": "sm", "wrap": true },
+                            { "type": "text", "text": `พลังงานที่ควรได้รับ(กิโลแคลอรี/วัน): ${nutrition.targetKcal.toLocaleString()}`, "color": "#0000FF", "size": "md", "weight": "bold" },
+                            { "type": "text", "text": nutrition.showDeficit ? nutrition.deficitText : " ", "color": "#FF0000", "size": "xs", "margin": "sm", "wrap": true },
                             { "type": "separator", "margin": "md", "color": "#0000FF" },
-                            { "type": "text", "text": `ปริมาณคาร์บที่แนะนำต่อวัน: ${dailyCarbExchange.toFixed(1)}`, "color": "#0000FF", "size": "md", "weight": "bold", "margin": "md" },
+                            { "type": "text", "text": `ปริมาณคาร์บที่แนะนำต่อวัน: ${nutrition.dailyCarbExchange}`, "color": "#0000FF", "size": "md", "weight": "bold", "margin": "md" },
                             { "type": "text", "text": "รวมคาร์บจากทุกประเภท ทั้งกลุ่มข้าวแป้ง ผัก ผลไม้ และนม", "color": "#FF0000", "size": "xs", "margin": "sm", "wrap": true },
                             { "type": "separator", "margin": "md", "color": "#FF0000" }
                           ]
@@ -661,8 +683,8 @@ async function handleEvent(event) {
                           "type": "box", "layout": "vertical", "margin": "lg",
                           "contents": [
                             { "type": "text", "text": "🎯 เป้าหมายโควตาอาหารของคุณ", "weight": "bold", "color": "#D35400", "size": "sm" },
-                            { "type": "text", "text": `ทานได้ไม่เกิน: ${carbPerMeal} คาร์บ / มื้อ`, "size": "xl", "weight": "bold", "color": "#333333", "margin": "md" },
-                            { "type": "text", "text": `(เทียบเท่า ข้าวสวย/แป้ง มื้อละ ${carbPerMeal} ทัพพี)`, "size": "sm", "color": "#666666", "wrap": true, "margin": "sm" }
+                            { "type": "text", "text": `ทานได้ไม่เกิน: ${nutrition.carbPerMeal} คาร์บ / มื้อ`, "size": "xl", "weight": "bold", "color": "#333333", "margin": "md" },
+                            { "type": "text", "text": `(เทียบเท่า ข้าวสวย/แป้ง มื้อละ ${nutrition.carbPerMeal} ทัพพี)`, "size": "sm", "color": "#666666", "wrap": true, "margin": "sm" }
                           ],
                           "backgroundColor": "#FDEBD0", "paddingAll": "20px", "cornerRadius": "10px"
                         },
