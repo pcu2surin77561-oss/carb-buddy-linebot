@@ -7,7 +7,8 @@ const { middleware, Client } = require('@line/bot-sdk');
 const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require('@google/generative-ai');
 const path = require('path');
 
-const { getPatientHealthReport, getRegisteredUser, registerNewUser } = require('./sheetHelper');
+// 🌟 นำเข้า saveFoodLog เพื่อใช้บันทึกข้อมูลอาหาร
+const { getPatientHealthReport, getRegisteredUser, registerNewUser, saveFoodLog } = require('./sheetHelper');
 
 // =====================================
 // 1. ตั้งค่า Keys และ Tokens
@@ -165,7 +166,6 @@ async function discoverGeminiModels() {
         console.error("❌ เกิดข้อผิดพลาดในการตรวจสอบโมเดล:", error.message);
     }
 }
-// รันคำสั่งนี้ทันทีที่เปิด Server
 discoverGeminiModels();
 
 // =====================================
@@ -307,9 +307,65 @@ app.get('/api/getUser', async (req, res) => {
 // 11. ฟังก์ชันจัดการ Event ของ LINE
 // =====================================
 async function handleEvent(event) {
-    if (event.type !== 'message') return Promise.resolve(null);
+    // 🌟 ดักรับทั้ง message และ postback
+    if (event.type !== 'message' && event.type !== 'postback') return Promise.resolve(null);
     const userId = event.source.userId;
 
+    // -----------------------------------------
+    // 🌟 11.1 จัดการ Postback (เมื่อผู้ใช้กดปุ่ม Quick Reply กินหมด/ครึ่งเดียว)
+    // -----------------------------------------
+    if (event.type === 'postback') {
+        const data = new URLSearchParams(event.postback.data);
+        
+        if (data.get('action') === 'logfood') {
+            const userInfo = await getRegisteredUser(userId);
+            if (!userInfo) {
+                return lineClient.pushMessage(userId, { type: 'text', text: '⚠️ กรุณาลงทะเบียนก่อนบันทึกอาหารนะครับ' });
+            }
+
+            const portion = parseFloat(data.get('p'));
+            const estimatedCarb = parseFloat(data.get('c'));
+            const actualCarb = parseFloat((estimatedCarb * portion).toFixed(1));
+            
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('th-TH', {timeZone: 'Asia/Bangkok'});
+            const timeStr = now.toLocaleTimeString('th-TH', {timeZone: 'Asia/Bangkok'});
+
+            let statusStr = "ไม่ได้กิน";
+            if(portion === 1) statusStr = "กินหมด";
+            if(portion > 0 && portion < 1) statusStr = "กินบางส่วน";
+
+            // บันทึกลง Google Sheet
+            await saveFoodLog({
+                date: dateStr,
+                time: timeStr,
+                userId: userId,
+                cid: userInfo.cid,
+                food: 'เมนูที่วิเคราะห์โดย AI',
+                carb: estimatedCarb,
+                portion: portion,
+                actual_carb: actualCarb,
+                status: statusStr,
+                image: '-', 
+                note: 'บันทึกผ่าน Quick Reply'
+            });
+
+            // ตอบกลับผู้ใช้งาน
+            if (portion === 0) {
+                return lineClient.pushMessage(userId, { type: 'text', text: `❌ ยกเลิกการบันทึกอาหารมื้อนี้ครับ (ถ่ายเฉยๆไม่ได้ทาน)` });
+            } else {
+                return lineClient.pushMessage(userId, { 
+                    type: 'text', 
+                    text: `✅ บันทึกอาหารสำเร็จ!\n\n📊 มื้อนี้คุณได้รับคาร์บไป: ${actualCarb} ทัพพี\n🎯 (โควตาของคุณคือ: ${userInfo.carbPerMeal} ทัพพี/มื้อ)\nพยายามคุมให้อยู่ในเกณฑ์นะครับ สู้ๆ ✌️` 
+                });
+            }
+        }
+        return Promise.resolve(null);
+    }
+
+    // -----------------------------------------
+    // 11.2 จัดการข้อความ (Text)
+    // -----------------------------------------
     if (event.message.type === 'text') {
         const text = event.message.text;
 
@@ -546,6 +602,7 @@ async function handleEvent(event) {
                 userCarbContext = `ข้อมูลเพิ่มเติม: นักเรียนท่านนี้มีโควตาคาร์บจำกัดอยู่ที่ "มื้อละ ${userInfo.carbPerMeal} คาร์บ" โปรดแนะนำเพิ่มเติมว่าอาหารในภาพนี้เกินโควตาหรือไม่`;
             }
 
+            // 🌟 บังคับให้ AI เพิ่ม [TOTAL_CARB: x] เพื่อนำไปสร้างปุ่ม
             const prompt = `
                 คุณคือ "ผู้ช่วย AI โรงเรียนเบาหวาน" ผู้เชี่ยวชาญด้านโภชนาการ
                 หากเป็นภาพผลตรวจสุขภาพ: สรุปค่าที่สำคัญ(โดยเฉพาะเบาหวาน), บอกว่าปกติหรือไม่, ให้คำแนะนำ
@@ -558,12 +615,26 @@ async function handleEvent(event) {
                 🔢 จำนวนคาร์บโดยประมาณ:
                 📈 ผลกระทบต่อน้ำตาลในเลือด:
                 💡 คำแนะนำสำหรับนักเรียนเบาหวาน:
+
+                **สำคัญมาก** หากเป็นภาพอาหาร ให้เพิ่มบรรทัดสุดท้ายของคำตอบเป็นตัวเลขคาร์บรวมในรูปแบบนี้เป๊ะๆ:
+                [TOTAL_CARB: ตัวเลข]
+                เช่น [TOTAL_CARB: 3.5]
             `;
 
             const imageParts = [{ inlineData: { data: base64Image, mimeType: "image/jpeg" } }];
             const text = await callGeminiWithFallback(prompt, imageParts);
 
             let finalText = text;
+            let estimatedCarb = 0;
+
+            // 🌟 ดึงตัวเลขคาร์บออกจากคำตอบของ AI ด้วย Regex
+            const carbMatch = text.match(/\[TOTAL_CARB:\s*([0-9.]+)\]/i);
+            if (carbMatch) {
+                estimatedCarb = parseFloat(carbMatch[1]);
+                // ลบบรรทัด [TOTAL_CARB: x] ออกจากข้อความที่จะส่งให้ผู้ใช้เห็น
+                finalText = finalText.replace(/\[TOTAL_CARB:\s*[0-9.]+\]/gi, '').trim();
+            }
+
             const detectedFoods = detectThaiFoods(text);
 
             if (detectedFoods.length > 0) {
@@ -578,10 +649,52 @@ async function handleEvent(event) {
                 finalText += `\n\n📌 หมายเหตุ: 1 คาร์บ = คาร์โบไฮเดรต 15 กรัม (เทียบเท่าข้าวสวย 1 ทัพพี)`;
             }
 
-            return lineClient.pushMessage(userId, {
-                type: 'text',
-                text: finalText
-            });
+            // 🌟 สร้าง Quick Reply Menu ถ้าหาคาร์บเจอ
+            if (estimatedCarb > 0) {
+                const quickReply = {
+                    items: [
+                        {
+                            type: "action",
+                            action: {
+                                type: "postback",
+                                label: "😋 กินหมด 100%",
+                                data: `action=logfood&p=1&c=${estimatedCarb}`,
+                                displayText: "ฉันกินหมดจานเลยครับ/ค่ะ"
+                            }
+                        },
+                        {
+                            type: "action",
+                            action: {
+                                type: "postback",
+                                label: "🌗 กินครึ่งเดียว 50%",
+                                data: `action=logfood&p=0.5&c=${estimatedCarb}`,
+                                displayText: "ฉันกินไปแค่ครึ่งเดียวครับ/ค่ะ"
+                            }
+                        },
+                        {
+                            type: "action",
+                            action: {
+                                type: "postback",
+                                label: "❌ ถ่ายเฉยๆ",
+                                data: `action=logfood&p=0&c=${estimatedCarb}`,
+                                displayText: "แค่ถ่ายรูปมาถามเฉยๆ ไม่ได้กินครับ"
+                            }
+                        }
+                    ]
+                };
+
+                return lineClient.pushMessage(userId, {
+                    type: 'text',
+                    text: finalText + `\n\n👇 กดปุ่มด้านล่างเพื่อบันทึกปริมาณที่คุณทานจริงได้เลยครับ`,
+                    quickReply: quickReply
+                });
+            } else {
+                // ถ้าหาคาร์บไม่เจอ (เช่น เป็นรูปผลเลือด หรือ AI ตอบผิดฟอร์แมต) ให้ตอบแบบปกติไม่มีปุ่ม
+                return lineClient.pushMessage(userId, {
+                    type: 'text',
+                    text: finalText
+                });
+            }
 
         } catch (error) {
             console.error("Error processing image:", error);
