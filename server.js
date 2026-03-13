@@ -292,7 +292,6 @@ async function callGeminiWithFallback(prompt, imageParts = []) {
         }
     ];
 
-    // 🌟 แก้ไข: บังคับ Temperature ให้เป็น 0.0 เพื่อให้ AI ตอบแบบตายตัว ไม่มีความมั่วหรือคาดเดา
     const generationConfig = {
         temperature: 0.0,
         topK: 1,
@@ -359,6 +358,12 @@ app.post('/webhook', middleware(config), (req, res) => {
 });
 
 app.use(express.json());
+
+// 🌟 4️⃣ Security เพิ่ม API Limit สำหรับการเรียกดูข้อมูล User
+app.use('/api/getUser', rateLimit({
+    windowMs: 10 * 60 * 1000,
+    max: 100
+}));
 
 app.get('/api/getUser', async (req, res) => {
     const apiKey = req.headers['x-api-key'];
@@ -799,7 +804,7 @@ async function handleEvent(event) {
             const buffer = Buffer.concat(chunks);
             
             // 3️⃣ Resize ภาพเพื่อความแม่นยำและประหยัด Token
-            const resizedImage = await sharp(buffer).resize(1024).jpeg({ quality: 80 }).toBuffer();
+            const resizedImage = await sharp(buffer).resize({ width: 768, withoutEnlargement: true }).jpeg({ quality: 80 }).toBuffer();
             const base64Image = resizedImage.toString('base64');
             
             // 🌟 1️⃣ Layer 1: Cache check ด้วย SHA-256 ป้องกัน Hash ชนกัน
@@ -813,6 +818,32 @@ async function handleEvent(event) {
             let userCarbContext = "";
             if (userInfo && userInfo.carbPerMeal) {
                 userCarbContext = `ข้อมูลเพิ่มเติม: นักเรียนท่านนี้มีโควตาคาร์บจำกัดอยู่ที่ "มื้อละ ${userInfo.carbPerMeal} คาร์บ" โปรดแนะนำเพิ่มเติมว่าอาหารในภาพนี้เกินโควตาหรือไม่`;
+            }
+
+            // 🌟 1️⃣ ตรวจ fingerprint ก่อนเรียก AI
+            const detectedFoodsEarly = detectThaiFoods(base64Image);
+            const fingerprintEarly = createFoodFingerprint(detectedFoodsEarly);
+
+            if (fingerprintEarly && fingerprintCache.has(fingerprintEarly)) {
+                console.log("⚡ Skip Gemini (fingerprint hit)");
+                const cached = fingerprintCache.get(fingerprintEarly);
+                
+                const safeFoodName = encodeURIComponent(fingerprintEarly.substring(0, 50));
+                const estimatedCarb = cached.carb;
+                
+                const quickReply = {
+                    items: [
+                        { type: "action", action: { type: "postback", label: "😋 กินหมด 100%", data: `action=logfood&p=1&c=${estimatedCarb}&f=${safeFoodName}`, displayText: "ฉันกินหมดจานเลยครับ/ค่ะ" } },
+                        { type: "action", action: { type: "postback", label: "🌗 กินครึ่งเดียว 50%", data: `action=logfood&p=0.5&c=${estimatedCarb}&f=${safeFoodName}`, displayText: "ฉันกินไปแค่ครึ่งเดียวครับ/ค่ะ" } },
+                        { type: "action", action: { type: "postback", label: "❌ ถ่ายเฉยๆ", data: `action=logfood&p=0&c=${estimatedCarb}&f=${safeFoodName}`, displayText: "แค่ถ่ายรูปมาถามเฉยๆ ไม่ได้กินครับ" } }
+                    ]
+                };
+
+                return lineClient.pushMessage(userId, {
+                    type: 'text',
+                    text: cached.text + `\n\n👇 กดปุ่มด้านล่างเพื่อบันทึกปริมาณที่คุณทานจริงได้เลยครับ`,
+                    quickReply: quickReply
+                });
             }
 
             // 🌟 4️⃣ Layer 4: Gemini AI (ใช้เมื่อ Cache ไม่มี)
@@ -898,41 +929,31 @@ async function handleEvent(event) {
             
             const foodNameToSave = detectedFoods.length > 0 ? detectedFoods.join(', ') : "AI Analyzed";
 
-            // 🌟 6️⃣ เช็ค Food Fingerprint Cache ก่อนสร้าง Text
-            const fingerprint = createFoodFingerprint(detectedFoods);
-            
-            if (fingerprint && fingerprintCache.has(fingerprint)) {
-                console.log("⚡ Food fingerprint cache hit");
-                const cachedData = fingerprintCache.get(fingerprint);
-                finalText = cachedData.text;
-                estimatedCarb = cachedData.carb;
-                logEvent(userId, "scan_food_fingerprint_hit", fingerprint);
-            } else {
-                // 🌟 บันทึก Log การสแกนอาหาร (กรณีไม่เจอใน Cache)
-                logEvent(userId, "scan_food", foodNameToSave);
+            // 🌟 6️⃣ บันทึก Log การสแกนอาหาร
+            logEvent(userId, "scan_food", foodNameToSave);
 
-                if (detectedFoods.length > 0) {
-                    finalText += `\n\n📊 ข้อมูลโภชนาการมาตรฐาน (ต่อ 1 เสิร์ฟปกติ):`;
-                    detectedFoods.forEach(foodName => {
-                        const data = thaiFoodDB.find(f => f.name === foodName);
-                        if (!data) return;
-                        
-                        const carbGrams = data.carb_g || 0;
-                        const carbExchange = data.carb_unit || (carbGrams > 0 ? (carbGrams / 15).toFixed(1) : "0");
-                        const calories = data.calories || 0;
-                        const sugar = data.sugar_g || 0;
-                        
-                        finalText += `\n\n🍲 ${foodName}\nพลังงาน: ~${calories} kcal\nคาร์โบไฮเดรต: ${carbGrams} g\nคิดเป็น ${carbExchange} คาร์บ`;
-                        if (sugar > 0) finalText += `\nน้ำตาล: ~${sugar} g`;
-                    });
+            if (detectedFoods.length > 0) {
+                finalText += `\n\n📊 ข้อมูลโภชนาการมาตรฐาน (ต่อ 1 เสิร์ฟปกติ):`;
+                detectedFoods.forEach(foodName => {
+                    const data = thaiFoodDB.find(f => f.name === foodName);
+                    if (!data) return;
                     
-                    finalText += `\n\n📌 หมายเหตุ: 1 คาร์บ = คาร์โบไฮเดรต 15 กรัม (เทียบเท่าข้าวสวย 1 ทัพพี)`;
-                }
+                    const carbGrams = data.carb_g || 0;
+                    const carbExchange = data.carb_unit || (carbGrams > 0 ? (carbGrams / 15).toFixed(1) : "0");
+                    const calories = data.calories || 0;
+                    const sugar = data.sugar_g || 0;
+                    
+                    finalText += `\n\n🍲 ${foodName}\nพลังงาน: ~${calories} kcal\nคาร์โบไฮเดรต: ${carbGrams} g\nคิดเป็น ${carbExchange} คาร์บ`;
+                    if (sugar > 0) finalText += `\nน้ำตาล: ~${sugar} g`;
+                });
+                
+                finalText += `\n\n📌 หมายเหตุ: 1 คาร์บ = คาร์โบไฮเดรต 15 กรัม (เทียบเท่าข้าวสวย 1 ทัพพี)`;
+            }
 
-                // 🌟 7️⃣ บันทึก fingerprint หลัง AI วิเคราะห์
-                if (fingerprint) {
-                    setCacheWithTTL(fingerprintCache, fingerprint, { text: finalText, carb: estimatedCarb });
-                }
+            // 🌟 7️⃣ บันทึก fingerprint หลัง AI วิเคราะห์
+            const fingerprint = createFoodFingerprint(detectedFoods);
+            if (fingerprint) {
+                setCacheWithTTL(fingerprintCache, fingerprint, { text: finalText, carb: estimatedCarb });
             }
 
             // 🌟 บันทึก Cache รูปภาพก่อนตอบกลับ พร้อม TTL
@@ -1009,6 +1030,9 @@ app.listen(port, () => {
         console.log("Memory usage:", mem.toFixed(2), "MB");
         if(mem > 400){
             console.log("⚠️ High memory usage");
+            if (global.gc) {
+                global.gc(); // 🌟 บังคับคืน Memory ถ้าเกิน 400MB
+            }
         }
     }, 60000);
     console.log(`Webhook server listening on port ${port}`);
