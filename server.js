@@ -46,14 +46,32 @@ async function logEvent(userId, action, data) {
     }
 }
 
+// 🌟 ระบบป้องกัน AI Abuse (จำกัดการส่งรูปภาพแบบมี Reset รายวัน)
+let currentDay = new Date().toDateString();
 const userUsage = new Map();
+
 function canUseAI(userId) {
+    const today = new Date().toDateString();
+    
+    // ถ้าข้ามวัน ให้ reset ข้อมูลทั้งหมด
+    if (today !== currentDay) {
+        console.log("🔄 Reset AI usage (new day)");
+        userUsage.clear();
+        currentDay = today;
+    }
+
     const count = userUsage.get(userId) || 0;
-    if (count > 20) return false;
+    
+    // กำหนดให้ใช้ได้ 20 ครั้งต่อวัน
+    if (count >= 20) return false;
+    
     userUsage.set(userId, count + 1);
     return true;
 }
 
+// =====================================
+// 1. ตั้งค่า Keys และ Tokens
+// =====================================
 const config = {
     channelAccessToken: process.env.LINE_ACCESS_TOKEN,
     channelSecret: process.env.LINE_CHANNEL_SECRET
@@ -186,7 +204,7 @@ function calculateUserNutrition(userInfo) {
 let availableGeminiModels = [];
 
 async function discoverGeminiModels() {
-    console.log("🔍 กำลังตรวจสอบรายชื่อโมเดล Gemini...");
+    console.log("🔍 กำลังตรวจสอบรายชื่อโมเดล Gemini ที่ API Key ของคุณรองรับ...");
     try {
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`);
         const data = await response.json();
@@ -714,7 +732,7 @@ async function handleEvent(event) {
         // 🌟 Security Risk 3: AI Abuse limit
         if (!canUseAI(userId)) {
             logEvent(userId, "error", "AI Rate limit exceeded");
-            return lineClient.pushMessage(userId, { type: 'text', text: '⚠️ ขออภัยครับ คุณใช้งานระบบวิเคราะห์ภาพเกินโควตาที่กำหนดไว้ชั่วคราว โปรดลองใหม่ภายหลังครับ' });
+            return lineClient.pushMessage(userId, { type: 'text', text: '⚠️ วันนี้คุณใช้ระบบวิเคราะห์ภาพครบ 20 ครั้งแล้ว\n\nกรุณาลองใหม่พรุ่งนี้ครับ' });
         }
         
         try {
@@ -921,41 +939,3 @@ const port = process.env.PORT || 3000;
 app.listen(port, () => {
     console.log(`Webhook server listening on port ${port}`);
 });
-// ใช้อันล่าสุดด้วยน้ะ ที่เป็น มี BUG ในส่วนของ AI Abuse limit ครับ
-ตอนนี้คุณใช้
-
-
-const userUsage = new Map();
-function canUseAI(userId) {
-    const count = userUsage.get(userId) || 0;
-    if (count > 20) return false;
-    userUsage.set(userId, count + 1);
-    return true;
-}
-
-มันจะนับไปเรื่อยๆ จนถึง 20 และ ผู้ใช้จะไม่สามารถใช้ AI ได้อีกเลยตลอดไป (จนกว่าเซิร์ฟเวอร์จะถูก restart)
-
-วิธีแก้ (ต้องมี Reset รายวัน)
-เพิ่มตัวแปรเก็บวันที่
-
-
-let currentDay = new Date().toDateString();
-const userUsage = new Map();
-
-function canUseAI(userId) {
-    const today = new Date().toDateString();
-    
-    // ถ้าข้ามวัน ให้ reset ข้อมูลทั้งหมด
-    if (today !== currentDay) {
-        userUsage.clear();
-        currentDay = today;
-    }
-
-    const count = userUsage.get(userId) || 0;
-    
-    // กำหนดให้ใช้ได้ 20 ครั้งต่อวัน
-    if (count >= 20) return false;
-    
-    userUsage.set(userId, count + 1);
-    return true;
-}
