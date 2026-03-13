@@ -26,6 +26,20 @@ const {
 const foodCache = new Map();
 const fingerprintCache = new Map(); // 🌟 4️⃣ สร้าง Fingerprint Cache
 
+// 🌟 2️⃣ ฟังก์ชันจัดการ Cache พร้อม TTL เพื่อป้องกัน Memory Leak
+function setCacheWithTTL(cache, key, value, ttl = 3600000) { // Default TTL: 1 ชั่วโมง
+    cache.set(key, value);
+    setTimeout(() => {
+        cache.delete(key);
+    }, ttl);
+
+    // ป้องกัน RAM โตเกินด้วยการจำกัดจำนวน
+    if (cache.size > 500) {
+        const firstKey = cache.keys().next().value;
+        cache.delete(firstKey);
+    }
+}
+
 // 🌟 🔟 ฟังก์ชันบันทึก Log แบบ Hospital Grade
 async function logEvent(userId, action, data) {
     const now = new Date();
@@ -217,7 +231,7 @@ function calculateUserNutrition(userInfo) {
 let availableGeminiModels = [];
 
 async function discoverGeminiModels() {
-    console.log("🔍 กำลังตรวจสอบรายชื่อโมเดล Gemini ที่ API Key ของคุณรองรับ...");
+    console.log("🔍 กำลังตรวจสอบรายชื่อโมเดล Gemini...");
     try {
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`);
         const data = await response.json();
@@ -284,7 +298,15 @@ async function callGeminiWithFallback(prompt, imageParts = []) {
         try {
             const model = genAI.getGenerativeModel({ model: modelName, safetySettings });
             const requestContent = imageParts.length > 0 ? [prompt, ...imageParts] : prompt;
-            const result = await model.generateContent(requestContent);
+            
+            // 🌟 4️⃣ Timeout protection (8 sec) ป้องกัน Server ค้าง
+            const result = await Promise.race([
+                model.generateContent(requestContent),
+                new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error("AI timeout")), 8000)
+                )
+            ]);
+
             console.log(`✅ ประมวลผลสำเร็จด้วยโมเดล: ${modelName}`);
             return result.response.text(); 
         } catch (error) {
@@ -350,6 +372,13 @@ app.get('/api/getUser', async (req, res) => {
     }
 });
 
+// 🌟 6️⃣ Security เพิ่ม API Limit สำหรับการลงทะเบียน
+const registerLimiter = rateLimit({
+    windowMs: 10 * 60 * 1000, // 10 นาที
+    max: 20 // ลงทะเบียนได้สูงสุด 20 ครั้งต่อ 10 นาที
+});
+
+app.use('/api/register', registerLimiter);
 app.post('/api/register', async (req, res) => {
     try {
         const {
@@ -890,22 +919,12 @@ async function handleEvent(event) {
 
                 // 🌟 7️⃣ บันทึก fingerprint หลัง AI วิเคราะห์
                 if (fingerprint) {
-                    fingerprintCache.set(fingerprint, { text: finalText, carb: estimatedCarb });
-                    
-                    // 🌟 8️⃣ จำกัด fingerprint cache (ไม่เกิน 300)
-                    if (fingerprintCache.size > 300) {
-                        const firstKey = fingerprintCache.keys().next().value;
-                        fingerprintCache.delete(firstKey);
-                    }
+                    setCacheWithTTL(fingerprintCache, fingerprint, { text: finalText, carb: estimatedCarb });
                 }
             }
 
-            // 🌟 บันทึก Cache ก่อนตอบกลับ พร้อมระบบจัดการ LRU แบบง่าย (จำกัด 500 รูป)
-            foodCache.set(imageHash, finalText); 
-            if (foodCache.size > 500) {
-                const firstKey = foodCache.keys().next().value;
-                foodCache.delete(firstKey);
-            }
+            // 🌟 บันทึก Cache รูปภาพก่อนตอบกลับ พร้อม TTL
+            setCacheWithTTL(foodCache, imageHash, finalText);
 
             if (estimatedCarb > 0) {
                 const safeFoodName = encodeURIComponent(foodNameToSave.substring(0, 50));
@@ -972,5 +991,13 @@ async function handleEvent(event) {
 // =====================================
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
+    // 🌟 5️⃣ ป้องกัน RAM เต็ม Render ด้วย Monitor ทุก 1 นาที
+    setInterval(() => {
+        const mem = process.memoryUsage().heapUsed / 1024 / 1024;
+        console.log("Memory usage:", mem.toFixed(2), "MB");
+        if(mem > 400){
+            console.log("⚠️ High memory usage");
+        }
+    }, 60000);
     console.log(`Webhook server listening on port ${port}`);
 });
