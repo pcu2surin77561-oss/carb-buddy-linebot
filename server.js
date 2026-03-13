@@ -167,6 +167,28 @@ function decodeFoodName(encodedStr) {
     }
 }
 
+// 🌟 ฟังก์ชันแยกอาหารหลายอย่างจาก AI
+function extractFoodsFromAI(text) {
+    const foods = [];
+    const lines = text.split("\n");
+    lines.forEach(line => {
+        const match = line.match(/(ข้าวสวย|ผัดกะเพรา|ไข่ดาว|ข้าวผัด|แกงเขียวหวาน|ผัดไทย|ก๋วยเตี๋ยว)/);
+        if (match) {
+            foods.push(match[1]);
+        }
+    });
+    return foods;
+}
+
+// 🌟 ฟังก์ชันวิเคราะห์ปริมาณข้าว
+function detectRicePortion(text) {
+    const riceMatch = text.match(/ข้าวสวย\s*[:\-]?\s*([0-9.]+)/);
+    if (riceMatch) {
+        return parseFloat(riceMatch[1]);
+    }
+    return 0;
+}
+
 // 🌟 ฟังก์ชันคำนวณโภชนาการกลาง (เพื่อให้สมุดพก และ หลอดคาร์บ มีเลขเป๊ะตรงกัน 100%)
 function calculateUserNutrition(userInfo) {
     if (!userInfo) return null;
@@ -433,29 +455,33 @@ async function handleEvent(event) {
 
             let statusStr = portion === 1 ? "กินหมด" : "กินบางส่วน";
 
+            // ดึงยอดคาร์บเก่า "ก่อน" บันทึก เพื่อป้องกันปัญหา Sheet ประมวลผลไม่ทัน
             const pastCarbToday = await getTodayCarbTotal(userId);
             const todayCarb = parseFloat((pastCarbToday + actualCarb).toFixed(1));
 
+            // สั่งบันทึกลง Sheet แบบขนาน
             saveFoodLog({
                 date: dateStr, time: timeStr, userId: userId, cid: userInfo.cid,
                 food: foodName, carb: estimatedCarb, portion: portion,
                 actual_carb: actualCarb, status: statusStr, note: 'บันทึกผ่าน Quick Reply'
             }).catch(console.error);
 
+            // ดึงสูตรคำนวณกลางมาใช้ (จะได้ตรงกับสมุดพกเป๊ะๆ)
             const nutrition = calculateUserNutrition(userInfo);
             const dailyLimit = nutrition.dailyCarbExchange; 
             const remain = Math.max(0, parseFloat((dailyLimit - todayCarb).toFixed(1)));
 
             let percent = Math.min(100, Math.round((todayCarb / dailyLimit) * 100));
+            // 🌟 สำคัญมาก: LINE Flex ห้ามตั้งค่า width เป็น "0%" เด็ดขาด
             let displayPercent = Math.max(1, percent);
 
-            let barColor = "#2ECC71"; 
+            let barColor = "#2ECC71"; // เขียว
             let headerColor = "#27AE60";
             let warningText = "";
 
-            if (percent > 80) barColor = "#F39C12"; 
+            if (percent > 80) barColor = "#F39C12"; // ส้ม
             if (todayCarb > dailyLimit) {
-                barColor = "#E74C3C"; 
+                barColor = "#E74C3C"; // แดง
                 headerColor = "#E74C3C";
                 warningText = "⚠️ คุณกินคาร์บเกินโควตาแล้ววันนี้\nแนะนำลดข้าว แป้ง หรือของหวานในมื้อต่อไปนะครับ";
             }
@@ -467,6 +493,7 @@ async function handleEvent(event) {
                 { "type": "text", "text": `กินวันนี้รวม ${todayCarb} / ${dailyLimit} คาร์บ`, "margin": "md", "weight": "bold" },
                 {
                     "type": "box", "layout": "vertical", "margin": "md", "height": "12px", "backgroundColor": "#eeeeee", "cornerRadius": "6px",
+                    // เพิ่ม contents Filler เข้าไปเพื่อให้ถูกต้องตามกฎของ Flex Message
                     "contents": [ { "type": "box", "layout": "vertical", "width": `${displayPercent}%`, "backgroundColor": barColor, "height": "12px", "contents": [{"type": "filler"}] } ]
                 },
                 { "type": "text", "text": `🟢 เหลือกินได้อีก ${remain} คาร์บ`, "margin": "md", "size": "sm", "color": "#555555" }
@@ -512,11 +539,13 @@ async function handleEvent(event) {
 
             const todayCarb = await getTodayCarbTotal(userId);
             
+            // ดึงสูตรคำนวณกลางมาใช้
             const nutrition = calculateUserNutrition(userInfo);
             const dailyLimit = nutrition.dailyCarbExchange; 
             const remain = Math.max(0, parseFloat((dailyLimit - todayCarb).toFixed(1)));
 
             let percent = Math.min(100, Math.round((todayCarb / dailyLimit) * 100));
+            // ป้องกัน LINE Error width 0%
             let displayPercent = Math.max(1, percent); 
 
             let barColor = "#2ECC71"; 
@@ -534,6 +563,7 @@ async function handleEvent(event) {
                 { "type": "text", "text": `กินวันนี้รวม ${todayCarb} / ${dailyLimit} คาร์บ`, "margin": "md", "weight": "bold", "size": "md" },
                 {
                     "type": "box", "layout": "vertical", "margin": "md", "height": "14px", "backgroundColor": "#eeeeee", "cornerRadius": "7px",
+                    // เพิ่ม contents Filler เข้าไปเพื่อให้ถูกต้องตามกฎของ Flex Message
                     "contents": [ { "type": "box", "layout": "vertical", "width": `${displayPercent}%`, "backgroundColor": barColor, "height": "14px", "contents": [{"type": "filler"}] } ]
                 },
                 { "type": "text", "text": `🟢 เหลือกินได้อีก ${remain} คาร์บ`, "margin": "md", "size": "sm", "color": "#555555" }
@@ -771,30 +801,53 @@ async function handleEvent(event) {
                 userCarbContext = `ข้อมูลเพิ่มเติม: นักเรียนท่านนี้มีโควตาคาร์บจำกัดอยู่ที่ "มื้อละ ${userInfo.carbPerMeal} คาร์บ" โปรดแนะนำเพิ่มเติมว่าอาหารในภาพนี้เกินโควตาหรือไม่`;
             }
 
-            // 4️⃣ Update Prompt ให้รับคาร์บง่ายขึ้น
+            // 🌟 อัปเดต Prompt ใหม่ ให้แยกอาหารหลายชนิด และแยกปริมาณข้าวชัดเจน
             const prompt = `
                 คุณคือผู้เชี่ยวชาญด้านโภชนาการสำหรับผู้ป่วยเบาหวาน
-                วิเคราะห์ภาพอย่างเป็นขั้นตอน
-                ขั้นตอน
-                1 ตรวจสอบว่าเป็น "อาหาร" หรือ "ผลตรวจสุขภาพ"
 
-                ถ้าเป็นอาหารให้ตอบตาม format นี้เท่านั้น
+                ภารกิจ:
+                วิเคราะห์ภาพอาหาร และแยกอาหารแต่ละอย่างในภาพ
 
-                🍲 เมนูที่พบ:
-                🍚 ปริมาณโดยประมาณ:
-                🔢 จำนวนคาร์บโดยประมาณ (1 คาร์บ = 15g):
-                📈 ผลต่อน้ำตาลในเลือด:
-                💡 คำแนะนำสำหรับผู้ป่วยเบาหวาน:
+                ขั้นตอนการวิเคราะห์
 
-                ${userCarbContext}
+                1. ระบุอาหารทุกอย่างที่เห็นในภาพ
+                2. ประเมินปริมาณของแต่ละอย่าง
+                3. ประเมินจำนวนคาร์บของแต่ละอย่าง
+                4. รวมคาร์บทั้งหมด
 
-                และต้องจบด้วย
+                รูปแบบการตอบต้องเป็นแบบนี้เท่านั้น
+
+                🍽 อาหารที่พบในภาพ:
+                - ข้าวสวย: X ทัพพี
+                - เมนูอาหาร: ปริมาณโดยประมาณ
+
+                📊 CARB_BREAKDOWN
+                ข้าวสวย: X
+                อาหารอื่น: X
+
+                📈 ผลต่อระดับน้ำตาล
+
+                💡 คำแนะนำผู้ป่วยเบาหวาน
+
+                ต้องจบด้วย
 
                 [TOTAL_CARB: X.X]
 
-                เช่น
+                ตัวอย่าง
 
-                [TOTAL_CARB: 3.5]
+                🍽 อาหารที่พบในภาพ
+                ข้าวสวย: 2 ทัพพี
+                ผัดกะเพรา: 1 จาน
+                ไข่ดาว: 1 ฟอง
+
+                CARB_BREAKDOWN
+                ข้าวสวย: 2
+                ผัดกะเพรา: 1
+                ไข่ดาว: 0
+
+                [TOTAL_CARB: 3]
+
+                ${userCarbContext}
             `;
 
             const imageParts = [{ inlineData: { data: base64Image, mimeType: "image/jpeg" } }];
@@ -809,16 +862,33 @@ async function handleEvent(event) {
                 finalText = finalText.replace(/\[TOTAL_CARB:\s*[0-9.]+\]/gi, '').trim();
             }
 
-            const detectedFoods = detectThaiFoods(text);
-            const foodNameToSave = detectedFoods.length > 0 ? detectedFoods[0] : "AI Analyzed";
+            // 6️⃣ รวมคาร์บจากข้าว (ดักไว้เผื่อ AI ลืมบวกค่าข้าวเข้าไปใน TOTAL_CARB)
+            const ricePortion = detectRicePortion(text);
+            if (ricePortion > 0 && estimatedCarb === 0) {
+                estimatedCarb += ricePortion;
+            }
 
+            // 🌟 ดึงข้อมูลอาหารหลายเมนูมารวมกัน
+            const detectedFoods = [
+                ...new Set([
+                    ...detectThaiFoods(text),
+                    ...extractFoodsFromAI(text)
+                ])
+            ];
+            
+            const foodNameToSave = detectedFoods.length > 0 ? detectedFoods.join(', ') : "AI Analyzed";
+
+            // 🌟 7️⃣ แสดงข้อมูลโภชนาการสำหรับอาหารหลายเมนูที่ตรวจพบ
             if (detectedFoods.length > 0) {
                 finalText += `\n\n📊 ข้อมูลโภชนาการมาตรฐาน (ต่อ 1 เสิร์ฟปกติ):`;
                 detectedFoods.forEach(food => {
                     const data = thaiFoodDB[food];
+                    if (!data) return;
+                    
                     const carbGrams = data.carb || 0;
                     const carbExchange = carbGrams > 0 ? (carbGrams / 15).toFixed(1) : "0";
-                    finalText += `\n\n🍲 ${food}\nพลังงาน: ~${data.kcal} kcal\nคาร์โบไฮเดรต: ~${carbGrams} กรัม (คิดเป็น ${carbExchange} คาร์บ)\nน้ำตาล: ~${data.sugar} g\nไขมัน: ~${data.fat} g\nโซเดียม: ~${data.sodium} mg`;
+                    
+                    finalText += `\n\n🍲 ${food}\nพลังงาน: ~${data.kcal} kcal\nคาร์โบไฮเดรต: ${carbGrams} g\nคิดเป็น ${carbExchange} คาร์บ`;
                 });
                 
                 finalText += `\n\n📌 หมายเหตุ: 1 คาร์บ = คาร์โบไฮเดรต 15 กรัม (เทียบเท่าข้าวสวย 1 ทัพพี)`;
