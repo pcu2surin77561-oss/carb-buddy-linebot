@@ -78,6 +78,7 @@ const config = {
 };
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const API_SECRET = process.env.API_SECRET || "default_api_secret_key"; 
+// 🌟 กำหนดความยาว 32 ตัวอักษรสำหรับ aes-256-cbc เสมอ
 const SECRET = process.env.CID_SECRET || "12345678901234567890123456789012"; 
 
 const lineClient = new Client(config);
@@ -204,7 +205,7 @@ function calculateUserNutrition(userInfo) {
 let availableGeminiModels = [];
 
 async function discoverGeminiModels() {
-    console.log("🔍 กำลังตรวจสอบรายชื่อโมเดล Gemini ที่ API Key ของคุณรองรับ...");
+    console.log("🔍 กำลังตรวจสอบรายชื่อโมเดล Gemini...");
     try {
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`);
         const data = await response.json();
