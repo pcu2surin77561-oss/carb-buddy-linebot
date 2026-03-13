@@ -7,6 +7,7 @@ const { middleware, Client } = require('@line/bot-sdk');
 const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require('@google/generative-ai');
 const path = require('path');
 
+// นำเข้าฟังก์ชันจาก sheetHelper.js
 const { getPatientHealthReport, getRegisteredUser, registerNewUser, saveFoodLog } = require('./sheetHelper');
 
 // =====================================
@@ -85,7 +86,7 @@ const thaiFoodDB = {
     "ปลาทอด": {kcal:420, carb:10, sugar:1, fat:28, sodium:700},
     "ปลานึ่งมะนาว": {kcal:260, carb:5, sugar:3, fat:10, sodium:850},
     "ปลาราดพริก": {kcal:380, carb:25, sugar:12, fat:20, sodium:900},
-    "ปลาสามรส": {kcal:450, carb:35, sugar:18, fat:24, sodium:950},
+    "ปลาสามรส": {kcal:450, carb:35, margin:18, fat:24, sodium:950},
     "ข้าวหมูทอด": {kcal:650, carb:70, sugar:3, fat:32, sodium:950},
     "ข้าวไก่ทอด": {kcal:680, carb:75, sugar:3, fat:34, sodium:1000},
     "ข้าวไข่เจียว": {kcal:550, carb:65, sugar:2, fat:26, sodium:800},
@@ -326,9 +327,8 @@ async function handleEvent(event) {
             const estimatedCarb = parseFloat(data.get('c'));
             const actualCarb = parseFloat((estimatedCarb * portion).toFixed(1));
             
-            // ✅ ดึงค่าชื่ออาหารและ Message ID จาก Payload
+            // ✅ ดึงค่าชื่ออาหารจาก Payload 
             const foodName = data.get('f') || 'AI_Analyzed';
-            const imageId = data.get('img') || '-';
             
             const now = new Date();
             const dateStr = now.toLocaleDateString('th-TH', {timeZone: 'Asia/Bangkok'});
@@ -338,18 +338,18 @@ async function handleEvent(event) {
             if(portion === 1) statusStr = "กินหมด";
             if(portion > 0 && portion < 1) statusStr = "กินบางส่วน";
 
-            // บันทึกลง Google Sheet
+            // บันทึกลง Google Sheet (ส่ง image: '-' ไปเลย)
             await saveFoodLog({
                 date: dateStr,
                 time: timeStr,
                 userId: userId,
                 cid: userInfo.cid,
-                food: foodName, // ใช้ชื่ออาหารจริง
+                food: foodName, 
                 carb: estimatedCarb,
                 portion: portion,
                 actual_carb: actualCarb,
                 status: statusStr,
-                image: imageId, // ใช้ Message ID
+                image: '-', // ❌ ไม่เก็บรูปภาพแล้ว
                 note: 'บันทึกผ่าน Quick Reply'
             });
 
@@ -597,7 +597,6 @@ async function handleEvent(event) {
             for await (const chunk of stream) { chunks.push(chunk); }
             const buffer = Buffer.concat(chunks);
             const base64Image = buffer.toString('base64');
-            const messageId = event.message.id; // ✅ เก็บ Message ID ไว้ใช้บันทึกรูป
             
             const userInfo = await getRegisteredUser(userId);
             let userCarbContext = "";
@@ -605,6 +604,7 @@ async function handleEvent(event) {
                 userCarbContext = `ข้อมูลเพิ่มเติม: นักเรียนท่านนี้มีโควตาคาร์บจำกัดอยู่ที่ "มื้อละ ${userInfo.carbPerMeal} คาร์บ" โปรดแนะนำเพิ่มเติมว่าอาหารในภาพนี้เกินโควตาหรือไม่`;
             }
 
+            // 🌟 บังคับให้ AI เพิ่ม [TOTAL_CARB: x] เพื่อนำไปสร้างปุ่ม
             const prompt = `
                 คุณคือ "ผู้ช่วย AI โรงเรียนเบาหวาน" ผู้เชี่ยวชาญด้านโภชนาการ
                 หากเป็นภาพผลตรวจสุขภาพ: สรุปค่าที่สำคัญ(โดยเฉพาะเบาหวาน), บอกว่าปกติหรือไม่, ให้คำแนะนำ
@@ -652,7 +652,7 @@ async function handleEvent(event) {
             }
 
             if (estimatedCarb > 0) {
-                // ✅ เข้ารหัสชื่ออาหารเพื่อซ่อนไปกับปุ่ม
+                // ✅ เข้ารหัสชื่ออาหารเพื่อซ่อนไปกับปุ่ม (ตัดความยาวไม่ให้ payload เกิน 300 ตัวอักษร)
                 const safeFoodName = encodeURIComponent(foodNameToSave.substring(0, 50));
                 
                 const quickReply = {
@@ -662,7 +662,8 @@ async function handleEvent(event) {
                             action: {
                                 type: "postback",
                                 label: "😋 กินหมด 100%",
-                                data: `action=logfood&p=1&c=${estimatedCarb}&f=${safeFoodName}&img=${messageId}`,
+                                // ❌ เอา &img=... ออกแล้ว
+                                data: `action=logfood&p=1&c=${estimatedCarb}&f=${safeFoodName}`,
                                 displayText: "ฉันกินหมดจานเลยครับ/ค่ะ"
                             }
                         },
@@ -671,7 +672,8 @@ async function handleEvent(event) {
                             action: {
                                 type: "postback",
                                 label: "🌗 กินครึ่งเดียว 50%",
-                                data: `action=logfood&p=0.5&c=${estimatedCarb}&f=${safeFoodName}&img=${messageId}`,
+                                // ❌ เอา &img=... ออกแล้ว
+                                data: `action=logfood&p=0.5&c=${estimatedCarb}&f=${safeFoodName}`,
                                 displayText: "ฉันกินไปแค่ครึ่งเดียวครับ/ค่ะ"
                             }
                         },
@@ -680,7 +682,8 @@ async function handleEvent(event) {
                             action: {
                                 type: "postback",
                                 label: "❌ ถ่ายเฉยๆ",
-                                data: `action=logfood&p=0&c=${estimatedCarb}&f=${safeFoodName}&img=${messageId}`,
+                                // ❌ เอา &img=... ออกแล้ว
+                                data: `action=logfood&p=0&c=${estimatedCarb}&f=${safeFoodName}`,
                                 displayText: "แค่ถ่ายรูปมาถามเฉยๆ ไม่ได้กินครับ"
                             }
                         }
@@ -717,22 +720,15 @@ async function handleEvent(event) {
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
     console.log(`Webhook server listening on port ${port}`);
-}); ใช้วิธี้ มีที่เก็บ รูปฟรี แนะนำมั้ย นอกเหนือจาก Message ID แล้วเราไปดึงรูปยังไง หรือวิธีอื่น เพื่อใช้ทำประวัติอาหารให้ผู้ป่วย 
+}); 
+จะเพิ่มโค้ดนี้ตรงไหน เพื่อที่จะได้ส่งไปที่  Google sheet ตรง status: statusStr,
+image_url: data.image || '-',
+note: data.note || '-' 
 
-เราต้องใช้ Cloud Storage เพื่อฝากรูป เพราะ
-Message ID ของ LINE มีอายุใช้งานจำกัด (เก็บไว้ดูย้อนหลังนานๆ ไม่ได้)
-Google Sheet เก็บได้แค่ "URL" หรือ Text เท่านั้น
-
-มีบริการไหนฟรีและทำง่ายบ้าง?
-1. Imgur API (⭐ แนะนำสำหรับโปรเจกต์นี้)
-ฟรี: 1,250 รูป/วัน หรือ 12,500 request/เดือน
-ข้อดี: แค่มี API Key โยน Base64 เข้าไป แล้วมันจะคืน URL รูป (เช่น https://i.imgur.com/abc.jpg) กลับมาให้เลย เอายิงลง Google Sheet ได้ทันที
-2. Firebase Storage
-ฟรี: 5 GB
-ข้อดี: ปลอดภัยมาก อยู่ร่วมกับ Ecosystem Google
-ข้อเสีย: การ Setup และโค้ดค่อนข้างซับซ้อนสำหรับโปรเจกต์ขนาดเล็ก
-3. Google Drive API
-ฟรี: 15 GB
-ข้อดี: คุ้นเคยดี โฟลเดอร์ดูง่าย
-ข้อเสีย: โค้ดปวดหัวมากตอน Upload
-💡 สรุป: ใช้ Imgur API เหมาะสมและง่ายที่สุดครับ ใช้ Imgur API ให้หน่อยครับ ต้องไปเอาอะไรที่ Imgur API บ้าง ขอโค้ด server.js ที่สมบูรณ์แล้ว
+function decodeFoodName(encodedStr) {
+  try {
+    return decodeURIComponent(encodedStr);
+  } catch (e) {
+    return "ไม่ทราบชื่ออาหาร";
+  }
+}
