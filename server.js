@@ -24,6 +24,7 @@ const {
 } = require('./sheetHelper');
 
 const foodCache = new Map();
+const fingerprintCache = new Map(); // 🌟 4️⃣ สร้าง Fingerprint Cache
 
 // 🌟 🔟 ฟังก์ชันบันทึก Log แบบ Hospital Grade
 async function logEvent(userId, action, data) {
@@ -150,6 +151,17 @@ function detectRicePortion(text) {
     return 0;
 }
 
+// 🌟 5️⃣ ฟังก์ชันสร้าง fingerprint
+function createFoodFingerprint(foods) {
+    if (!foods || foods.length === 0) {
+        return null;
+    }
+    return foods
+        .map(f => f.trim())
+        .sort()
+        .join("|");
+}
+
 // 🌟 ฟังก์ชันคำนวณโภชนาการกลาง
 function calculateUserNutrition(userInfo) {
     if (!userInfo) return null;
@@ -205,7 +217,7 @@ function calculateUserNutrition(userInfo) {
 let availableGeminiModels = [];
 
 async function discoverGeminiModels() {
-    console.log("🔍 กำลังตรวจสอบรายชื่อโมเดล Gemini...");
+    console.log("🔍 กำลังตรวจสอบรายชื่อโมเดล Gemini ที่ API Key ของคุณรองรับ...");
     try {
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`);
         const data = await response.json();
@@ -845,29 +857,51 @@ async function handleEvent(event) {
             
             const foodNameToSave = detectedFoods.length > 0 ? detectedFoods.join(', ') : "AI Analyzed";
 
-            // 🌟 6️⃣ บันทึก Log การสแกนอาหาร
-            logEvent(userId, "scan_food", foodNameToSave);
+            // 🌟 6️⃣ เช็ค Food Fingerprint Cache ก่อนสร้าง Text
+            const fingerprint = createFoodFingerprint(detectedFoods);
+            
+            if (fingerprint && fingerprintCache.has(fingerprint)) {
+                console.log("⚡ Food fingerprint cache hit");
+                const cachedData = fingerprintCache.get(fingerprint);
+                finalText = cachedData.text;
+                estimatedCarb = cachedData.carb;
+                logEvent(userId, "scan_food_fingerprint_hit", fingerprint);
+            } else {
+                // 🌟 บันทึก Log การสแกนอาหาร (กรณีไม่เจอใน Cache)
+                logEvent(userId, "scan_food", foodNameToSave);
 
-            if (detectedFoods.length > 0) {
-                finalText += `\n\n📊 ข้อมูลโภชนาการมาตรฐาน (ต่อ 1 เสิร์ฟปกติ):`;
-                detectedFoods.forEach(foodName => {
-                    const data = thaiFoodDB.find(f => f.name === foodName);
-                    if (!data) return;
+                if (detectedFoods.length > 0) {
+                    finalText += `\n\n📊 ข้อมูลโภชนาการมาตรฐาน (ต่อ 1 เสิร์ฟปกติ):`;
+                    detectedFoods.forEach(foodName => {
+                        const data = thaiFoodDB.find(f => f.name === foodName);
+                        if (!data) return;
+                        
+                        const carbGrams = data.carb_g || 0;
+                        const carbExchange = data.carb_unit || (carbGrams > 0 ? (carbGrams / 15).toFixed(1) : "0");
+                        const calories = data.calories || 0;
+                        const sugar = data.sugar_g || 0;
+                        
+                        finalText += `\n\n🍲 ${foodName}\nพลังงาน: ~${calories} kcal\nคาร์โบไฮเดรต: ${carbGrams} g\nคิดเป็น ${carbExchange} คาร์บ`;
+                        if (sugar > 0) finalText += `\nน้ำตาล: ~${sugar} g`;
+                    });
                     
-                    const carbGrams = data.carb_g || 0;
-                    const carbExchange = data.carb_unit || (carbGrams > 0 ? (carbGrams / 15).toFixed(1) : "0");
-                    const calories = data.calories || 0;
-                    const sugar = data.sugar_g || 0;
+                    finalText += `\n\n📌 หมายเหตุ: 1 คาร์บ = คาร์โบไฮเดรต 15 กรัม (เทียบเท่าข้าวสวย 1 ทัพพี)`;
+                }
+
+                // 🌟 7️⃣ บันทึก fingerprint หลัง AI วิเคราะห์
+                if (fingerprint) {
+                    fingerprintCache.set(fingerprint, { text: finalText, carb: estimatedCarb });
                     
-                    finalText += `\n\n🍲 ${foodName}\nพลังงาน: ~${calories} kcal\nคาร์โบไฮเดรต: ${carbGrams} g\nคิดเป็น ${carbExchange} คาร์บ`;
-                    if (sugar > 0) finalText += `\nน้ำตาล: ~${sugar} g`;
-                });
-                
-                finalText += `\n\n📌 หมายเหตุ: 1 คาร์บ = คาร์โบไฮเดรต 15 กรัม (เทียบเท่าข้าวสวย 1 ทัพพี)`;
+                    // 🌟 8️⃣ จำกัด fingerprint cache (ไม่เกิน 300)
+                    if (fingerprintCache.size > 300) {
+                        const firstKey = fingerprintCache.keys().next().value;
+                        fingerprintCache.delete(firstKey);
+                    }
+                }
             }
 
             // 🌟 บันทึก Cache ก่อนตอบกลับ พร้อมระบบจัดการ LRU แบบง่าย (จำกัด 500 รูป)
-            foodCache.set(imageHash, finalText);
+            foodCache.set(imageHash, finalText); 
             if (foodCache.size > 500) {
                 const firstKey = foodCache.keys().next().value;
                 foodCache.delete(firstKey);
