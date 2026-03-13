@@ -1,13 +1,32 @@
 // --- ไฟล์ server.js ---
 // ระบบ Webhook สำหรับ LINE OA: โรงเรียนเบาหวาน
+// วิเคราะห์ผลสุขภาพ + สแกนอาหาร AI + แสดงหน้าเว็บลงทะเบียน + คลังความรู้เบาหวาน
 
 const express = require('express');
 const { middleware, Client } = require('@line/bot-sdk');
 const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require('@google/generative-ai');
 const path = require('path');
 
+// 1️⃣ แก้ BUG fetch is not defined และ 3️⃣ ติดตั้ง sharp สำหรับ resize รูป 6️⃣ Rate limit
+const fetch = require('node-fetch');
+const sharp = require('sharp');
+const rateLimit = require('express-rate-limit');
+
 // 🌟 นำเข้าฟังก์ชันทั้งหมด รวมถึง getTodayCarbTotal
 const { getPatientHealthReport, getRegisteredUser, registerNewUser, saveFoodLog, getTodayCarbTotal } = require('./sheetHelper');
+
+// 7️⃣ สร้าง Cache เก็บผลลัพธ์อาหารเพื่อลดการเรียก AI ซ้ำซ้อน
+const foodCache = new Map();
+
+// 🔟 Production logging
+function logEvent(userId, action, data) {
+    console.log(JSON.stringify({
+        time: new Date(),
+        userId,
+        action,
+        data
+    }));
+}
 
 // =====================================
 // 1. ตั้งค่า Keys และ Tokens
@@ -85,7 +104,7 @@ const thaiFoodDB = {
     "ปลาทอด": {kcal:420, carb:10, sugar:1, fat:28, sodium:700},
     "ปลานึ่งมะนาว": {kcal:260, carb:5, sugar:3, fat:10, sodium:850},
     "ปลาราดพริก": {kcal:380, carb:25, sugar:12, fat:20, sodium:900},
-    "ปลาสามรส": {kcal:450, carb:35, margin:18, fat:24, sodium:950},
+    "ปลาสามรส": {kcal:450, carb:35, sugar:18, fat:24, sodium:950}, // 2️⃣ แก้ไข margin เป็น sugar
     "ข้าวหมูทอด": {kcal:650, carb:70, sugar:3, fat:32, sodium:950},
     "ข้าวไก่ทอด": {kcal:680, carb:75, sugar:3, fat:34, sodium:1000},
     "ข้าวไข่เจียว": {kcal:550, carb:65, sugar:2, fat:26, sodium:800},
@@ -282,6 +301,14 @@ async function callGeminiWithFallback(prompt, imageParts = []) {
     throw new Error(`ไม่สามารถเชื่อมต่อ AI ได้เลย ล่าสุด Error: ${lastError.message}`);
 }
 
+// 6️⃣ ป้องกัน AI Spam ด้วย Rate Limit
+const apiLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 นาที
+    max: 30 // จำกัดที่ 30 requests ต่อนาที
+});
+
+app.use('/webhook', apiLimiter);
+
 // =====================================
 // 5. Route สำหรับแสดงหน้าเว็บลงทะเบียน (index.html)
 // =====================================
@@ -296,6 +323,15 @@ app.get('/ping', (req, res) => {
     res.status(200).send("Carb Buddy LINE Bot is awake and running!");
 });
 
+// 9️⃣ Health check route
+app.get('/health', (req, res) => {
+    res.json({
+        status: "ok",
+        uptime: process.uptime(),
+        memory: process.memoryUsage()
+    });
+});
+
 // =====================================
 // 7. Endpoint /webhook สำหรับ LINE
 // =====================================
@@ -303,9 +339,10 @@ app.post('/webhook', middleware(config), (req, res) => {
     res.status(200).send('OK');
 
     Promise
-        .all(req.body.events.map(handleEvent))
+        // 5️⃣ แก้ไขปัญหา LINE Webhook crash โดยใช้ allSettled
+        .allSettled(req.body.events.map(handleEvent))
         .catch((err) => {
-            console.error("เกิดข้อผิดพลาดในการรัน Background Event:", err);
+            console.error("Background Event Error:", err);
         });
 });
 
@@ -396,33 +433,29 @@ async function handleEvent(event) {
 
             let statusStr = portion === 1 ? "กินหมด" : "กินบางส่วน";
 
-            // ดึงยอดคาร์บเก่า "ก่อน" บันทึก เพื่อป้องกันปัญหา Sheet ประมวลผลไม่ทัน
             const pastCarbToday = await getTodayCarbTotal(userId);
             const todayCarb = parseFloat((pastCarbToday + actualCarb).toFixed(1));
 
-            // สั่งบันทึกลง Sheet แบบขนาน
             saveFoodLog({
                 date: dateStr, time: timeStr, userId: userId, cid: userInfo.cid,
                 food: foodName, carb: estimatedCarb, portion: portion,
                 actual_carb: actualCarb, status: statusStr, note: 'บันทึกผ่าน Quick Reply'
             }).catch(console.error);
 
-            // ดึงสูตรคำนวณกลางมาใช้ (จะได้ตรงกับสมุดพกเป๊ะๆ)
             const nutrition = calculateUserNutrition(userInfo);
             const dailyLimit = nutrition.dailyCarbExchange; 
             const remain = Math.max(0, parseFloat((dailyLimit - todayCarb).toFixed(1)));
 
             let percent = Math.min(100, Math.round((todayCarb / dailyLimit) * 100));
-            // 🌟 สำคัญมาก: LINE Flex ห้ามตั้งค่า width เป็น "0%" เด็ดขาด
             let displayPercent = Math.max(1, percent);
 
-            let barColor = "#2ECC71"; // เขียว
+            let barColor = "#2ECC71"; 
             let headerColor = "#27AE60";
             let warningText = "";
 
-            if (percent > 80) barColor = "#F39C12"; // ส้ม
+            if (percent > 80) barColor = "#F39C12"; 
             if (todayCarb > dailyLimit) {
-                barColor = "#E74C3C"; // แดง
+                barColor = "#E74C3C"; 
                 headerColor = "#E74C3C";
                 warningText = "⚠️ คุณกินคาร์บเกินโควตาแล้ววันนี้\nแนะนำลดข้าว แป้ง หรือของหวานในมื้อต่อไปนะครับ";
             }
@@ -434,7 +467,6 @@ async function handleEvent(event) {
                 { "type": "text", "text": `กินวันนี้รวม ${todayCarb} / ${dailyLimit} คาร์บ`, "margin": "md", "weight": "bold" },
                 {
                     "type": "box", "layout": "vertical", "margin": "md", "height": "12px", "backgroundColor": "#eeeeee", "cornerRadius": "6px",
-                    // เพิ่ม contents Filler เข้าไปเพื่อให้ถูกต้องตามกฎของ Flex Message
                     "contents": [ { "type": "box", "layout": "vertical", "width": `${displayPercent}%`, "backgroundColor": barColor, "height": "12px", "contents": [{"type": "filler"}] } ]
                 },
                 { "type": "text", "text": `🟢 เหลือกินได้อีก ${remain} คาร์บ`, "margin": "md", "size": "sm", "color": "#555555" }
@@ -480,13 +512,11 @@ async function handleEvent(event) {
 
             const todayCarb = await getTodayCarbTotal(userId);
             
-            // ดึงสูตรคำนวณกลางมาใช้
             const nutrition = calculateUserNutrition(userInfo);
             const dailyLimit = nutrition.dailyCarbExchange; 
             const remain = Math.max(0, parseFloat((dailyLimit - todayCarb).toFixed(1)));
 
             let percent = Math.min(100, Math.round((todayCarb / dailyLimit) * 100));
-            // ป้องกัน LINE Error width 0%
             let displayPercent = Math.max(1, percent); 
 
             let barColor = "#2ECC71"; 
@@ -504,7 +534,6 @@ async function handleEvent(event) {
                 { "type": "text", "text": `กินวันนี้รวม ${todayCarb} / ${dailyLimit} คาร์บ`, "margin": "md", "weight": "bold", "size": "md" },
                 {
                     "type": "box", "layout": "vertical", "margin": "md", "height": "14px", "backgroundColor": "#eeeeee", "cornerRadius": "7px",
-                    // เพิ่ม contents Filler เข้าไปเพื่อให้ถูกต้องตามกฎของ Flex Message
                     "contents": [ { "type": "box", "layout": "vertical", "width": `${displayPercent}%`, "backgroundColor": barColor, "height": "14px", "contents": [{"type": "filler"}] } ]
                 },
                 { "type": "text", "text": `🟢 เหลือกินได้อีก ${remain} คาร์บ`, "margin": "md", "size": "sm", "color": "#555555" }
@@ -725,7 +754,16 @@ async function handleEvent(event) {
             const chunks = [];
             for await (const chunk of stream) { chunks.push(chunk); }
             const buffer = Buffer.concat(chunks);
-            const base64Image = buffer.toString('base64');
+            
+            // 3️⃣ Resize ภาพเพื่อความแม่นยำและประหยัด Token
+            const resizedImage = await sharp(buffer).resize(1024).jpeg({ quality: 80 }).toBuffer();
+            const base64Image = resizedImage.toString('base64');
+            
+            // 7️⃣ Cache check ก่อนยิงเข้า AI
+            const imageHash = base64Image.substring(0, 100);
+            if (foodCache.has(imageHash)) {
+                return lineClient.pushMessage(userId, { type: "text", text: foodCache.get(imageHash) });
+            }
             
             const userInfo = await getRegisteredUser(userId);
             let userCarbContext = "";
@@ -733,22 +771,30 @@ async function handleEvent(event) {
                 userCarbContext = `ข้อมูลเพิ่มเติม: นักเรียนท่านนี้มีโควตาคาร์บจำกัดอยู่ที่ "มื้อละ ${userInfo.carbPerMeal} คาร์บ" โปรดแนะนำเพิ่มเติมว่าอาหารในภาพนี้เกินโควตาหรือไม่`;
             }
 
+            // 4️⃣ Update Prompt ให้รับคาร์บง่ายขึ้น
             const prompt = `
-                คุณคือ "ผู้ช่วย AI โรงเรียนเบาหวาน" ผู้เชี่ยวชาญด้านโภชนาการ
-                หากเป็นภาพผลตรวจสุขภาพ: สรุปค่าที่สำคัญ(โดยเฉพาะเบาหวาน), บอกว่าปกติหรือไม่, ให้คำแนะนำ
-                หากเป็นภาพอาหาร: 1. ระบุชื่ออาหาร 2. ประเมินปริมาณ (ทัพพี) 3. ประเมินจำนวนคาร์บ (1 คาร์บ = 15g) แยกเป็นส่วนๆ 4. ประเมินผลต่อน้ำตาลในเลือด
-                ${userCarbContext}
-                ตอบให้กระชับ เป็นมิตร ให้กำลังใจ
-                รูปแบบตอบกลับอาหาร:
-                🍲 เมนูที่พบ:
-                🍚 ปริมาณที่ประเมินได้:
-                🔢 จำนวนคาร์บโดยประมาณ:
-                📈 ผลกระทบต่อน้ำตาลในเลือด:
-                💡 คำแนะนำสำหรับนักเรียนเบาหวาน:
+                คุณคือผู้เชี่ยวชาญด้านโภชนาการสำหรับผู้ป่วยเบาหวาน
+                วิเคราะห์ภาพอย่างเป็นขั้นตอน
+                ขั้นตอน
+                1 ตรวจสอบว่าเป็น "อาหาร" หรือ "ผลตรวจสุขภาพ"
 
-                **สำคัญมาก** หากเป็นภาพอาหาร ให้เพิ่มบรรทัดสุดท้ายของคำตอบเป็นตัวเลขคาร์บรวมในรูปแบบนี้เป๊ะๆ:
-                [TOTAL_CARB: ตัวเลข]
-                เช่น [TOTAL_CARB: 3.5]
+                ถ้าเป็นอาหารให้ตอบตาม format นี้เท่านั้น
+
+                🍲 เมนูที่พบ:
+                🍚 ปริมาณโดยประมาณ:
+                🔢 จำนวนคาร์บโดยประมาณ (1 คาร์บ = 15g):
+                📈 ผลต่อน้ำตาลในเลือด:
+                💡 คำแนะนำสำหรับผู้ป่วยเบาหวาน:
+
+                ${userCarbContext}
+
+                และต้องจบด้วย
+
+                [TOTAL_CARB: X.X]
+
+                เช่น
+
+                [TOTAL_CARB: 3.5]
             `;
 
             const imageParts = [{ inlineData: { data: base64Image, mimeType: "image/jpeg" } }];
@@ -777,6 +823,9 @@ async function handleEvent(event) {
                 
                 finalText += `\n\n📌 หมายเหตุ: 1 คาร์บ = คาร์โบไฮเดรต 15 กรัม (เทียบเท่าข้าวสวย 1 ทัพพี)`;
             }
+
+            // บันทึก Cache ก่อนตอบกลับ
+            foodCache.set(imageHash, finalText);
 
             if (estimatedCarb > 0) {
                 const safeFoodName = encodeURIComponent(foodNameToSave.substring(0, 50));
