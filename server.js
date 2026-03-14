@@ -9,8 +9,6 @@ const path = require('path');
 const crypto = require("crypto"); 
 const fs = require('fs'); // 🌟 นำเข้า fs สำหรับอ่านไฟล์ foods.json
 
-// 🌟 แก้ไข: ใช้ node-fetch เพื่อความเสถียรบน Render
-const fetch = require('node-fetch');
 const sharp = require('sharp');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet'); // 🌟 4️⃣ เพิ่ม Helmet สำหรับ Security Headers
@@ -117,7 +115,7 @@ const lineClient = new Client(config);
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const app = express();
 
-// 🌟 แก้ไข Helmet อนุญาต Resource ภายนอกและ scriptSrcAttr สำหรับแก้ปัญหา onclick ในปุ่ม
+// 🌟 แก้ไข Helmet อนุญาต Resource ภายนอกและ scriptSrcAttr สำหรับแก้ปัญหา onclickในปุ่ม
 app.use(
     helmet({
         contentSecurityPolicy: {
@@ -284,7 +282,7 @@ let availableGeminiModels = [];
 async function discoverGeminiModels() {
     logger.info("🔍 กำลังตรวจสอบรายชื่อโมเดล Gemini...");
     try {
-        // 🌟 3️⃣ ใช้ node-fetch
+        // 🌟 3️⃣ ใช้ native fetch ของ Node 18+ แทน
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`);
         const data = await response.json();
 
@@ -357,7 +355,7 @@ async function callGeminiWithFallback(prompt, imageParts = []) {
             const model = genAI.getGenerativeModel({ model: modelName, safetySettings, generationConfig });
             const requestContent = imageParts.length > 0 ? [prompt, ...imageParts] : prompt;
             
-            // 🌟 4️⃣ Timeout protection (15 sec) ป้องกัน Server ค้าง (เพิ่มเวลาจาก 8s เป็น 15s)
+            // 🌟 4️⃣ Timeout protection (8 sec) ป้องกัน Server ค้าง
             const result = await Promise.race([
                 model.generateContent(requestContent),
                 new Promise((_, reject) =>
@@ -1100,4 +1098,4 @@ app.listen(port, () => {
         }
     }, 60000);
     logger.info(`Webhook server listening on port ${port}`);
-}); ตอนนี้ ส่งภาพไปแล้ว ไม่เกิดการวิเคราะห์ เหมือนไม่มีการประมวลผลอะไรเลย และในหน้าlog ก็นิ่งไปเลย ไม่ขยับใดๆ ช่วยเช็คที
+});
