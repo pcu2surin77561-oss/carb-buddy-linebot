@@ -454,6 +454,12 @@ app.post('/api/register', async (req, res) => {
             return res.status(400).json({ error: "ข้อมูลไม่ครบถ้วน" });
         }
 
+        // 🌟 แก้ไข: ตรวจสอบว่าผู้ใช้เคยลงทะเบียนแล้วหรือไม่
+        const existingUser = await getRegisteredUser(userId);
+        if (existingUser) {
+            return res.status(400).json({ error: "คุณได้ลงทะเบียนในระบบเรียบร้อยแล้วครับ ไม่สามารถลงทะเบียนซ้ำได้" });
+        }
+
         const hashedCID = hashCID(cid);
 
         const result = await registerNewUser(
@@ -644,6 +650,12 @@ async function handleEvent(event) {
                 return lineClient.pushMessage(userId, { type: 'text', text: '⚠️ ข้อมูลไม่ครบถ้วน แนะนำให้ทำรายการผ่านเมนูลงทะเบียนครับ' });
             }
             
+            // 🌟 แก้ไข: ตรวจสอบว่าผู้ใช้เคยลงทะเบียนผ่านช่องทางนี้แล้วหรือไม่
+            const existingUser = await getRegisteredUser(userId);
+            if (existingUser) {
+                return lineClient.pushMessage(userId, { type: 'text', text: '⚠️ คุณได้ลงทะเบียนในระบบเรียบร้อยแล้วครับ ไม่สามารถลงทะเบียนซ้ำได้' });
+            }
+
             const hashedCID = hashCID(parts[1].trim());
 
             const result = await registerNewUser(
