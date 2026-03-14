@@ -419,7 +419,7 @@ app.use('/api/getUser', rateLimit({
 
 app.get('/api/getUser', async (req, res) => {
     // 🌟 เปิดให้หน้าเว็บตรวจเช็กผู้ใช้อัตโนมัติได้ โดยใช้แค่ userId 
-    // หน้า Frontend จะได้รู้ว่าเคยลงทะเบียนแล้ว และซ่อนปุ่มลงทะเบียน
+    // หน้า Frontend จะได้รู้ว่าเคยลงทะเบียนแล้ว
     const userId = req.query.userId;
     if(!userId){
         return res.status(400).json({error:"Missing userId"});
@@ -440,9 +440,8 @@ const registerLimiter = rateLimit({
 });
 
 app.use('/api/register', registerLimiter);
-app.use('/api/update', registerLimiter);
 
-// 🛑 API สำหรับ "ลงทะเบียนใหม่เท่านั้น"
+// 🛑 API สำหรับ "ลงทะเบียน" (รองรับทั้ง การลงทะเบียนใหม่ และ การอัปเดตถ้ามีข้อมูลแล้ว)
 app.post('/api/register', async (req, res) => {
     try {
         const {
@@ -450,93 +449,81 @@ app.post('/api/register', async (req, res) => {
             activityMultiplier, dietMultiplier
         } = req.body;
 
-        if (!userId || !cid) {
-            return res.status(400).json({ error: "ข้อมูลไม่ครบถ้วน" });
-        }
-
-        // 🌟 แก้ไข: บล็อกคนที่ลงทะเบียนแล้วทันที ป้องกันการกดลงทะเบียนใหม่
-        const existingUser = await getRegisteredUser(userId);
-        if (existingUser) {
-            return res.status(400).json({ 
-                error: "⚠️ คุณได้ลงทะเบียนในระบบเรียบร้อยแล้ว ไม่สามารถลงทะเบียนใหม่ซ้ำได้ครับ\n(หากต้องการเปลี่ยนข้อมูลสุขภาพ กรุณาใช้เมนู 'แก้ไขข้อมูล' แทนครับ)" 
-            });
-        }
-
-        // ให้ Backend คำนวณคาร์บใหม่ 100% ป้องกันส่งค่ามาผิด
-        const tempUserInfo = {
-            birthday: birthday,
-            gender: gender,
-            weight: weight,
-            height: height,
-            activity: activityMultiplier,
-            dietType: dietMultiplier
-        };
-        const nutrition = calculateUserNutrition(tempUserInfo);
-        const calculatedCarbPerMeal = nutrition.carbPerMeal;
-
-        const hashedCID = hashCID(cid);
-        const result = await registerNewUser(
-            userId, hashedCID, birthday, gender, weight, height, 
-            activityMultiplier, dietMultiplier, calculatedCarbPerMeal
-        );
-
-        if (result === "success") {
-            logEvent(userId, "register", "new_user");
-            await lineClient.pushMessage(userId, { type: 'text', text: `✅ ลงทะเบียนสำเร็จ!\n\n📌 แนะนำให้ทานคาร์บมื้อละ: ${calculatedCarbPerMeal} คาร์บ\n(พิมพ์ "ดูสมุดพก" เพื่อดูผลการวิเคราะห์เต็มรูปแบบครับ)` });
-        }
-
-        res.json({ status: "ok", result: result, newCarbPerMeal: calculatedCarbPerMeal });
-    } catch (error) {
-        logEvent(req.body.userId || "unknown", "error", error.message);
-        logger.error({ err: error }, "Register API Error");
-        res.status(500).json({ error: "Server Error" });
-    }
-});
-
-// 🟢 API สำหรับ "อัปเดตข้อมูลส่วนที่ 2 เท่านั้น" (สำหรับคนที่เคยลงทะเบียนแล้ว)
-app.post('/api/update', async (req, res) => {
-    try {
-        const {
-            userId, weight, height, activityMultiplier, dietMultiplier
-        } = req.body;
-
         if (!userId) {
-            return res.status(400).json({ error: "ข้อมูลไม่ครบถ้วน" });
+            return res.status(400).json({ error: "ข้อมูลไม่ครบถ้วน (ไม่มี userId)" });
         }
 
+        // 🌟 เช็กว่าเคยลงทะเบียนหรือยัง
         const existingUser = await getRegisteredUser(userId);
-        if (!existingUser) {
-            return res.status(404).json({ 
-                error: "⚠️ ไม่พบข้อมูลการลงทะเบียนของคุณ กรุณาทำรายการ 'ลงทะเบียนใหม่' ครับ" 
+
+        if (existingUser) {
+            // -------------------------------------------------------------
+            // กรณี: เคยลงทะเบียนแล้ว (ให้อัปเดตเฉพาะส่วนที่ 2)
+            // -------------------------------------------------------------
+            const tempUserInfo = {
+                birthday: existingUser.birthday, // ล็อควันเกิดเดิม
+                gender: existingUser.gender,     // ล็อคเพศเดิม
+                weight: weight || existingUser.weight,
+                height: height || existingUser.height,
+                activity: activityMultiplier || existingUser.activity,
+                dietType: dietMultiplier || existingUser.dietType
+            };
+
+            // ให้ Backend คำนวณคาร์บใหม่
+            const nutrition = calculateUserNutrition(tempUserInfo);
+            const calculatedCarbPerMeal = nutrition.carbPerMeal;
+
+            const result = await registerNewUser(
+                userId, existingUser.cid, existingUser.birthday, existingUser.gender, 
+                tempUserInfo.weight, tempUserInfo.height, tempUserInfo.activity, tempUserInfo.dietType, calculatedCarbPerMeal
+            );
+
+            logEvent(userId, "update_profile", `updated_user_part2: newCarb=${calculatedCarbPerMeal}`);
+            
+            // ส่งแจ้งเตือนว่า อัปเดตข้อมูลให้แล้วอย่างเดียว
+            await lineClient.pushMessage(userId, { 
+                type: 'text', 
+                text: `⚠️ แจ้งเตือน: คุณเคยลงทะเบียนแล้ว\nระบบทำการแก้ไขเฉพาะ "น้ำหนัก ส่วนสูง กิจกรรม และเป้าหมายการคุมอาหาร" ให้ใหม่เรียบร้อยครับ\n\n📌 โควตาคาร์บใหม่ของคุณคือ: ${calculatedCarbPerMeal} คาร์บ/มื้อ\n(คาร์บ 1 ส่วน = ข้าวสวย 1 ทัพพี) 🍚` 
             });
+
+            return res.json({ status: "ok", result: "updated", newCarbPerMeal: calculatedCarbPerMeal });
+
+        } else {
+            // -------------------------------------------------------------
+            // กรณี: เป็นผู้ใช้ใหม่ 100% (ลงทะเบียนใหม่)
+            // -------------------------------------------------------------
+            if (!cid || !birthday || !gender) {
+                return res.status(400).json({ error: "ข้อมูลไม่ครบถ้วนสำหรับการลงทะเบียนใหม่ (ขาด CID, วันเกิด หรือเพศ)" });
+            }
+
+            const tempUserInfo = {
+                birthday: birthday,
+                gender: gender,
+                weight: weight,
+                height: height,
+                activity: activityMultiplier,
+                dietType: dietMultiplier
+            };
+            const nutrition = calculateUserNutrition(tempUserInfo);
+            const calculatedCarbPerMeal = nutrition.carbPerMeal;
+
+            const hashedCID = hashCID(cid);
+            const result = await registerNewUser(
+                userId, hashedCID, birthday, gender, weight, height, 
+                activityMultiplier, dietMultiplier, calculatedCarbPerMeal
+            );
+
+            if (result === "success") {
+                logEvent(userId, "register", "new_user");
+                await lineClient.pushMessage(userId, { type: 'text', text: `✅ ลงทะเบียนสำเร็จ!\n\n📌 แนะนำให้ทานคาร์บมื้อละ: ${calculatedCarbPerMeal} คาร์บ\n(พิมพ์ "ดูสมุดพก" เพื่อดูผลการวิเคราะห์เต็มรูปแบบครับ)` });
+            }
+
+            return res.json({ status: "ok", result: result, newCarbPerMeal: calculatedCarbPerMeal });
         }
 
-        // 🌟 ให้ Backend นำข้อมูลที่แก้ไขใหม่มาคำนวณโควตาคาร์บให้ใหม่ทันที (Recalculate)
-        const tempUserInfo = {
-            birthday: existingUser.birthday,
-            gender: existingUser.gender,
-            weight: weight || existingUser.weight,
-            height: height || existingUser.height,
-            activity: activityMultiplier || existingUser.activity,
-            dietType: dietMultiplier || existingUser.dietType
-        };
-
-        const nutrition = calculateUserNutrition(tempUserInfo);
-        const calculatedCarbPerMeal = nutrition.carbPerMeal;
-
-        // 🌟 ล็อคข้อมูลส่วนที่ 1 ไว้ (ดึงจากฐานข้อมูลเดิม) และอัปเดตเฉพาะส่วนที่ 2 + โควตาใหม่
-        const result = await registerNewUser(
-            userId, existingUser.cid, existingUser.birthday, existingUser.gender, 
-            tempUserInfo.weight, tempUserInfo.height, tempUserInfo.activity, tempUserInfo.dietType, calculatedCarbPerMeal
-        );
-
-        logEvent(userId, "update_profile", `updated_user_part2: newCarb=${calculatedCarbPerMeal}`);
-        await lineClient.pushMessage(userId, { type: 'text', text: `🔄 อัปเดตข้อมูลสุขภาพสำเร็จ!\n\nระบบคำนวณโควตาใหม่ให้แล้ว\n📌 โควตาคาร์บของคุณคือ: ${calculatedCarbPerMeal} คาร์บ/มื้อ\n(คาร์บ 1 ส่วน = ข้าวสวย 1 ทัพพี) 🍚` });
-
-        res.json({ status: "ok", result: "updated", newCarbPerMeal: calculatedCarbPerMeal });
     } catch (error) {
         logEvent(req.body.userId || "unknown", "error", error.message);
-        logger.error({ err: error }, "Update API Error");
+        logger.error({ err: error }, "Register/Update API Error");
         res.status(500).json({ error: "Server Error" });
     }
 });
@@ -642,64 +629,98 @@ async function handleEvent(event) {
     if (event.message.type === 'text') {
         const text = event.message.text.trim();
 
-        // 🌟 แก้ไข: รวมการตรวจสอบ "ลงทะเบียน" ทุกรูปแบบไว้ที่เดียว และบล็อกอย่างเด็ดขาดถ้ามีประวัติแล้ว
+        // 🌟 แก้ไข: จัดการคำสั่ง ลงทะเบียน ทั้งกรณีเดี่ยวและมีพารามิเตอร์ต่อท้ายผ่านแชท
         if (text === 'ลงทะเบียน' || text.startsWith('ลงทะเบียน ')) {
             const existingUser = await getRegisteredUser(userId);
             
             if (existingUser) {
-                logEvent(userId, "blocked_register", "already_registered");
-                return lineClient.pushMessage(userId, { 
-                    type: 'text', 
-                    text: '⚠️ คุณได้ลงทะเบียนในระบบเรียบร้อยแล้วครับ ไม่สามารถลงทะเบียนใหม่ซ้ำได้\n\n📌 หากต้องการแก้ไขข้อมูลสุขภาพ (น้ำหนัก, ส่วนสูง หรือ กิจกรรม) กรุณากดเมนู "แก้ไขข้อมูล" จากหน้าเว็บ หรือพิมพ์สั่ง "แก้ไขข้อมูล <น้ำหนัก> <ส่วนสูง> <กิจกรรม> <เป้าหมาย>" ครับ' 
-                });
-            }
-
-            if (text === 'ลงทะเบียน') {
-                return lineClient.pushMessage(userId, { 
-                    type: 'text', 
-                    text: '📝 กรุณากดปุ่ม "ลงทะเบียน" จากเมนูด้านล่าง เพื่อกรอกข้อมูลผ่านหน้าเว็บครับ' 
-                });
-            } else {
-                // สำหรับคนที่พิมพ์ Text เข้ามาตรงๆ (ต้องเป็น User ใหม่เท่านั้นถึงจะมาถึงตรงนี้ได้)
-                const parts = text.split(' ');
-                if (parts.length < 9) {
-                    return lineClient.pushMessage(userId, { type: 'text', text: '⚠️ ข้อมูลไม่ครบถ้วน แนะนำให้ทำรายการผ่านเมนูลงทะเบียนครับ' });
-                }
-
-                const weight = parts[4].trim();
-                const height = parts[5].trim();
-                const activityMultiplier = parts[6].trim();
-                const dietMultiplier = parts[7].trim();
-                
-                // ให้ระบบคำนวณใหม่เสมอ ไม่เชื่อใจค่าที่พิมพ์มา
-                const tempUserInfo = {
-                    birthday: parts[2].trim(),
-                    gender: parts[3].trim(),
-                    weight: weight,
-                    height: height,
-                    activity: activityMultiplier,
-                    dietType: dietMultiplier
-                };
-                const nutrition = calculateUserNutrition(tempUserInfo);
-                const calculatedCarbPerMeal = nutrition.carbPerMeal;
-
-                const hashedCID = hashCID(parts[1].trim());
-                const result = await registerNewUser(
-                    userId, hashedCID, tempUserInfo.birthday, tempUserInfo.gender, 
-                    weight, height, activityMultiplier, dietMultiplier, calculatedCarbPerMeal
-                );
-                
-                if (result === "success") {
-                    logEvent(userId, "register_text", "new_user");
-                    return lineClient.pushMessage(userId, { type: 'text', text: `✅ ลงทะเบียนสำเร็จ!\nระบบได้ประเมินสุขภาพและโควตาอาหารให้คุณเรียบร้อยแล้ว\n\n📌 แนะนำให้ทานคาร์บมื้อละ: ${calculatedCarbPerMeal} คาร์บ\n(พิมพ์ "ดูสมุดพก" เพื่อดูผลการวิเคราะห์เต็มรูปแบบครับ)` });
+                if (text === 'ลงทะเบียน') {
+                    return lineClient.pushMessage(userId, { 
+                        type: 'text', 
+                        text: '⚠️ คุณเคยลงทะเบียนแล้ว\nสามารถแก้ไข "น้ำหนัก ส่วนสูง กิจกรรม เป้าหมายการคุมอาหาร" ได้อย่างเดียวครับ\n📝 กรุณากดปุ่ม "ลงทะเบียน" ด้านล่างเพื่ออัปเดตข้อมูลผ่านหน้าเว็บได้เลยครับ' 
+                    });
                 } else {
-                    logEvent(userId, "error", "Failed to register via text");
-                    return lineClient.pushMessage(userId, { type: 'text', text: '🛠️ เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่ภายหลัง' });
+                    // หากพิมพ์มาเต็มยศพร้อมพารามิเตอร์ แต่เคยลงทะเบียนแล้ว ก็จะบังคับเปลี่ยนเป็นอัปเดตแค่ส่วน 2 ทันที
+                    const parts = text.split(' ');
+                    if (parts.length < 9) {
+                        return lineClient.pushMessage(userId, { type: 'text', text: '⚠️ ข้อมูลไม่ครบถ้วน แนะนำให้ทำรายการผ่านเมนูลงทะเบียนครับ' });
+                    }
+                    
+                    const weight = parts[4].trim();
+                    const height = parts[5].trim();
+                    const activityMultiplier = parts[6].trim();
+                    const dietMultiplier = parts[7].trim();
+                    
+                    const tempUserInfo = {
+                        birthday: existingUser.birthday,
+                        gender: existingUser.gender,
+                        weight: weight,
+                        height: height,
+                        activity: activityMultiplier,
+                        dietType: dietMultiplier
+                    };
+
+                    const nutrition = calculateUserNutrition(tempUserInfo);
+                    const calculatedCarbPerMeal = nutrition.carbPerMeal;
+
+                    await registerNewUser(
+                        userId, existingUser.cid, existingUser.birthday, existingUser.gender, 
+                        weight, height, activityMultiplier, dietMultiplier, calculatedCarbPerMeal
+                    );
+
+                    logEvent(userId, "update_profile_text", "updated_user_part2");
+                    return lineClient.pushMessage(userId, { 
+                        type: 'text', 
+                        text: `⚠️ แจ้งเตือน: คุณเคยลงทะเบียนแล้ว\nระบบทำการแก้ไขเฉพาะ "น้ำหนัก ส่วนสูง กิจกรรม เป้าหมายการคุมอาหาร" ให้ใหม่เรียบร้อยครับ\n\n📌 โควตาคาร์บใหม่ของคุณคือ: ${calculatedCarbPerMeal} คาร์บ/มื้อ\n(คาร์บ 1 ส่วน = ข้าวสวย 1 ทัพพี) 🍚` 
+                    });
+                }
+            } else {
+                // กรณี: ยังไม่เคยลงทะเบียน
+                if (text === 'ลงทะเบียน') {
+                    return lineClient.pushMessage(userId, { 
+                        type: 'text', 
+                        text: '📝 กรุณากดปุ่ม "ลงทะเบียน" จากเมนูด้านล่าง เพื่อกรอกข้อมูลผ่านหน้าเว็บครับ' 
+                    });
+                } else {
+                    const parts = text.split(' ');
+                    if (parts.length < 9) {
+                        return lineClient.pushMessage(userId, { type: 'text', text: '⚠️ ข้อมูลไม่ครบถ้วน แนะนำให้ทำรายการผ่านเมนูลงทะเบียนครับ' });
+                    }
+
+                    const weight = parts[4].trim();
+                    const height = parts[5].trim();
+                    const activityMultiplier = parts[6].trim();
+                    const dietMultiplier = parts[7].trim();
+                    
+                    const tempUserInfo = {
+                        birthday: parts[2].trim(),
+                        gender: parts[3].trim(),
+                        weight: weight,
+                        height: height,
+                        activity: activityMultiplier,
+                        dietType: dietMultiplier
+                    };
+                    const nutrition = calculateUserNutrition(tempUserInfo);
+                    const calculatedCarbPerMeal = nutrition.carbPerMeal;
+
+                    const hashedCID = hashCID(parts[1].trim());
+                    const result = await registerNewUser(
+                        userId, hashedCID, tempUserInfo.birthday, tempUserInfo.gender, 
+                        weight, height, activityMultiplier, dietMultiplier, calculatedCarbPerMeal
+                    );
+                    
+                    if (result === "success") {
+                        logEvent(userId, "register_text", "new_user");
+                        return lineClient.pushMessage(userId, { type: 'text', text: `✅ ลงทะเบียนสำเร็จ!\nระบบได้ประเมินสุขภาพและโควตาอาหารให้คุณเรียบร้อยแล้ว\n\n📌 แนะนำให้ทานคาร์บมื้อละ: ${calculatedCarbPerMeal} คาร์บ\n(พิมพ์ "ดูสมุดพก" เพื่อดูผลการวิเคราะห์เต็มรูปแบบครับ)` });
+                    } else {
+                        logEvent(userId, "error", "Failed to register via text");
+                        return lineClient.pushMessage(userId, { type: 'text', text: '🛠️ เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่ภายหลัง' });
+                    }
                 }
             }
         }
 
-        // 🌟 แก้ไข: เพิ่มคำสั่งผ่านแชทสำหรับการอัปเดตส่วนที่ 2 + รีคำนวณใหม่ (เผื่อไม่อยากใช้เว็บ)
+        // เพิ่มคำสั่งผ่านแชทสำหรับการอัปเดตส่วนที่ 2 อย่างเดียว (เผื่อไว้)
         if (text.startsWith('แก้ไขข้อมูล ')) {
             const existingUser = await getRegisteredUser(userId);
             if (!existingUser) {
@@ -707,7 +728,6 @@ async function handleEvent(event) {
             }
 
             const parts = text.split(' ');
-            // รูปแบบ: แก้ไขข้อมูล <น้ำหนัก> <ส่วนสูง> <กิจกรรม> <เป้าหมาย>
             if (parts.length < 5) {
                  return lineClient.pushMessage(userId, { type: 'text', text: '⚠️ ข้อมูลไม่ครบถ้วน\nรูปแบบ: แก้ไขข้อมูล <น้ำหนัก> <ส่วนสูง> <กิจกรรม> <เป้าหมาย>\n\nหรือกดทำรายการผ่านหน้าเว็บได้เลยครับ' });
             }
@@ -729,7 +749,7 @@ async function handleEvent(event) {
             const nutrition = calculateUserNutrition(tempUserInfo);
             const calculatedCarbPerMeal = nutrition.carbPerMeal;
 
-            const result = await registerNewUser(
+            await registerNewUser(
                 userId, existingUser.cid, existingUser.birthday, existingUser.gender,
                 weight, height, activityMultiplier, dietMultiplier, calculatedCarbPerMeal
             );
@@ -1195,11 +1215,11 @@ async function handleEvent(event) {
 
 // 🌟 8️⃣ Global Error Handlers ป้องกัน Server ค้างและดับ
 process.on("uncaughtException", (err) => {
-    logger.error({ err }, "UNCAUGHT EXCEPTION");
+    logger.error({ err }, "UNCAUGHT EXCEPTION");
 });
 
 process.on("unhandledRejection", (err) => {
-    logger.error({ err }, "UNHANDLED PROMISE REJECTION");
+    logger.error({ err }, "UNHANDLED PROMISE REJECTION");
 });
 
 // =====================================
@@ -1207,16 +1227,16 @@ process.on("unhandledRejection", (err) => {
 // =====================================
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
-    // 🌟 5️⃣ ป้องกัน RAM เต็ม Render ด้วย Monitor ทุก 1 นาที
-    setInterval(() => {
-        const mem = process.memoryUsage().heapUsed / 1024 / 1024;
-        logger.info(`Memory usage: ${mem.toFixed(2)} MB`);
-        if(mem > 400){
-            logger.warn("⚠️ High memory usage");
-            if (global.gc) {
-                global.gc(); // 🌟 บังคับคืน Memory ถ้าเกิน 400MB (ต้องรันด้วย node --expose-gc server.js)
-            }
-        }
-    }, 60000);
-    logger.info(`Webhook server listening on port ${port}`);
+    // 🌟 5️⃣ ป้องกัน RAM เต็ม Render ด้วย Monitor ทุก 1 นาที
+    setInterval(() => {
+        const mem = process.memoryUsage().heapUsed / 1024 / 1024;
+        logger.info(`Memory usage: ${mem.toFixed(2)} MB`);
+        if(mem > 400){
+            logger.warn("⚠️ High memory usage");
+            if (global.gc) {
+                global.gc(); // 🌟 บังคับคืน Memory ถ้าเกิน 400MB (ต้องรันด้วย node --expose-gc server.js)
+            }
+        }
+    }, 60000);
+    logger.info(`Webhook server listening on port ${port}`);
 });
