@@ -186,11 +186,40 @@ async function saveLog({ time, userId, action, data }) {
     }
 }
 
+// 🌟 ฟังก์ชันสำหรับดึงข้อมูลการกินอาหารทั้งหมดไปแสดงบน Dashboard
+async function getAllFoodLogs() {
+    try {
+        await doc.loadInfo();
+        const sheet = doc.sheetsByTitle['food_logs'];
+        if (!sheet) return [];
+
+        const rows = await sheet.getRows();
+        
+        // แปลงข้อมูลจาก Google Sheet ให้เป็น Array ของ Object ปกติ
+        const logs = rows.map(row => {
+            return {
+                date: row.get('date') || "",
+                time: row.get('time') || "",
+                userId: row.get('userId') || "",
+                food: row.get('food_name') || "unknown",
+                actual_carb: Number(row.get('actual_carb')) || 0,
+                status: row.get('status') || ""
+            };
+        });
+
+        return logs;
+    } catch (error) {
+        console.error("Error getting all food logs:", error);
+        return [];
+    }
+}
+
 module.exports = { 
     getPatientHealthReport, 
     getRegisteredUser, 
     registerNewUser, 
     saveFoodLog, 
     getTodayCarbTotal,
-    saveLog 
+    saveLog,
+    getAllFoodLogs // 🌟 เพิ่มตรงนี้เข้าไป
 };
