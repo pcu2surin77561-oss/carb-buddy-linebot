@@ -4,7 +4,11 @@
   "description": "LINE Bot สำหรับนักเรียนโรงเรียนเบาหวาน ช่วยสแกนอาหาร นับคาร์บด้วย Gemini AI และดึงผลแล็บเป็นสมุดพกสุขภาพ",
   "main": "server.js",
   "scripts": {
-    "start": "node --expose-gc server.js"
+    "start": "node --expose-gc server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
   },
   "keywords": [
     "linebot",
