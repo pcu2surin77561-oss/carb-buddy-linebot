@@ -64,18 +64,12 @@ async function logEvent(userId, action, data) {
     }
 }
 
-// 🌟 1️⃣ BUG ใหญ่ — AI Limit Reset ไม่ถูกต้อง (แก้ให้ใช้ Timezone ไทยเสมอ)
-function getTodayTH() {
-    return new Date().toLocaleDateString("en-CA", {
-        timeZone: "Asia/Bangkok"
-    });
-}
-
-let currentDay = getTodayTH();
+// 🌟 ระบบป้องกัน AI Abuse (จำกัดการส่งรูปภาพแบบมี Reset รายวัน)
+let currentDay = new Date().toDateString();
 const userUsage = new Map();
 
 function canUseAI(userId) {
-    const today = getTodayTH();
+    const today = new Date().toDateString();
     
     // ถ้าข้ามวัน ให้ reset ข้อมูลทั้งหมด (ตามเวลาไทย)
     if (today !== currentDay) {
@@ -108,24 +102,20 @@ if (!API_SECRET) {
    throw new Error("🚨 SECURITY ALERT: API_SECRET is not set in Environment Variables!");
 }
 
-// 🌟 กำหนดความยาว 32 ตัวอักษรสำหรับ aes-256-cbc เสมอ
-const SECRET = process.env.CID_SECRET || "12345678901234567890123456789012"; 
-
 const lineClient = new Client(config);
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const app = express();
 
-app.use(helmet()); // 🌟 4️⃣ เปิดใช้งาน Security Headers
+// 🌟 ย้าย Middleware มาไว้บนสุดเพื่อป้องกันปัญหา API ไม่อ่าน Body
+app.use(express.json({ limit: "1mb" }));
+app.use(helmet()); 
 
-function encryptCID(cid) {
-    const cipher = crypto.createCipheriv(
-        "aes-256-cbc",
-        Buffer.from(SECRET),
-        Buffer.alloc(16, 0)
-    );
-    let encrypted = cipher.update(cid, "utf8", "hex");
-    encrypted += cipher.final("hex");
-    return encrypted;
+// 🌟 ฟังก์ชันเข้ารหัส CID แบบ Hash (One-way encryption เพื่อความปลอดภัยสูงสุด)
+function hashCID(cid){
+    return crypto
+        .createHash("sha256")
+        .update(String(cid).trim())
+        .digest("hex");
 }
 
 // =====================================
@@ -250,7 +240,6 @@ let availableGeminiModels = [];
 async function discoverGeminiModels() {
     logger.info("🔍 กำลังตรวจสอบรายชื่อโมเดล Gemini...");
     try {
-        // 🌟 3️⃣ ใช้ native fetch ของ Node 18+ แทน
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`);
         const data = await response.json();
 
@@ -376,9 +365,6 @@ app.post('/webhook', middleware(config), (req, res) => {
         });
 });
 
-// 🌟 5️⃣ Missing Body Size Limit ป้องกัน JSON attack
-app.use(express.json({ limit: "1mb" }));
-
 // 🌟 4️⃣ Security เพิ่ม API Limit สำหรับการเรียกดูข้อมูล User
 app.use('/api/getUser', rateLimit({
     windowMs: 10 * 60 * 1000,
@@ -422,10 +408,10 @@ app.post('/api/register', async (req, res) => {
             return res.status(400).json({ error: "ข้อมูลไม่ครบถ้วน" });
         }
 
-        const encryptedCID = encryptCID(cid);
+        const hashedCID = hashCID(cid);
 
         const result = await registerNewUser(
-            userId, encryptedCID, birthday, gender, weight, height, 
+            userId, hashedCID, birthday, gender, weight, height, 
             activityMultiplier, dietMultiplier, carbPerMeal
         );
 
@@ -612,10 +598,10 @@ async function handleEvent(event) {
                 return lineClient.pushMessage(userId, { type: 'text', text: '⚠️ ข้อมูลไม่ครบถ้วน แนะนำให้ทำรายการผ่านเมนูลงทะเบียนครับ' });
             }
             
-            const encryptedCID = encryptCID(parts[1].trim());
+            const hashedCID = hashCID(parts[1].trim());
 
             const result = await registerNewUser(
-                userId, encryptedCID, parts[2].trim(), parts[3].trim(), 
+                userId, hashedCID, parts[2].trim(), parts[3].trim(), 
                 parts[4].trim(), parts[5].trim(), parts[6].trim(), parts[7].trim(), parts[8].trim()
             );
             
@@ -840,6 +826,32 @@ async function handleEvent(event) {
                 userCarbContext = `ข้อมูลเพิ่มเติม: นักเรียนท่านนี้มีโควตาคาร์บจำกัดอยู่ที่ "มื้อละ ${userInfo.carbPerMeal} คาร์บ" โปรดแนะนำเพิ่มเติมว่าอาหารในภาพนี้เกินโควตาหรือไม่`;
             }
 
+            // 🌟 1️⃣ ตรวจ fingerprint ก่อนเรียก AI
+            const detectedFoodsEarly = detectThaiFoods(base64Image);
+            const fingerprintEarly = createFoodFingerprint(detectedFoodsEarly);
+
+            if (fingerprintEarly && fingerprintCache.has(fingerprintEarly)) {
+                console.log("⚡ Skip Gemini (fingerprint hit)");
+                const cached = fingerprintCache.get(fingerprintEarly);
+                
+                const safeFoodName = encodeURIComponent(fingerprintEarly.substring(0, 50));
+                const estimatedCarb = cached.carb;
+                
+                const quickReply = {
+                    items: [
+                        { type: "action", action: { type: "postback", label: "😋 กินหมด 100%", data: `action=logfood&p=1&c=${estimatedCarb}&f=${safeFoodName}`, displayText: "ฉันกินหมดจานเลยครับ/ค่ะ" } },
+                        { type: "action", action: { type: "postback", label: "🌗 กินครึ่งเดียว 50%", data: `action=logfood&p=0.5&c=${estimatedCarb}&f=${safeFoodName}`, displayText: "ฉันกินไปแค่ครึ่งเดียวครับ/ค่ะ" } },
+                        { type: "action", action: { type: "postback", label: "❌ ถ่ายเฉยๆ", data: `action=logfood&p=0&c=${estimatedCarb}&f=${safeFoodName}`, displayText: "แค่ถ่ายรูปมาถามเฉยๆ ไม่ได้กินครับ" } }
+                    ]
+                };
+
+                return lineClient.pushMessage(userId, {
+                    type: 'text',
+                    text: cached.text + `\n\n👇 กดปุ่มด้านล่างเพื่อบันทึกปริมาณที่คุณทานจริงได้เลยครับ`,
+                    quickReply: quickReply
+                });
+            }
+
             // 🌟 4️⃣ Layer 4: Gemini AI (ใช้เมื่อ Cache ไม่มี)
             const prompt = `
                 คุณคือผู้เชี่ยวชาญด้านโภชนาการสำหรับผู้ป่วยเบาหวาน
@@ -1016,11 +1028,11 @@ async function handleEvent(event) {
 
 // 🌟 8️⃣ Global Error Handlers ป้องกัน Server ค้างและดับ
 process.on("uncaughtException", (err) => {
-    logger.error({ err }, "UNCAUGHT EXCEPTION");
+    logger.error({ err }, "UNCAUGHT EXCEPTION");
 });
 
 process.on("unhandledRejection", (err) => {
-    logger.error({ err }, "UNHANDLED PROMISE REJECTION");
+    logger.error({ err }, "UNHANDLED PROMISE REJECTION");
 });
 
 // =====================================
@@ -1028,16 +1040,145 @@ process.on("unhandledRejection", (err) => {
 // =====================================
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
-    // 🌟 5️⃣ ป้องกัน RAM เต็ม Render ด้วย Monitor ทุก 1 นาที
-    setInterval(() => {
-        const mem = process.memoryUsage().heapUsed / 1024 / 1024;
-        logger.info(`Memory usage: ${mem.toFixed(2)} MB`);
-        if(mem > 400){
-            logger.warn("⚠️ High memory usage");
-            if (global.gc) {
-                global.gc(); // 🌟 บังคับคืน Memory ถ้าเกิน 400MB (ต้องรันด้วย node --expose-gc server.js)
-            }
-        }
-    }, 60000);
-    logger.info(`Webhook server listening on port ${port}`);
-});
+    // 🌟 5️⃣ ป้องกัน RAM เต็ม Render ด้วย Monitor ทุก 1 นาที
+    setInterval(() => {
+        const mem = process.memoryUsage().heapUsed / 1024 / 1024;
+        logger.info(`Memory usage: ${mem.toFixed(2)} MB`);
+        if(mem > 400){
+            logger.warn("⚠️ High memory usage");
+            if (global.gc) {
+                global.gc(); // 🌟 บังคับคืน Memory ถ้าเกิน 400MB (ต้องรันด้วย node --expose-gc server.js)
+            }
+        }
+    }, 60000);
+    logger.info(`Webhook server listening on port ${port}`);
+});   แก้ไขได้"
+
+ให้แก้โค้ดตามรายการที่วิเคราะห์
+
+ข้อกำหนดในการแก้โค้ด
+
+
+
+ต้องรักษาโค้ดเดิมไว้
+
+ห้ามลบโค้ดที่ไม่เกี่ยวข้อง
+
+เพิ่มหรือแก้เฉพาะส่วนที่จำเป็น
+
+ต้องส่งโค้ดกลับมาครบทั้งไฟล์
+
+ห้ามใช้ ... หรือข้อความย่อ
+
+ห้ามสรุปโค้ด
+
+ต้องแสดงทุกบรรทัด 1 ❗ BUG สำคัญที่สุด (server อาจ crash)
+
+ในโค้ดคุณมี    1️⃣ BUG 1: detectThaiFoods อ่าน base64Image ผิด
+ปัญหาเดิมที่คุณใส่โค้ดไว้
+
+const detectedFoodsEarly = detectThaiFoods(base64Image);
+
+โค้ดนี้ผิด 100%
+เพราะ detectThaiFoods ถูกออกแบบมาให้รับข้อความภาษาไทย (Text)
+เช่น "ข้าวสวย ผัดกะเพรา" แต่คุณส่ง base64Image (ตัวอักษรเข้ารหัสภาพ e.g., iVBORw0KGgoAAA...) เข้าไป
+ผลลัพธ์คือ
+
+detectedFoodsEarly จะว่างเปล่าเสมอ
+ทำให้ fingerprintEarly ไม่มีค่า
+และ Fingerprint Cache ก่อนเรียก AI จะ ไม่เคยทำงานเลย
+✅ วิธีแก้
+การทำ Fingerprint Cache ก่อนเรียก AI ต้องใช้ Image Hash ไม่ใช่ Text Fingerprint เพราะเรายังไม่รู้ว่าในภาพมีอาหารอะไร
+ลบโค้ดตรงนี้ทิ้ง:
+
+
+// 🌟 1️⃣ ตรวจ fingerprint ก่อนเรียก AI
+const detectedFoodsEarly = detectThaiFoods(base64Image);
+const fingerprintEarly = createFoodFingerprint(detectedFoodsEarly);
+
+if (fingerprintEarly && fingerprintCache.has(fingerprintEarly)) {
+    // ... ลบออกให้หมด ...
+}
+
+เพราะคุณมี Image Hash Cache อยู่แล้วข้างบน ซึ่งถูกต้องและทำงานได้ดีกว่า!
+
+// 🌟 1️⃣ Layer 1: Cache check ด้วย SHA-256 ป้องกัน Hash ชนกัน
+const imageHash = crypto.createHash("sha256").update(base64Image).digest("hex");
+if (foodCache.has(imageHash)) {
+    logEvent(userId, "scan_food_cache", "Cache hit");
+    return lineClient.pushMessage(userId, { type: "text", text: foodCache.get(imageHash) });
+}
+
+2️⃣ BUG 2: โค้ด Fingerprint Cache ผิดตำแหน่งและไม่สมบูรณ์
+คุณมีโค้ดบันทึก Fingerprint หลัง AI วิเคราะห์:
+
+// 🌟 7️⃣ บันทึก fingerprint หลัง AI วิเคราะห์
+const fingerprint = createFoodFingerprint(detectedFoods);
+if (fingerprint) {
+    setCacheWithTTL(fingerprintCache, fingerprint, { text: finalText, carb: estimatedCarb });
+}
+
+แต่คุณ ดันไปลบส่วนเช็ค Fingerprint Cache ออก!
+ทำให้ Fingerprint ที่บันทึกไว้ ไม่เคยถูกนำมาใช้ประโยชน์เลย
+
+✅ วิธีการทำงานของ Fingerprint Cache ที่ถูกต้องคือ:
+
+AI วิเคราะห์ภาพ 1 ได้ข้อความว่า "ข้าวสวย ผัดกะเพรา ไข่ดาว"
+ระบบสร้าง Fingerprint = "ข้าวสวย|ผัดกะเพรา|ไข่ดาว" และบันทึกคำตอบไว้
+ครั้งต่อไป AI วิเคราะห์ภาพ 2 (รูปคนละมุม) ได้ข้อความ "ไข่ดาว ผัดกะเพรา ข้าวสวย"
+ระบบสร้าง Fingerprint = "ข้าวสวย|ผัดกะเพรา|ไข่ดาว" (เรียงลำดับใหม่แล้วตรงกัน)
+ระบบจะดึงคำตอบจาก Cache ทันที โดยไม่ต้องไปคำนวณโภชนาการหรือสร้างข้อความตอบกลับใหม่
+✅ วิธีแก้ไข (แก้ไขหลัง AI ตอบกลับ)
+แทนที่โค้ดส่วนนี้:
+
+// 🌟 6️⃣ บันทึก Log การสแกนอาหาร
+logEvent(userId, "scan_food", foodNameToSave);
+
+if (detectedFoods.length > 0) {
+    // ...
+}
+
+// 🌟 7️⃣ บันทึก fingerprint หลัง AI วิเคราะห์
+const fingerprint = createFoodFingerprint(detectedFoods);
+if (fingerprint) {
+    setCacheWithTTL(fingerprintCache, fingerprint, { text: finalText, carb: estimatedCarb });
+}
+
+ด้วยโค้ดที่ถูกต้องดังนี้:
+
+// 🌟 6️⃣ ตรวจสอบ Fingerprint Cache ทันทีที่รู้ว่ามีเมนูอะไรบ้าง (หลัง AI ตอบ)
+const fingerprint = createFoodFingerprint(detectedFoods);
+
+if (fingerprint && fingerprintCache.has(fingerprint)) {
+    logger.info("⚡ Food fingerprint cache hit!");
+    const cachedData = fingerprintCache.get(fingerprint);
+    finalText = cachedData.text;
+    estimatedCarb = cachedData.carb;
+    logEvent(userId, "scan_food_fingerprint_hit", fingerprint);
+} else {
+    // ถ้าไม่เจอใน Fingerprint Cache ค่อยสร้างข้อความโภชนาการใหม่
+    logEvent(userId, "scan_food", foodNameToSave);
+
+    if (detectedFoods.length > 0) {
+        finalText += `\n\n📊 ข้อมูลโภชนาการมาตรฐาน (ต่อ 1 เสิร์ฟปกติ):`;
+        detectedFoods.forEach(foodName => {
+            const data = thaiFoodDB.find(f => f.name === foodName);
+            if (!data) return;
+            
+            const carbGrams = data.carb_g || 0;
+            const carbExchange = data.carb_unit || (carbGrams > 0 ? (carbGrams / 15).toFixed(1) : "0");
+            const calories = data.calories || 0;
+            const sugar = data.sugar_g || 0;
+            
+            finalText += `\n\n🍲 ${foodName}\nพลังงาน: ~${calories} kcal\nคาร์โบไฮเดรต: ${carbGrams} g\nคิดเป็น ${carbExchange} คาร์บ`;
+            if (sugar > 0) finalText += `\nน้ำตาล: ~${sugar} g`;
+        });
+        
+        finalText += `\n\n📌 หมายเหตุ: 1 คาร์บ = คาร์โบไฮเดรต 15 กรัม (เทียบเท่าข้าวสวย 1 ทัพพี)`;
+    }
+
+    // 🌟 7️⃣ บันทึก Fingerprint ใหม่ลง Cache
+    if (fingerprint) {
+        setCacheWithTTL(fingerprintCache, fingerprint, { text: finalText, carb: estimatedCarb });
+    }
+}
