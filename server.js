@@ -450,20 +450,31 @@ app.post('/api/register', async (req, res) => {
             activityMultiplier, dietMultiplier, carbPerMeal
         } = req.body;
 
-        if (!userId || !cid) {
+        if (!userId) {
             return res.status(400).json({ error: "ข้อมูลไม่ครบถ้วน" });
         }
 
         // 🌟 แก้ไข: ตรวจสอบว่าผู้ใช้เคยลงทะเบียนแล้วหรือไม่
         const existingUser = await getRegisteredUser(userId);
+        let finalHashedCID, finalBirthday, finalGender;
+
         if (existingUser) {
-            return res.status(400).json({ error: "คุณได้ลงทะเบียนในระบบเรียบร้อยแล้วครับ ไม่สามารถลงทะเบียนซ้ำได้" });
+            // ถ้าเคยลงทะเบียนแล้ว ดึงข้อมูลส่วนที่ 1 เดิมมาใช้ (ไม่อนุญาตให้แก้ CID, วันเกิด, เพศ)
+            // ให้แก้เฉพาะ น้ำหนัก, ส่วนสูง, การออกกำลังกาย ฯลฯ (ส่วนที่ 2)
+            finalHashedCID = existingUser.cid;
+            finalBirthday = existingUser.birthday;
+            finalGender = existingUser.gender;
+        } else {
+            if (!cid) {
+                return res.status(400).json({ error: "ข้อมูลไม่ครบถ้วน" });
+            }
+            finalHashedCID = hashCID(cid);
+            finalBirthday = birthday;
+            finalGender = gender;
         }
 
-        const hashedCID = hashCID(cid);
-
         const result = await registerNewUser(
-            userId, hashedCID, birthday, gender, weight, height, 
+            userId, finalHashedCID, finalBirthday, finalGender, weight, height, 
             activityMultiplier, dietMultiplier, carbPerMeal
         );
 
@@ -652,14 +663,21 @@ async function handleEvent(event) {
             
             // 🌟 แก้ไข: ตรวจสอบว่าผู้ใช้เคยลงทะเบียนผ่านช่องทางนี้แล้วหรือไม่
             const existingUser = await getRegisteredUser(userId);
+            let finalHashedCID, finalBirthday, finalGender;
+
             if (existingUser) {
-                return lineClient.pushMessage(userId, { type: 'text', text: '⚠️ คุณได้ลงทะเบียนในระบบเรียบร้อยแล้วครับ ไม่สามารถลงทะเบียนซ้ำได้' });
+                // ถ้าเคยลงทะเบียนแล้ว ให้ล็อคข้อมูลส่วนที่ 1 ไว้ และอัปเดตเฉพาะส่วนที่ 2
+                finalHashedCID = existingUser.cid;
+                finalBirthday = existingUser.birthday;
+                finalGender = existingUser.gender;
+            } else {
+                finalHashedCID = hashCID(parts[1].trim());
+                finalBirthday = parts[2].trim();
+                finalGender = parts[3].trim();
             }
 
-            const hashedCID = hashCID(parts[1].trim());
-
             const result = await registerNewUser(
-                userId, hashedCID, parts[2].trim(), parts[3].trim(), 
+                userId, finalHashedCID, finalBirthday, finalGender, 
                 parts[4].trim(), parts[5].trim(), parts[6].trim(), parts[7].trim(), parts[8].trim()
             );
             
