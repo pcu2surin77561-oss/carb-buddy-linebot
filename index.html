@@ -82,7 +82,7 @@
     </div>
 
     <div id="loading" class="skeleton" style="display:none;"></div>
-    <div id="updateNotice">💡 พบข้อมูลเดิมของคุณในระบบ<br>สามารถแก้ไขตัวเลขเพื่ออัปเดตได้เลยครับ</div>
+    <div id="updateNotice">💡 พบข้อมูลเดิมของคุณในระบบ<br>กรุณายืนยันเลขบัตรประชาชนเพื่ออัปเดตข้อมูลครับ</div>
 
     <div id="step1" class="step active">
         <div class="form-group">
@@ -149,7 +149,7 @@
             </div>
         </div>
         
-        <button class="btn-primary" onclick="submitRegistration()" id="submitBtn">บันทึกข้อมูลและคำนวณคาร์บ</button>
+        <button class="btn-primary" onclick="submitRegistration()" id="submitBtn">บันห์ทึกข้อมูลและคำนวณคาร์บ</button>
         <button class="btn-secondary" onclick="prevStep()">ย้อนกลับ</button>
     </div>
     
@@ -262,7 +262,12 @@
         document.getElementById('stepIndicator').style.display = 'none';
 
         try {
-            const response = await fetch(`/api/getUser?userId=${userId}`);
+            // 🌟 แก้ไข: ส่ง x-api-key ไปพร้อมกับ Request
+            const response = await fetch(`/api/getUser?userId=${userId}`, {
+                headers: {
+                    "x-api-key": "default_api_secret_key" // ระบุ Key ให้ตรงกับค่า API_SECRET ใน Server
+                }
+            });
             
             if (!response.ok && response.status !== 404) {
                 showToast("⚠️ ไม่สามารถเชื่อมต่อฐานข้อมูลได้ชั่วคราว");
@@ -274,7 +279,8 @@
             if (response.ok) {
                 const data = await response.json();
                 if (data && data.cid) {
-                    document.getElementById('cid').value = formatCID(data.cid || '');
+                    // 🌟 แก้ไข: ไม่แสดง CID เพราะในระบบเก็บเป็น Hash แล้ว ผู้ใช้ต้องกรอกใหม่เพื่อความปลอดภัย
+                    document.getElementById('cid').value = '';
                     document.getElementById('birthday').value = formatBirthday(data.birthday || '');
                     if(data.gender) document.getElementById('gender').value = data.gender;
                     if(data.weight) document.getElementById('weight').value = data.weight;
@@ -285,12 +291,8 @@
                     document.getElementById('updateNotice').style.display = 'block';
                     document.getElementById('submitBtn').innerText = 'อัปเดตข้อมูลและคำนวณคาร์บใหม่';
 
-                    // ข้ามไป Step 2 ทันทีถ้ามีข้อมูล
-                    document.getElementById('step1').classList.remove('active');
-                    document.getElementById('step2').classList.add('active');
-                    document.getElementById('subtitle').innerText = 'แก้ไขข้อมูลสุขภาพ';
-                    document.getElementById("dot1").classList.remove("active");
-                    document.getElementById("dot2").classList.add("active");
+                    // แสดง Step 1 เพื่อให้ผู้ใช้กรอกเลขบัตรประชาชนใหม่ยืนยันตัวตน
+                    document.getElementById('step1').style.display = 'block';
                 } else {
                     document.getElementById('step1').style.display = 'block';
                 }
@@ -348,6 +350,11 @@
     }
 
     async function submitRegistration() {
+        const submitBtn = document.getElementById('submitBtn');
+        
+        // 🌟 แก้ไข: ป้องกันการกด submit ซ้ำ (Double Submit)
+        if (submitBtn.disabled) return;
+        
         const rawCid = document.getElementById('cid').value.trim();
         const cleanCid = rawCid.replace(/-/g, ''); 
         const birthday = document.getElementById('birthday').value.trim();
@@ -358,7 +365,6 @@
         const dietMultiplier = parseFloat(document.getElementById('dietType').value);
         const consent = document.getElementById('pdpaConsent').checked;
         
-        const submitBtn = document.getElementById('submitBtn');
         const loadingOverlay = document.getElementById('loadingOverlay');
 
         if (!gender) return showToast('กรุณาเลือกเพศครับ');
@@ -425,7 +431,7 @@
                 loadingOverlay.style.display = 'none';
                 alert(`(โหมดทดสอบ)\nบันทึก: ${cleanCid}\nเป้าหมาย: ${carbPerMeal} คาร์บ/มื้อ`);
                 submitBtn.disabled = false;
-                submitBtn.innerText = 'อัปเดตข้อมูลและคำนวณคาร์บ';
+                submitBtn.innerText = 'อัปเดตข้อมูลและคำนวณคาร์บใหม่';
             }
         } catch (error) {
             loadingOverlay.style.display = 'none';
