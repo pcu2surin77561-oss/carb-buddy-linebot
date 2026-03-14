@@ -1,6 +1,15 @@
 // --- ไฟล์ sheetHelper.js ---
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 const { JWT } = require('google-auth-library');
+const crypto = require("crypto"); // 🌟 นำเข้า crypto สำหรับทำ Hashing
+
+// 🌟 ฟังก์ชันสร้าง Hash สำหรับ CID
+function hashCID(cid){
+    return crypto
+        .createHash("sha256")
+        .update(String(cid).trim())
+        .digest("hex");
+}
 
 let creds;
 try {
@@ -19,13 +28,13 @@ const serviceAccountAuth = new JWT({
 const doc = new GoogleSpreadsheet(SHEET_ID, serviceAccountAuth);
 
 const COL = {
-    CID: 'cid', HN: 'hn', FNAME: 'fname', LNAME: 'lname', 
+    CID: 'cid_hash', HN: 'hn', FNAME: 'fname', LNAME: 'lname', 
     BIRTHDAY: 'birthday1', AGE: 'age_y', LAB_DATE: 'lab_date', 
     LAB_NAME: 'lab_name', LAB_RESULT: 'lab_result', NORMAL_VAL: 'normal_value'
 };
 
 const COL_USER = {
-    LINE_ID: 'line_id', CID: 'cid', BIRTHDAY: 'birthday', 
+    LINE_ID: 'line_id', CID: 'cid_hash', BIRTHDAY: 'birthday', 
     GENDER: 'gender', WEIGHT: 'weight', HEIGHT: 'height', 
     ACTIVITY: 'activity', DIET_TYPE: 'diet_type', 
     CARB_PER_MEAL: 'carb_per_meal', REG_DATE: 'registered_date'
@@ -33,6 +42,8 @@ const COL_USER = {
 
 async function getPatientHealthReport(targetCid, targetBirthday) {
     try {
+        const hashedCID = hashCID(targetCid); // 🌟 แปลง CID ที่รับมาเป็น Hash ก่อนนำไปค้นหาใน Sheet
+
         await doc.loadInfo();
         const sheet = doc.sheetsByIndex[0]; 
         const rows = await sheet.getRows(); 
@@ -40,7 +51,8 @@ async function getPatientHealthReport(targetCid, targetBirthday) {
         let labResultsMap = {}; 
 
         for (const row of rows) {
-            if (row.get(COL.CID) === targetCid && row.get(COL.BIRTHDAY) === targetBirthday) {
+            // 🌟 เปรียบเทียบกับค่า Hash ใน Sheet
+            if (row.get(COL.CID) === hashedCID && row.get(COL.BIRTHDAY) === targetBirthday) {
                 patientInfo = {
                     name: `${row.get(COL.FNAME)} ${row.get(COL.LNAME)}`,
                     age: row.get(COL.AGE),
@@ -91,6 +103,7 @@ async function registerNewUser(userId, cid, birthday, gender, weight, height, ac
         const userSheet = doc.sheetsByTitle['users'];
         const rows = await userSheet.getRows();
         const today = new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' });
+        // cid ที่ถูกส่งเข้ามาถูก Hash จาก server.js เรียบร้อยแล้ว ไม่ต้องทำซ้ำ
         const existingUserRow = rows.find(row => row.get(COL_USER.LINE_ID) === userId || row.get(COL_USER.CID) === cid);
         
         if (existingUserRow) {
@@ -119,7 +132,7 @@ async function saveFoodLog(data) {
         if (!foodSheet) return false;
 
         await foodSheet.addRow({
-            date: data.date, time: data.time, userId: data.userId, cid: data.cid,
+            date: data.date, time: data.time, userId: data.userId, cid_hash: data.cid,
             food_name: data.food, estimated_carb: data.carb, portion: data.portion,
             actual_carb: data.actual_carb, status: data.status, image_url: '-', note: data.note || '-'
         });
@@ -179,5 +192,5 @@ module.exports = {
     registerNewUser, 
     saveFoodLog, 
     getTodayCarbTotal,
-    saveLog // ✅ Export saveLog
+    saveLog 
 };
