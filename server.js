@@ -418,11 +418,8 @@ app.use('/api/getUser', rateLimit({
 }));
 
 app.get('/api/getUser', async (req, res) => {
-    const apiKey = req.headers['x-api-key'];
-    if(apiKey !== API_SECRET){
-        return res.status(403).json({error:"Unauthorized"});
-    }
-
+    // 🌟 แก้ไข: เปิดให้หน้าเว็บตรวจเช็กผู้ใช้อัตโนมัติได้ โดยใช้แค่ userId 
+    // หน้า Frontend จะได้รู้ว่าเคยลงทะเบียนแล้ว และแสดงเฉพาะส่วนที่ 2 ให้แก้ไข
     const userId = req.query.userId;
     if(!userId){
         return res.status(400).json({error:"Missing userId"});
@@ -459,8 +456,8 @@ app.post('/api/register', async (req, res) => {
         let finalHashedCID, finalBirthday, finalGender;
 
         if (existingUser) {
-            // ถ้าเคยลงทะเบียนแล้ว ดึงข้อมูลส่วนที่ 1 เดิมมาใช้ (ไม่อนุญาตให้แก้ CID, วันเกิด, เพศ)
-            // ให้แก้เฉพาะ น้ำหนัก, ส่วนสูง, การออกกำลังกาย ฯลฯ (ส่วนที่ 2)
+            // ถ้าเคยลงทะเบียนแล้ว ดึงข้อมูลส่วนที่ 1 เดิมมาใช้เสมอ (ไม่อนุญาตให้แก้ CID, วันเกิด, เพศ)
+            // ให้เว็บส่งมาอัปเดตเฉพาะ น้ำหนัก, ส่วนสูง, การออกกำลังกาย ฯลฯ (ส่วนที่ 2)
             finalHashedCID = existingUser.cid;
             finalBirthday = existingUser.birthday;
             finalGender = existingUser.gender;
@@ -595,6 +592,17 @@ async function handleEvent(event) {
     if (event.message.type === 'text') {
         const text = event.message.text.trim();
 
+        // 🌟 แก้ไข: เพิ่มการเช็กคำสั่ง "ลงทะเบียน" เดี่ยวๆ จาก Rich Menu 
+        // ไม่ให้ผู้ใช้ที่สมัครแล้วรู้สึกว่ายังกดลงทะเบียนใหม่ได้
+        if (text === 'ลงทะเบียน') {
+            const existingUser = await getRegisteredUser(userId);
+            if (existingUser) {
+                return lineClient.pushMessage(userId, { type: 'text', text: '⚠️ คุณได้ลงทะเบียนในระบบเรียบร้อยแล้วครับ\n\n📌 สามารถคลิกที่เมนูเดิมเพื่อ "แก้ไขข้อมูล" ส่วนที่ 2 (น้ำหนัก, ส่วนสูง, กิจกรรม) ผ่านหน้าเว็บได้เลยครับ' });
+            } else {
+                return lineClient.pushMessage(userId, { type: 'text', text: '📝 กรุณากดเมนู "ลงทะเบียน" ด้านล่าง เพื่อกรอกข้อมูลผ่านหน้าเว็บครับ' });
+            }
+        }
+
         if (text === 'ดูคาร์บวันนี้') {
             logEvent(userId, "view_carb_today", "view");
 
@@ -656,28 +664,21 @@ async function handleEvent(event) {
         }
 
         if (text.startsWith('ลงทะเบียน ')) {
+            // 🌟 แก้ไข: ตรวจสอบว่าผู้ใช้เคยลงทะเบียนผ่านช่องทางนี้แล้วหรือไม่ ป้องกันการใช้คำสั่ง text สมัครซ้ำ
+            const existingUser = await getRegisteredUser(userId);
+            if (existingUser) {
+                return lineClient.pushMessage(userId, { type: 'text', text: '⚠️ คุณได้ลงทะเบียนในระบบเรียบร้อยแล้วครับ ไม่อนุญาตให้ลงทะเบียนใหม่ซ้ำได้\n\n(หากต้องการแก้ไข น้ำหนัก, ส่วนสูง, วิธีออกกำลังกาย กรุณาแก้ไขผ่านเมนูในระบบ/หน้าเว็บครับ)' });
+            }
+
             const parts = text.split(' ');
             if (parts.length < 9) {
                 return lineClient.pushMessage(userId, { type: 'text', text: '⚠️ ข้อมูลไม่ครบถ้วน แนะนำให้ทำรายการผ่านเมนูลงทะเบียนครับ' });
             }
-            
-            // 🌟 แก้ไข: ตรวจสอบว่าผู้ใช้เคยลงทะเบียนผ่านช่องทางนี้แล้วหรือไม่
-            const existingUser = await getRegisteredUser(userId);
-            let finalHashedCID, finalBirthday, finalGender;
 
-            if (existingUser) {
-                // ถ้าเคยลงทะเบียนแล้ว ให้ล็อคข้อมูลส่วนที่ 1 ไว้ และอัปเดตเฉพาะส่วนที่ 2
-                finalHashedCID = existingUser.cid;
-                finalBirthday = existingUser.birthday;
-                finalGender = existingUser.gender;
-            } else {
-                finalHashedCID = hashCID(parts[1].trim());
-                finalBirthday = parts[2].trim();
-                finalGender = parts[3].trim();
-            }
+            const hashedCID = hashCID(parts[1].trim());
 
             const result = await registerNewUser(
-                userId, finalHashedCID, finalBirthday, finalGender, 
+                userId, hashedCID, parts[2].trim(), parts[3].trim(), 
                 parts[4].trim(), parts[5].trim(), parts[6].trim(), parts[7].trim(), parts[8].trim()
             );
             
