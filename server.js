@@ -860,42 +860,27 @@ async function handleEvent(event) {
             const base64Image = resizedImage.toString('base64');
             
             // 🌟 1️⃣ Layer 1: Cache check ด้วย SHA-256 ป้องกัน Hash ชนกัน
-            const imageHash = crypto.createHash("sha256").update(base64Image).digest("hex");
+            const imageHash = crypto
+                .createHash("sha256")
+                .update(resizedImage)
+                .digest("hex");
+
             if (foodCache.has(imageHash)) {
+                logger.info("⚡ Image cache hit");
                 logEvent(userId, "scan_food_cache", "Cache hit");
-                return lineClient.pushMessage(userId, { type: "text", text: foodCache.get(imageHash) });
+                
+                const cached = foodCache.get(imageHash);
+
+                return lineClient.pushMessage(userId, {
+                    type: 'text',
+                    text: cached
+                });
             }
             
             const userInfo = await getRegisteredUser(userId);
             let userCarbContext = "";
             if (userInfo && userInfo.carbPerMeal) {
                 userCarbContext = `ข้อมูลเพิ่มเติม: นักเรียนท่านนี้มีโควตาคาร์บจำกัดอยู่ที่ "มื้อละ ${userInfo.carbPerMeal} คาร์บ" โปรดแนะนำเพิ่มเติมว่าอาหารในภาพนี้เกินโควตาหรือไม่`;
-            }
-
-            // 🌟 1️⃣ ตรวจ fingerprint ก่อนเรียก AI
-            const detectedFoodsEarly = detectThaiFoods(base64Image);
-            const fingerprintEarly = createFoodFingerprint(detectedFoodsEarly);
-
-            if (fingerprintEarly && fingerprintCache.has(fingerprintEarly)) {
-                console.log("⚡ Skip Gemini (fingerprint hit)");
-                const cached = fingerprintCache.get(fingerprintEarly);
-                
-                const safeFoodName = encodeURIComponent(fingerprintEarly.substring(0, 50));
-                const estimatedCarb = cached.carb;
-                
-                const quickReply = {
-                    items: [
-                        { type: "action", action: { type: "postback", label: "😋 กินหมด 100%", data: `action=logfood&p=1&c=${estimatedCarb}&f=${safeFoodName}`, displayText: "ฉันกินหมดจานเลยครับ/ค่ะ" } },
-                        { type: "action", action: { type: "postback", label: "🌗 กินครึ่งเดียว 50%", data: `action=logfood&p=0.5&c=${estimatedCarb}&f=${safeFoodName}`, displayText: "ฉันกินไปแค่ครึ่งเดียวครับ/ค่ะ" } },
-                        { type: "action", action: { type: "postback", label: "❌ ถ่ายเฉยๆ", data: `action=logfood&p=0&c=${estimatedCarb}&f=${safeFoodName}`, displayText: "แค่ถ่ายรูปมาถามเฉยๆ ไม่ได้กินครับ" } }
-                    ]
-                };
-
-                return lineClient.pushMessage(userId, {
-                    type: 'text',
-                    text: cached.text + `\n\n👇 กดปุ่มด้านล่างเพื่อบันทึกปริมาณที่คุณทานจริงได้เลยครับ`,
-                    quickReply: quickReply
-                });
             }
 
             // 🌟 4️⃣ Layer 4: Gemini AI (ใช้เมื่อ Cache ไม่มี)
