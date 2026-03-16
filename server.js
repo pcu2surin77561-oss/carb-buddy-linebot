@@ -119,6 +119,9 @@ const lineClient = new Client(config);
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const app = express();
 
+// 🌟 ตั้งค่าให้ Express เชื่อใจ Proxy (แก้ปัญหา ERR_ERL_UNEXPECTED_X_FORWARDED_FOR บน Cloud/Render)
+app.set('trust proxy', 1);
+
 app.use(
     helmet({
         contentSecurityPolicy: {
@@ -767,8 +770,8 @@ async function handleEvent(event) {
 
             if (!userInfo) return lineClient.replyMessage(event.replyToken, { type: 'text', text: '🔒 คุณยังไม่ได้ลงทะเบียนครับ กรุณากดปุ่ม "ลงทะเบียน" จากเมนูด้านล่างก่อนนะครับ' });
 
-            // ใช้ replyMessage ในจังหวะตอบรับแรก
-            await lineClient.replyMessage(event.replyToken, { type: 'text', text: '⏳ ระบบกำลังตรวจสอบข้อมูลผลแล็บ และวิเคราะห์โควตาอาหารของคุณ กรุณารอสักครู่นะครับ...' });
+            // ❌ เอาการแจ้งให้รอออก เพื่อเก็บ Reply Token ไว้ใช้ตอบกลับหลังจาก AI ทำงานเสร็จ
+            // await lineClient.replyMessage(event.replyToken, { type: 'text', text: '⏳ ระบบกำลังตรวจสอบข้อมูลผลแล็บ และวิเคราะห์โควตาอาหารของคุณ กรุณารอสักครู่นะครับ...' });
 
             try {
                 const healthData = await getPatientHealthReport(userInfo.cid, userInfo.birthday);
@@ -858,13 +861,14 @@ async function handleEvent(event) {
                   }
                 };
                 
-                // ใช้ pushMessage ในการส่งผลลัพธ์ เนื่องจาก replyToken หมดอายุแล้ว
-                return lineClient.pushMessage(userId, flexMessage);
+                // ✅ ใช้ replyMessage ในการส่งผลลัพธ์เพื่อไม่ให้เปลืองโควตา Push Message
+                return lineClient.replyMessage(event.replyToken, flexMessage);
 
             } catch (error) {
                 console.error("Error generating health report:", error);
                 logEvent(userId, "error", "Health report generation failed");
-                return lineClient.pushMessage(userId, { type: 'text', text: 'ขออภัยครับ เกิดข้อผิดพลาดในการดึงข้อมูลสมุดพก 🙏' });
+                // ✅ เปลี่ยนเป็น replyMessage ในกรณีเกิด Error
+                return lineClient.replyMessage(event.replyToken, { type: 'text', text: 'ขออภัยครับ เกิดข้อผิดพลาดในการดึงข้อมูลสมุดพก 🙏' });
             }
         }
 
@@ -882,7 +886,8 @@ async function handleEvent(event) {
         }
         
         try {
-            await lineClient.replyMessage(event.replyToken, { type: 'text', text: '⏳ ได้รับรูปภาพแล้วครับ กำลังให้ AI ช่วยวิเคราะห์ข้อมูลให้ กรุณารอสักครู่นะครับ...' });
+            // ❌ เอาการแจ้งให้รอออก เพื่อเก็บ Reply Token ไว้ใช้ส่งผลลัพธ์
+            // await lineClient.replyMessage(event.replyToken, { type: 'text', text: '⏳ ได้รับรูปภาพแล้วครับ กำลังให้ AI ช่วยวิเคราะห์ข้อมูลให้ กรุณารอสักครู่นะครับ...' });
 
             const stream = await lineClient.getMessageContent(event.message.id);
             const chunks = [];
@@ -905,8 +910,8 @@ async function handleEvent(event) {
                 logEvent(userId, "scan_food_cache", "Cache hit");
                 const cached = foodCache.get(imageHash);
                 
-                // ใช้ pushMessage เพราะ replyToken ถูกใช้ไปตอน "ได้รับรูปภาพแล้วครับ..."
-                return lineClient.pushMessage(userId, { type: 'text', text: cached });
+                // ✅ เปลี่ยนกลับมาใช้ replyMessage
+                return lineClient.replyMessage(event.replyToken, { type: 'text', text: cached });
             }
             
             const userInfo = await getRegisteredUser(userId);
@@ -1027,16 +1032,18 @@ async function handleEvent(event) {
                     ]
                 };
 
-                return lineClient.pushMessage(userId, { type: 'text', text: finalText + `\n\n👇 กดปุ่มด้านล่างเพื่อบันทึกปริมาณที่คุณทานจริงได้เลยครับ`, quickReply: quickReply });
+                // ✅ ใช้ replyMessage ในการส่งผลลัพธ์
+                return lineClient.replyMessage(event.replyToken, { type: 'text', text: finalText + `\n\n👇 กดปุ่มด้านล่างเพื่อบันทึกปริมาณที่คุณทานจริงได้เลยครับ`, quickReply: quickReply });
             } else {
-                return lineClient.pushMessage(userId, { type: 'text', text: finalText });
+                // ✅ ใช้ replyMessage
+                return lineClient.replyMessage(event.replyToken, { type: 'text', text: finalText });
             }
 
         } catch (error) {
             logger.error({ err: error }, "Error processing image");
             logEvent(userId, "error", error.message);
-            // แจ้ง Error กลับต้องใช้ pushMessage เพราะ replyToken ถูกใช้ไปตอนแสดงข้อความรอแล้ว
-            return lineClient.pushMessage(userId, { type: 'text', text: 'ขออภัยครับ/ค่ะ ระบบวิเคราะห์ภาพมีปัญหาชั่วคราว กรุณาลองส่งรูปใหม่อีกครั้งในภายหลังนะคะ 🛠️' });
+            // ✅ ใช้ replyMessage ในกรณีเกิด Error
+            return lineClient.replyMessage(event.replyToken, { type: 'text', text: 'ขออภัยครับ/ค่ะ ระบบวิเคราะห์ภาพมีปัญหาชั่วคราว กรุณาลองส่งรูปใหม่อีกครั้งในภายหลังนะคะ 🛠️' });
         }
     }
 
