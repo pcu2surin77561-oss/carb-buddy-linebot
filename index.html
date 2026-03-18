@@ -247,6 +247,15 @@
         }
     };
 
+    function showStep1() {
+        document.getElementById('initLoading').style.display = 'none';
+        document.getElementById('mainContainer').style.display = 'block';
+        
+        document.getElementById('step1').classList.add('active');
+        document.getElementById('step2').classList.remove('active');
+        document.getElementById('stepIndicator').style.display = 'flex';
+    }
+
     async function initializeLiff() {
         try {
             await liff.init({ liffId: MY_LIFF_ID });
@@ -257,26 +266,22 @@
 
             if (!liff.isInClient() && !liff.isLoggedIn()) {
                 liff.login();
+                return;
             }
 
             if (liff.isLoggedIn()) {
                 const profile = await liff.getProfile();
                 await fetchExistingData(profile.userId);
+            } else {
+                showStep1();
             }
         } catch (error) {
             console.error('LIFF Error:', error);
+            showStep1();
         }
     }
 
     async function fetchExistingData(userId) {
-        const loading = document.getElementById('loading');
-        // เปิดแสดง Skeleton
-        loading.style.display = 'block';
-        document.getElementById('step1').style.display = 'none';
-        document.getElementById('stepIndicator').style.display = 'none';
-
-        let isExistingUser = false;
-
         try {
             // 🌟 แก้ไข: ส่ง x-api-key ไปพร้อมกับ Request
             const response = await fetch(`/api/getUser?userId=${userId}`, {
@@ -285,17 +290,10 @@
                 }
             });
             
-            if (!response.ok && response.status !== 404) {
-                showToast("⚠️ ไม่สามารถเชื่อมต่อฐานข้อมูลได้ชั่วคราว");
-                document.getElementById('step1').style.display = 'block';
-                return;
-            }
-
             if (response.ok) {
                 const data = await response.json();
-                if (data && data.cid) {
-                    isExistingUser = true;
-                    // ดึงข้อมูลเดิมมาซ่อนไว้สำหรับคำนวณ
+                // เช็กว่ามีข้อมูลเพศมาด้วยเพื่อยืนยันว่าเป็นข้อมูลที่สมบูรณ์
+                if (data && data.gender) {
                     document.getElementById('cid').value = '';
                     document.getElementById('birthday').value = formatBirthday(data.birthday || '');
                     if(data.gender) document.getElementById('gender').value = data.gender;
@@ -311,30 +309,28 @@
                     document.getElementById('step1').classList.remove('active');
                     document.getElementById('step2').classList.add('active');
                     document.getElementById('subtitle').innerText = 'ส่วนที่ 2: อัปเดตข้อมูลสุขภาพ';
+                    document.getElementById('stepIndicator').style.display = 'none';
                     
                     // ซ่อนปุ่มย้อนกลับใน Step 2
                     const prevBtn = document.querySelector('.btn-secondary');
                     if (prevBtn) prevBtn.style.display = 'none';
 
+                    document.getElementById('initLoading').style.display = 'none';
+                    document.getElementById('mainContainer').style.display = 'block';
+
                     setTimeout(() => {
                         alert("💡 พบประวัติของคุณในระบบแล้ว!\n\nคุณสามารถแก้ไข 'น้ำหนัก ส่วนสูง ระดับกิจกรรม และเป้าหมาย' เพื่ออัปเดตโควตาคาร์บได้เลยครับ");
                     }, 300);
-                } else {
-                    document.getElementById('step1').style.display = 'block';
+                    return;
                 }
-            } else {
-                document.getElementById('step1').style.display = 'block';
+            } else if (response.status !== 404) {
+                showToast("⚠️ ไม่สามารถเชื่อมต่อฐานข้อมูลได้ชั่วคราว");
             }
         } catch (error) {
             console.error('Fetch error:', error);
-            document.getElementById('step1').style.display = 'block';
-        } finally {
-            // ซ่อน Skeleton และเปิดให้เห็น Indicator เฉพาะผู้ใช้ใหม่
-            loading.style.display = 'none';
-            if (!isExistingUser) {
-                document.getElementById('stepIndicator').style.display = 'flex';
-            }
         }
+        // ถ้าไม่เจอผู้ใช้ หรือมี Error ใดๆ ให้เด้งมาที่หน้าลงทะเบียนใหม่
+        showStep1();
     }
 
     function nextStep() {
