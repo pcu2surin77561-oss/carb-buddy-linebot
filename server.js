@@ -121,8 +121,6 @@ if (!API_SECRET) {
    throw new Error("🚨 SECURITY ALERT: API_SECRET is not set in Environment Variables!");
 }
 
-const SECRET = process.env.CID_SECRET || "12345678901234567890123456789012"; 
-
 const lineClient = new Client(config);
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const app = express();
@@ -164,12 +162,12 @@ app.use(
     })
 );
 
-// ✅ แก้ไขฟังก์ชัน hashCID ให้บังคับลบอักขระที่ไม่ใช่ตัวเลขออกให้หมด
+// ✅ แก้ไขฟังก์ชัน hashCID : ตัด SECRET ออก ให้รหัสเหมือนฝั่ง LAB 100%
 function hashCID(cid){
-    const cleanCID = String(cid).replace(/[^0-9]/g, '');
+    const cleanCID = String(cid).replace(/[^0-9]/g, ''); // บังคับตัดขีดและเว้นวรรคทิ้ง
     return crypto
         .createHash("sha256")
-        .update(cleanCID + SECRET)
+        .update(cleanCID) // เอา + SECRET ออกแล้ว!
         .digest("hex");
 }
 
@@ -670,7 +668,6 @@ async function handleEvent(event) {
                     const tempUserInfo = { birthday: parts[2].trim(), gender: parts[3].trim(), weight: parts[4].trim(), height: parts[5].trim(), activity: parts[6].trim(), dietType: parts[7].trim() };
                     const nutrition = calculateUserNutrition(tempUserInfo);
                     const calculatedCarbPerMeal = nutrition.carbPerMeal;
-                    // ✅ hashCID จัดการตัดขีดให้เรียบร้อยแล้ว
                     const hashedCID = hashCID(parts[1].trim());
 
                     const result = await registerNewUser(userId, hashedCID, tempUserInfo.birthday, tempUserInfo.gender, tempUserInfo.weight, tempUserInfo.height, tempUserInfo.activity, tempUserInfo.dietType, calculatedCarbPerMeal);
