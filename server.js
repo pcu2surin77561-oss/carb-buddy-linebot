@@ -479,8 +479,12 @@ app.post('/api/register', async (req, res) => {
             const nutrition = calculateUserNutrition(tempUserInfo);
             const calculatedCarbPerMeal = nutrition.carbPerMeal;
 
+            // เมื่ออัปเดต, ถ้ามีการส่ง CID ดิบมาในฟอร์ม ให้ hash ใหม่เพื่อแก้ค่าที่อาจผิดพลาดในอดีต
+            // ถ้าไม่ส่งมา ให้ใช้ค่า hash เดิมที่มีอยู่ไปก่อน
+            const cidToUpdate = cid ? hashCID(cid) : existingUser.cid;
+
             await registerNewUser(
-                userId, existingUser.cid, existingUser.birthday, existingUser.gender, 
+                userId, cidToUpdate, existingUser.birthday, existingUser.gender, 
                 tempUserInfo.weight, tempUserInfo.height, tempUserInfo.activity, tempUserInfo.dietType, calculatedCarbPerMeal
             );
 
