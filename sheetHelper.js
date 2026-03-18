@@ -51,10 +51,27 @@ const COL_USER = {
 // =====================================
 // 🌟 ระบบลดการเรียก API (ป้องกัน Error 429 Too Many Requests)
 // =====================================
+async function retryOperation(operation, maxRetries = 3) {
+    for (let i = 0; i < maxRetries; i++) {
+        try {
+            return await operation();
+        } catch (error) {
+            const isRateLimit = error.response && error.response.status === 429;
+            const isNetworkError = error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT';
+            if ((isRateLimit || isNetworkError) && i < maxRetries - 1) {
+                const delay = Math.pow(2, i) * 1000 + Math.random() * 500;
+                await new Promise(res => setTimeout(res, delay));
+            } else {
+                throw error;
+            }
+        }
+    }
+}
+
 let isDocLoaded = false;
 async function initDoc() {
     if (!isDocLoaded) {
-        await doc.loadInfo();
+        await retryOperation(() => doc.loadInfo());
         isDocLoaded = true;
     }
 }
@@ -148,7 +165,7 @@ async function getPatientHealthReport(targetCidHash, targetBirthday) {
 
         await initDoc(); // 🌟 โหลดโครงสร้าง Sheet (ใช้ของที่ Cache ไว้ถ้าเคยโหลดแล้ว)
         const sheet = doc.sheetsByIndex[0]; 
-        const rows = await sheet.getRows(); 
+        const rows = await retryOperation(() => sheet.getRows()); 
         
         const { patientInfo, latestLabs } = getLatestLab(rows, hashedCID, targetBirthday);
 
