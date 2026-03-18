@@ -82,7 +82,7 @@
     </div>
 
     <div id="loading" class="skeleton" style="display:none;"></div>
-    <div id="updateNotice">💡 พบข้อมูลเดิมของคุณในระบบ<br>กรุณายืนยันเลขบัตรประชาชนเพื่ออัปเดตข้อมูลครับ</div>
+    <div id="updateNotice">💡 พบข้อมูลเดิมของคุณในระบบ<br>สามารถอัปเดตข้อมูลด้านล่างเพื่อคำนวณใหม่ได้เลยครับ</div>
 
     <div id="step1" class="step active">
         <div class="form-group">
@@ -261,6 +261,8 @@
         document.getElementById('step1').style.display = 'none';
         document.getElementById('stepIndicator').style.display = 'none';
 
+        let isExistingUser = false;
+
         try {
             // 🌟 แก้ไข: ส่ง x-api-key ไปพร้อมกับ Request
             const response = await fetch(`/api/getUser?userId=${userId}`, {
@@ -272,14 +274,14 @@
             if (!response.ok && response.status !== 404) {
                 showToast("⚠️ ไม่สามารถเชื่อมต่อฐานข้อมูลได้ชั่วคราว");
                 document.getElementById('step1').style.display = 'block';
-                document.getElementById('stepIndicator').style.display = 'flex';
                 return;
             }
 
             if (response.ok) {
                 const data = await response.json();
                 if (data && data.cid) {
-                    // 🌟 แก้ไข: ไม่แสดง CID เพราะในระบบเก็บเป็น Hash แล้ว ผู้ใช้ต้องกรอกใหม่เพื่อความปลอดภัย
+                    isExistingUser = true;
+                    // ดึงข้อมูลเดิมมาซ่อนไว้สำหรับคำนวณ
                     document.getElementById('cid').value = '';
                     document.getElementById('birthday').value = formatBirthday(data.birthday || '');
                     if(data.gender) document.getElementById('gender').value = data.gender;
@@ -291,12 +293,17 @@
                     document.getElementById('updateNotice').style.display = 'block';
                     document.getElementById('submitBtn').innerText = 'อัปเดตข้อมูลและคำนวณคาร์บใหม่';
 
-                    // แสดง Step 1 เพื่อให้ผู้ใช้กรอกเลขบัตรประชาชนใหม่ยืนยันตัวตน
-                    document.getElementById('step1').style.display = 'block';
+                    // ข้ามไป Step 2 ทันที
+                    document.getElementById('step1').classList.remove('active');
+                    document.getElementById('step2').classList.add('active');
+                    document.getElementById('subtitle').innerText = 'ส่วนที่ 2: อัปเดตข้อมูลสุขภาพ';
                     
-                    // 🌟 เพิ่ม Alert Pop-up เพื่อให้มั่นใจว่าผู้ใช้สังเกตเห็นการแจ้งเตือน 100%
+                    // ซ่อนปุ่มย้อนกลับใน Step 2
+                    const prevBtn = document.querySelector('.btn-secondary');
+                    if (prevBtn) prevBtn.style.display = 'none';
+
                     setTimeout(() => {
-                        alert("💡 พบประวัติของคุณในระบบแล้ว!\n\nเพื่อความปลอดภัย กรุณากรอก 'เลขบัตรประชาชน 13 หลัก' อีกครั้งเพื่อยืนยันตัวตน และอัปเดตข้อมูลให้เป็นปัจจุบันครับ");
+                        alert("💡 พบประวัติของคุณในระบบแล้ว!\n\nคุณสามารถแก้ไข 'น้ำหนัก ส่วนสูง ระดับกิจกรรม และเป้าหมาย' เพื่ออัปเดตโควตาคาร์บได้เลยครับ");
                     }, 300);
                 } else {
                     document.getElementById('step1').style.display = 'block';
@@ -308,9 +315,11 @@
             console.error('Fetch error:', error);
             document.getElementById('step1').style.display = 'block';
         } finally {
-            // ซ่อน Skeleton และเปิดให้เห็น Indicator ตามปกติ
+            // ซ่อน Skeleton และเปิดให้เห็น Indicator เฉพาะผู้ใช้ใหม่
             loading.style.display = 'none';
-            document.getElementById('stepIndicator').style.display = 'flex';
+            if (!isExistingUser) {
+                document.getElementById('stepIndicator').style.display = 'flex';
+            }
         }
     }
 
