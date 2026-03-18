@@ -3,6 +3,8 @@ const { GoogleSpreadsheet } = require('google-spreadsheet');
 const { JWT } = require('google-auth-library');
 const crypto = require("crypto"); 
 
+const SECRET = process.env.CID_SECRET || "12345678901234567890123456789012";
+
 // 🌟 ฟังก์ชันสร้าง Hash สำหรับ CID (เพิ่มระบบป้องกันการ Hash ซ้ำซ้อน)
 function hashCID(cid){
     if (!cid) return "";
@@ -15,7 +17,7 @@ function hashCID(cid){
     
     return crypto
         .createHash("sha256")
-        .update(strCid)
+        .update(strCid + SECRET)
         .digest("hex");
 }
 
@@ -38,6 +40,7 @@ const doc = new GoogleSpreadsheet(SHEET_ID, serviceAccountAuth);
 const COL = {
     CID: 'cid_hash', HN: 'hn', FNAME: 'fname', LNAME: 'lname', 
     BIRTHDAY: 'birthday1', AGE: 'age_y', LAB_DATE: 'lab_date', 
+    BIRTHDAY: 'birthday1', AGE: 'age_y', LAB_DATE: 'lab_date', LAB_TIME: 'lab_time',
     LAB_NAME: 'lab_name', LAB_RESULT: 'lab_result', NORMAL_VAL: 'normal_value'
 };
 
@@ -78,12 +81,32 @@ async function initDoc() {
 
 // =====================================
 // 🌟 ฟังก์ชันแปลงเวลาสำหรับจัดการ พ.ศ. และ Timezone
+// 🌟 ฟังก์ชันจัดการวันที่และเวลา
 // =====================================
+function normalizeDateStr(dateStr) {
+    if (!dateStr) return '';
+    const cleanStr = String(dateStr).trim();
+    const parts = cleanStr.split(/[\/-]/);
+    if (parts.length === 3) {
+        let d = parts[0];
+        let m = parts[1];
+        let y = parts[2];
+        if (d.length === 4) { // รองรับกรณี YYYY-MM-DD
+            y = parts[0];
+            m = parts[1];
+            d = parts[2];
+        }
+        return `${d.padStart(2, '0')}/${m.padStart(2, '0')}/${y}`;
+    }
+    return cleanStr;
+}
+
 function convertToISO(dateStr, timeStr) {
     if (!dateStr) return null;
     
     let d, m, y;
     const cleanDateStr = String(dateStr).trim();
+    const cleanTimeStr = String(timeStr || '').trim();
     
     // รองรับทั้งการคั่นด้วย / และ -
     if (cleanDateStr.includes('/')) {
@@ -108,6 +131,17 @@ function convertToISO(dateStr, timeStr) {
     if (y > 2400) y = y - 543;
 
     const formattedTime = timeStr ? timeStr : "00:00:00";
+    let formattedTime = "00:00:00";
+    if (cleanTimeStr && cleanTimeStr !== "undefined" && cleanTimeStr !== "-") {
+        const timeParts = cleanTimeStr.split(':');
+        if (timeParts.length >= 2) {
+            const th = timeParts[0].padStart(2, '0');
+            const tm = timeParts[1].padStart(2, '0');
+            const ts = timeParts[2] ? timeParts[2].padStart(2, '0') : '00';
+            formattedTime = `${th}:${tm}:${ts}`;
+        }
+    }
+
     return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}T${formattedTime}`;
 }
 
@@ -120,10 +154,12 @@ function getLatestLab(rows, hashedCID, targetBirthday) {
     
     const safeHashedCID = String(hashedCID).trim();
     const safeTargetBirthday = String(targetBirthday).trim();
+    const safeTargetBirthday = normalizeDateStr(targetBirthday);
 
     rows.forEach(row => {
         const rowCID = String(row.get(COL.CID) || '').trim();
         const rowBirthday = String(row.get(COL.BIRTHDAY) || '').trim();
+        const rowBirthday = normalizeDateStr(row.get(COL.BIRTHDAY));
 
         if (rowCID === safeHashedCID && rowBirthday === safeTargetBirthday) {
             // เก็บข้อมูลคนไข้ (ดึงจากบรรทัดแรกที่เจอข้อมูลตรงกัน)
@@ -137,15 +173,23 @@ function getLatestLab(rows, hashedCID, targetBirthday) {
 
             const key = row.get(COL.LAB_NAME);
             if (!key) return; 
+            const rawKey = row.get(COL.LAB_NAME);
+            if (!rawKey) return; 
+            
+            // ใช้ Uppercase เพื่อป้องกันปัญหาชื่อซ้ำซ้อนแบบ HbA1c กับ HbA1C
+            const key = String(rawKey).trim().toUpperCase();
 
             const dateStr = row.get(COL.LAB_DATE);
             const isoString = convertToISO(dateStr, "00:00:00");
+            const timeStr = row.get(COL.LAB_TIME);
+            const isoString = convertToISO(dateStr, timeStr);
             
             const datetime = isoString ? new Date(isoString) : new Date(0);
 
             // เช็กว่าถ้ายังไม่มีค่าของแล็บนี้ หรือมีแล้วแต่วันที่ใหม่กว่า ให้แทนที่ของเดิม
             if (!map[key] || datetime >= map[key].datetime) {
                 map[key] = {
+                    name: String(rawKey).trim(),
                     result: row.get(COL.LAB_RESULT),
                     normal: row.get(COL.NORMAL_VAL) || 'ไม่ระบุ',
                     date: dateStr || '-',
@@ -156,6 +200,7 @@ function getLatestLab(rows, hashedCID, targetBirthday) {
     });
 
     return { patientInfo, latestLabs: Object.entries(map) };
+    return { patientInfo, latestLabs: Object.entries(map) }; // คงไว้ตามเดิมเพื่อให้โครงสร้างด้านล่างใช้ได้ต่อ
 }
 
 async function getPatientHealthReport(targetCidHash, targetBirthday) {
@@ -174,6 +219,8 @@ async function getPatientHealthReport(targetCidHash, targetBirthday) {
         let finalLabList = [];
         for (const [name, data] of latestLabs) {
             finalLabList.push(`- ${name}: ${data.result} (ค่าปกติ: ${data.normal}) [ตรวจเมื่อ: ${data.date}]`);
+        for (const [key, data] of latestLabs) {
+            finalLabList.push(`- ${data.name}: ${data.result} (ค่าปกติ: ${data.normal}) [ตรวจเมื่อ: ${data.date}]`);
         }
 
         return { patientInfo, labTextSummary: finalLabList.join('\n') };
