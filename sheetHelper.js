@@ -1,7 +1,7 @@
 // --- ไฟล์ sheetHelper.js ---
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 const { JWT } = require('google-auth-library');
-const crypto = require("crypto"); // 🌟 นำเข้า crypto สำหรับทำ Hashing
+const crypto = require("crypto"); 
 
 // 🌟 ฟังก์ชันสร้าง Hash สำหรับ CID
 function hashCID(cid){
@@ -40,41 +40,89 @@ const COL_USER = {
     CARB_PER_MEAL: 'carb_per_meal', REG_DATE: 'registered_date'
 };
 
+// =====================================
+// 🌟 ฟังก์ชันแปลงเวลาสำหรับจัดการ พ.ศ. และ Timezone
+// =====================================
+function convertToISO(dateStr, timeStr) {
+    if (!dateStr) return null;
+    const parts = dateStr.split('/');
+    if (parts.length !== 3) return null;
+    
+    let d = parts[0];
+    let m = parts[1];
+    let y = parseInt(parts[2]);
+
+    // รองรับกรณีคนกรอก พ.ศ. ให้แปลงกลับเป็น ค.ศ.
+    if (y > 2400) y = y - 543;
+
+    const formattedTime = timeStr ? timeStr : "00:00:00";
+    return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}T${formattedTime}`;
+}
+
+// =====================================
+// 🌟 ฟังก์ชันกรองดึง "ผลแล็บล่าสุด" เท่านั้น
+// =====================================
+function getLatestLab(rows, hashedCID, targetBirthday) {
+    const map = {};
+    let patientInfo = null;
+
+    rows.forEach(row => {
+        if (row.get(COL.CID) === hashedCID && row.get(COL.BIRTHDAY) === targetBirthday) {
+            // เก็บข้อมูลคนไข้ (ดึงจากบรรทัดแรกที่เจอข้อมูลตรงกัน)
+            if (!patientInfo) {
+                patientInfo = {
+                    name: `${row.get(COL.FNAME)} ${row.get(COL.LNAME)}`,
+                    age: row.get(COL.AGE),
+                    date: row.get(COL.LAB_DATE) 
+                };
+            }
+
+            const key = row.get(COL.LAB_NAME);
+            const dateStr = row.get(COL.LAB_DATE);
+            const isoString = convertToISO(dateStr, "00:00:00");
+            
+            if (!isoString || !key) return;
+
+            const datetime = new Date(isoString);
+
+            // เช็กว่าถ้ายังไม่มีค่าของแล็บนี้ หรือมีแล้วแต่วันที่ใหม่กว่า ให้แทนที่ของเดิม
+            if (!map[key] || datetime > map[key].datetime) {
+                map[key] = {
+                    result: row.get(COL.LAB_RESULT),
+                    normal: row.get(COL.NORMAL_VAL) || 'ไม่ระบุ',
+                    date: dateStr,
+                    datetime: datetime
+                };
+            }
+        }
+    });
+
+    return { patientInfo, latestLabs: Object.entries(map) };
+}
+
 async function getPatientHealthReport(targetCid, targetBirthday) {
     try {
-        const hashedCID = hashCID(targetCid); // 🌟 แปลง CID ที่รับมาเป็น Hash ก่อนนำไปค้นหาใน Sheet
+        const hashedCID = hashCID(targetCid);
 
         await doc.loadInfo();
         const sheet = doc.sheetsByIndex[0]; 
         const rows = await sheet.getRows(); 
-        let patientInfo = null;
-        let labResultsMap = {}; 
+        
+        // 🌟 เรียกใช้ฟังก์ชันดึงแล็บล่าสุด
+        const { patientInfo, latestLabs } = getLatestLab(rows, hashedCID, targetBirthday);
 
-        for (const row of rows) {
-            // 🌟 เปรียบเทียบกับค่า Hash ใน Sheet
-            if (row.get(COL.CID) === hashedCID && row.get(COL.BIRTHDAY) === targetBirthday) {
-                patientInfo = {
-                    name: `${row.get(COL.FNAME)} ${row.get(COL.LNAME)}`,
-                    age: row.get(COL.AGE),
-                    date: row.get(COL.LAB_DATE)
-                };
-                const labDate = row.get(COL.LAB_DATE);
-                const labName = row.get(COL.LAB_NAME);
-                const labResult = row.get(COL.LAB_RESULT);
-                const normalVal = row.get(COL.NORMAL_VAL);
+        if (!patientInfo || latestLabs.length === 0) return null;
 
-                if (labName && labResult) {
-                    labResultsMap[labName] = { result: labResult, normal: normalVal || 'ไม่ระบุ', date: labDate };
-                }
-            }
-        }
-        if (!patientInfo) return null;
         let finalLabList = [];
-        for (const [name, data] of Object.entries(labResultsMap)) {
+        for (const [name, data] of latestLabs) {
             finalLabList.push(`- ${name}: ${data.result} (ค่าปกติ: ${data.normal}) [ตรวจเมื่อ: ${data.date}]`);
         }
+
         return { patientInfo, labTextSummary: finalLabList.join('\n') };
-    } catch (e) { return null; }
+    } catch (e) { 
+        console.error("Error in getPatientHealthReport:", e);
+        return null; 
+    }
 }
 
 async function getRegisteredUser(userId) {
@@ -103,7 +151,7 @@ async function registerNewUser(userId, cid, birthday, gender, weight, height, ac
         const userSheet = doc.sheetsByTitle['users'];
         const rows = await userSheet.getRows();
         const today = new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' });
-        // cid ที่ถูกส่งเข้ามาถูก Hash จาก server.js เรียบร้อยแล้ว ไม่ต้องทำซ้ำ
+        
         const existingUserRow = rows.find(row => row.get(COL_USER.LINE_ID) === userId || row.get(COL_USER.CID) === cid);
         
         if (existingUserRow) {
@@ -132,12 +180,24 @@ async function saveFoodLog(data) {
         if (!foodSheet) return false;
 
         await foodSheet.addRow({
-            date: data.date, time: data.time, userId: data.userId, cid_hash: data.cid,
-            food_name: data.food, estimated_carb: data.carb, portion: data.portion,
-            actual_carb: data.actual_carb, status: data.status, image_url: '-', note: data.note || '-'
+            timestamp: data.timestamp || new Date().toISOString(), // 🌟 บันทึก timestamp ISO
+            date: data.date, 
+            time: data.time, 
+            userId: data.userId, 
+            cid_hash: data.cid,
+            food_name: data.food, 
+            estimated_carb: data.carb, 
+            portion: data.portion,
+            actual_carb: data.actual_carb, 
+            status: data.status, 
+            image_url: '-', 
+            note: data.note || '-'
         });
         return true;
-    } catch (error) { return false; }
+    } catch (error) { 
+        console.error("Error saving food log:", error);
+        return false; 
+    }
 }
 
 async function getTodayCarbTotal(userId) {
@@ -163,8 +223,8 @@ async function getTodayCarbTotal(userId) {
     }
 }
 
-// 🌟 ฟังก์ชันบันทึก Log การใช้งานลง Google Sheet (แท็บ LOG)
-async function saveLog({ time, userId, action, data }) {
+// 🌟 ฟังก์ชันบันทึก Log 
+async function saveLog({ timestamp, time, userId, action, data }) {
     try {
         await doc.loadInfo();
         const sheet = doc.sheetsByTitle["LOG"];
@@ -174,6 +234,7 @@ async function saveLog({ time, userId, action, data }) {
         }
 
         await sheet.addRow({
+            timestamp: timestamp || new Date().toISOString(), // 🌟 บันทึก timestamp ISO
             time: time,
             userId: userId,
             action: action,
@@ -186,7 +247,6 @@ async function saveLog({ time, userId, action, data }) {
     }
 }
 
-// 🌟 ฟังก์ชันสำหรับดึงข้อมูลการกินอาหารทั้งหมดไปแสดงบน Dashboard
 async function getAllFoodLogs() {
     try {
         await doc.loadInfo();
@@ -195,7 +255,6 @@ async function getAllFoodLogs() {
 
         const rows = await sheet.getRows();
         
-        // แปลงข้อมูลจาก Google Sheet ให้เป็น Array ของ Object ปกติ
         const logs = rows.map(row => {
             return {
                 date: row.get('date') || "",
@@ -221,5 +280,5 @@ module.exports = {
     saveFoodLog, 
     getTodayCarbTotal,
     saveLog,
-    getAllFoodLogs // 🌟 เพิ่มตรงนี้เข้าไป
+    getAllFoodLogs
 };
