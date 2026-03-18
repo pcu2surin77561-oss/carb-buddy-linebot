@@ -3,7 +3,6 @@ const { GoogleSpreadsheet } = require('google-spreadsheet');
 const { JWT } = require('google-auth-library');
 const crypto = require("crypto"); 
 
-// 🌟 ฟังก์ชันสร้าง Hash สำหรับ CID
 function hashCID(cid){
     if (!cid) return "";
     return crypto
@@ -41,49 +40,48 @@ const COL_USER = {
     CARB_PER_MEAL: 'carb_per_meal', REG_DATE: 'registered_date'
 };
 
-// =====================================
-// 🌟 ฟังก์ชันแปลงเวลาที่ยืดหยุ่นขึ้น (ป้องกันบั๊กถ้าพิมพ์รูปแบบวันที่ผิด)
-// =====================================
+// 🌟 เพิ่มระบบ Cache โครงสร้าง Sheet เพื่อป้องกัน Error 429 (Too Many Requests)
+let isDocLoaded = false;
+async function initDoc() {
+    if (!isDocLoaded) {
+        await doc.loadInfo();
+        isDocLoaded = true;
+    }
+}
+
 function convertToISO(dateStr, timeStr) {
     if (!dateStr) return null;
     
     let d, m, y;
     const cleanDateStr = String(dateStr).trim();
     
-    // รองรับทั้งการคั่นด้วย / และ -
     if (cleanDateStr.includes('/')) {
         const parts = cleanDateStr.split('/');
         if (parts.length === 3) { d = parts[0]; m = parts[1]; y = parseInt(parts[2]); }
     } else if (cleanDateStr.includes('-')) {
         const parts = cleanDateStr.split('-');
         if (parts.length === 3) {
-            if (parts[0].length === 4) { y = parseInt(parts[0]); m = parts[1]; d = parts[2]; } // YYYY-MM-DD
-            else { d = parts[0]; m = parts[1]; y = parseInt(parts[2]); } // DD-MM-YYYY
+            if (parts[0].length === 4) { y = parseInt(parts[0]); m = parts[1]; d = parts[2]; } 
+            else { d = parts[0]; m = parts[1]; y = parseInt(parts[2]); } 
         }
     }
 
-    // ถ้าหารูปแบบไม่เจอ ให้ลองใช้ Date ของ JS แปลงดูเผื่อรอด
     if (!y || !m || !d) {
         const fallbackDate = new Date(cleanDateStr);
         if (!isNaN(fallbackDate.getTime())) return fallbackDate.toISOString();
         return null;
     }
 
-    // รองรับกรณีคนกรอก พ.ศ. ให้แปลงกลับเป็น ค.ศ.
     if (y > 2400) y = y - 543;
 
     const formattedTime = timeStr ? timeStr : "00:00:00";
     return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}T${formattedTime}`;
 }
 
-// =====================================
-// 🌟 ฟังก์ชันกรองดึง "ผลแล็บล่าสุด"
-// =====================================
 function getLatestLab(rows, hashedCID, targetBirthday) {
     const map = {};
     let patientInfo = null;
     
-    // ป้องกันปัญหาเว้นวรรค
     const safeHashedCID = String(hashedCID).trim();
     const safeTargetBirthday = String(targetBirthday).trim();
 
@@ -92,7 +90,6 @@ function getLatestLab(rows, hashedCID, targetBirthday) {
         const rowBirthday = String(row.get(COL.BIRTHDAY) || '').trim();
 
         if (rowCID === safeHashedCID && rowBirthday === safeTargetBirthday) {
-            // เก็บข้อมูลคนไข้ (ดึงจากบรรทัดแรกที่เจอ)
             if (!patientInfo) {
                 patientInfo = {
                     name: `${row.get(COL.FNAME) || ''} ${row.get(COL.LNAME) || ''}`.trim() || 'นักเรียน',
@@ -102,15 +99,13 @@ function getLatestLab(rows, hashedCID, targetBirthday) {
             }
 
             const key = row.get(COL.LAB_NAME);
-            if (!key) return; // ถ้าไม่มีชื่อแล็บข้ามเลย
+            if (!key) return; 
 
             const dateStr = row.get(COL.LAB_DATE);
             const isoString = convertToISO(dateStr, "00:00:00");
             
-            // ถ้าแปลงวันที่ไม่ได้ ให้เซ็ตเป็น Date(0) (ปี 1970) เพื่อให้ยังดึงข้อมูลมาแสดงได้ ดีกว่าข้อมูลหายไปเลย
             const datetime = isoString ? new Date(isoString) : new Date(0);
 
-            // เช็กว่าถ้ายังไม่มีค่าของแล็บนี้ หรือมีแล้วแต่วันที่ใหม่กว่า ให้แทนที่ของเดิม
             if (!map[key] || datetime >= map[key].datetime) {
                 map[key] = {
                     result: row.get(COL.LAB_RESULT),
@@ -125,17 +120,14 @@ function getLatestLab(rows, hashedCID, targetBirthday) {
     return { patientInfo, latestLabs: Object.entries(map) };
 }
 
-// 🌟 แก้บั๊ก Double Hashing ตรงนี้
 async function getPatientHealthReport(targetCidHash, targetBirthday) {
     try {
-        // ❌ เอา hashCID() ออก เพราะ targetCidHash มันถูก Hash มาจาก server.js แล้ว
         const hashedCID = targetCidHash;
 
-        await doc.loadInfo();
+        await initDoc(); // 🌟 เปลี่ยนมาใช้ initDoc()
         const sheet = doc.sheetsByIndex[0]; 
         const rows = await sheet.getRows(); 
         
-        // 🌟 เรียกใช้ฟังก์ชันดึงแล็บล่าสุด
         const { patientInfo, latestLabs } = getLatestLab(rows, hashedCID, targetBirthday);
 
         if (!patientInfo || latestLabs.length === 0) return null;
@@ -154,7 +146,7 @@ async function getPatientHealthReport(targetCidHash, targetBirthday) {
 
 async function getRegisteredUser(userId) {
     try {
-        await doc.loadInfo();
+        await initDoc(); // 🌟 เปลี่ยนมาใช้ initDoc()
         const userSheet = doc.sheetsByTitle['users'];
         const rows = await userSheet.getRows();
         const userRow = rows.find(row => row.get(COL_USER.LINE_ID) === userId);
@@ -174,7 +166,7 @@ async function getRegisteredUser(userId) {
 
 async function registerNewUser(userId, cid, birthday, gender, weight, height, activity, dietType, carbPerMeal) {
     try {
-        await doc.loadInfo();
+        await initDoc(); // 🌟 เปลี่ยนมาใช้ initDoc()
         const userSheet = doc.sheetsByTitle['users'];
         const rows = await userSheet.getRows();
         const today = new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' });
@@ -202,7 +194,7 @@ async function registerNewUser(userId, cid, birthday, gender, weight, height, ac
 
 async function saveFoodLog(data) {
     try {
-        await doc.loadInfo();
+        await initDoc(); // 🌟 เปลี่ยนมาใช้ initDoc()
         const foodSheet = doc.sheetsByTitle['food_logs'];
         if (!foodSheet) return false;
 
@@ -229,7 +221,7 @@ async function saveFoodLog(data) {
 
 async function getTodayCarbTotal(userId) {
     try {
-        await doc.loadInfo();
+        await initDoc(); // 🌟 เปลี่ยนมาใช้ initDoc()
         const sheet = doc.sheetsByTitle['food_logs'];
         if (!sheet) return 0;
 
@@ -250,10 +242,9 @@ async function getTodayCarbTotal(userId) {
     }
 }
 
-// 🌟 ฟังก์ชันบันทึก Log 
 async function saveLog({ timestamp, time, userId, action, data }) {
     try {
-        await doc.loadInfo();
+        await initDoc(); // 🌟 เปลี่ยนมาใช้ initDoc()
         const sheet = doc.sheetsByTitle["LOG"];
         if (!sheet) {
             console.error("ไม่พบแท็บ LOG ใน Google Sheet");
@@ -276,7 +267,7 @@ async function saveLog({ timestamp, time, userId, action, data }) {
 
 async function getAllFoodLogs() {
     try {
-        await doc.loadInfo();
+        await initDoc(); // 🌟 เปลี่ยนมาใช้ initDoc()
         const sheet = doc.sheetsByTitle['food_logs'];
         if (!sheet) return [];
 
