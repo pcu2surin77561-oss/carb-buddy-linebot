@@ -224,7 +224,10 @@ async function getRegisteredUser(userId) {
         await initDoc();
         const userSheet = doc.sheetsByTitle['users'];
         const rows = await userSheet.getRows();
-        const userRow = rows.find(row => row.get(COL_USER.LINE_ID) === userId);
+        
+        // 🌟 บังคับลบเว้นวรรคซ้ายขวาทั้งฝั่งข้อมูลและฝั่งค้นหา ป้องกันปัญหาหาไม่เจอ
+        const safeUserId = String(userId).trim();
+        const userRow = rows.find(row => String(row.get(COL_USER.LINE_ID) || '').trim() === safeUserId);
         
         return userRow ? { 
             cid: userRow.get(COL_USER.CID), 
@@ -236,7 +239,10 @@ async function getRegisteredUser(userId) {
             dietType: userRow.get(COL_USER.DIET_TYPE),
             carbPerMeal: userRow.get(COL_USER.CARB_PER_MEAL)
         } : null;
-    } catch (e) { return null; }
+    } catch (e) { 
+        console.error("❌ Error in getRegisteredUser (Check column line_id):", e);
+        return null; 
+    }
 }
 
 async function registerNewUser(userId, cid, birthday, gender, weight, height, activity, dietType, carbPerMeal) {
@@ -246,7 +252,12 @@ async function registerNewUser(userId, cid, birthday, gender, weight, height, ac
         const rows = await userSheet.getRows();
         const today = new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' });
         
-        const existingUserRow = rows.find(row => row.get(COL_USER.LINE_ID) === userId || row.get(COL_USER.CID) === cid);
+        const safeUserId = String(userId).trim();
+        const safeCid = String(cid).trim();
+        const existingUserRow = rows.find(row => 
+            String(row.get(COL_USER.LINE_ID) || '').trim() === safeUserId || 
+            String(row.get(COL_USER.CID) || '').trim() === safeCid
+        );
         
         if (existingUserRow) {
             existingUserRow.assign({
