@@ -250,6 +250,7 @@ async function registerNewUser(userId, cid, birthday, gender, weight, height, ac
         
         if (existingUserRow) {
             existingUserRow.assign({
+                [COL_USER.CID]: cid,
                 [COL_USER.WEIGHT]: weight, [COL_USER.HEIGHT]: height, [COL_USER.ACTIVITY]: activity,
                 [COL_USER.DIET_TYPE]: dietType, [COL_USER.CARB_PER_MEAL]: carbPerMeal, [COL_USER.REG_DATE]: today
             });
