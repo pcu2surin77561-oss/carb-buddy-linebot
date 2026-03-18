@@ -486,10 +486,14 @@ app.post('/api/register', async (req, res) => {
 
             logEvent(userId, "update_profile", `updated_user_part2: newCarb=${calculatedCarbPerMeal}`);
             
-            await lineClient.pushMessage(userId, { 
-                type: 'text', 
-                text: `⚠️ แจ้งเตือน: คุณเคยลงทะเบียนแล้ว\nระบบทำการแก้ไขเฉพาะ "น้ำหนัก ส่วนสูง กิจกรรม และเป้าหมายการคุมอาหาร" ให้ใหม่เรียบร้อยครับ\n\n📌 โควตาคาร์บใหม่ของคุณคือ: ${calculatedCarbPerMeal} คาร์บ/มื้อ\n(คาร์บ 1 ส่วน = ข้าวสวย 1 ทัพพี) 🍚` 
-            });
+            try {
+                await lineClient.pushMessage(userId, { 
+                    type: 'text', 
+                    text: `⚠️ แจ้งเตือน: คุณเคยลงทะเบียนแล้ว\nระบบทำการแก้ไขเฉพาะ "น้ำหนัก ส่วนสูง กิจกรรม และเป้าหมายการคุมอาหาร" ให้ใหม่เรียบร้อยครับ\n\n📌 โควตาคาร์บใหม่ของคุณคือ: ${calculatedCarbPerMeal} คาร์บ/มื้อ\n(คาร์บ 1 ส่วน = ข้าวสวย 1 ทัพพี) 🍚` 
+                });
+            } catch (pushErr) {
+                logger.warn({ err: pushErr.message }, "⚠️ ข้ามการส่ง Push Message (อาจติด Limit 429 ของ LINE Free Plan)");
+            }
 
             return res.json({ status: "ok", result: "updated", newCarbPerMeal: calculatedCarbPerMeal });
 
@@ -507,7 +511,11 @@ app.post('/api/register', async (req, res) => {
 
             if (result === "success") {
                 logEvent(userId, "register", "new_user");
-                await lineClient.pushMessage(userId, { type: 'text', text: `✅ ลงทะเบียนสำเร็จ!\n\n📌 แนะนำให้ทานคาร์บมื้อละ: ${calculatedCarbPerMeal} คาร์บ\n(พิมพ์ "ดูสมุดพก" เพื่อดูผลการวิเคราะห์เต็มรูปแบบครับ)` });
+                try {
+                    await lineClient.pushMessage(userId, { type: 'text', text: `✅ ลงทะเบียนสำเร็จ!\n\n📌 แนะนำให้ทานคาร์บมื้อละ: ${calculatedCarbPerMeal} คาร์บ\n(พิมพ์ "ดูสมุดพก" เพื่อดูผลการวิเคราะห์เต็มรูปแบบครับ)` });
+                } catch (pushErr) {
+                    logger.warn({ err: pushErr.message }, "⚠️ ข้ามการส่ง Push Message (อาจติด Limit 429 ของ LINE Free Plan)");
+                }
             }
 
             return res.json({ status: "ok", result: result, newCarbPerMeal: calculatedCarbPerMeal });
