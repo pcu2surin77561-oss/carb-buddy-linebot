@@ -293,6 +293,11 @@
 
                     // แสดง Step 1 เพื่อให้ผู้ใช้กรอกเลขบัตรประชาชนใหม่ยืนยันตัวตน
                     document.getElementById('step1').style.display = 'block';
+                    
+                    // 🌟 เพิ่ม Alert Pop-up เพื่อให้มั่นใจว่าผู้ใช้สังเกตเห็นการแจ้งเตือน 100%
+                    setTimeout(() => {
+                        alert("💡 พบประวัติของคุณในระบบแล้ว!\n\nเพื่อความปลอดภัย กรุณากรอก 'เลขบัตรประชาชน 13 หลัก' อีกครั้งเพื่อยืนยันตัวตน และอัปเดตข้อมูลให้เป็นปัจจุบันครับ");
+                    }, 300);
                 } else {
                     document.getElementById('step1').style.display = 'block';
                 }
@@ -419,13 +424,36 @@
                 });
 
                 if (response.ok) {
+                    const resData = await response.json();
                     loadingOverlay.style.display = 'none';
                     document.getElementById("mainContainer").style.display = "none";
-                    document.getElementById("successPage").style.display = "block";
                     
-                    setTimeout(() => { liff.closeWindow(); }, 2500);
+                    const successPage = document.getElementById("successPage");
+                    if (resData.result === "updated") {
+                        successPage.innerHTML = `
+                            <h2 style="color:#00897B; font-size: 28px;">🔄 อัปเดตข้อมูลสำเร็จ</h2>
+                            <p style="color:#555; font-size: 16px;">ระบบได้ปรับปรุงข้อมูลสุขภาพของคุณเรียบร้อยแล้ว</p>
+                            <div style="background:#e0f2f1; padding:15px; border-radius:10px; margin-top:15px; color:#00695c;">
+                                <strong>โควตาคาร์บใหม่ของคุณ:</strong><br><span style="font-size:24px;">${resData.newCarbPerMeal} คาร์บ/มื้อ</span>
+                            </div>
+                            <p style="color:#888; font-size: 14px; margin-top: 20px;">กำลังปิดหน้าต่าง...</p>
+                        `;
+                    } else {
+                        successPage.innerHTML = `
+                            <h2 style="color:#00897B; font-size: 28px;">✅ ลงทะเบียนสำเร็จ</h2>
+                            <p style="color:#555; font-size: 16px;">ระบบได้บันทึกข้อมูลโภชนาการของคุณเรียบร้อยแล้ว</p>
+                            <div style="background:#e0f2f1; padding:15px; border-radius:10px; margin-top:15px; color:#00695c;">
+                                <strong>โควตาคาร์บที่แนะนำ:</strong><br><span style="font-size:24px;">${resData.newCarbPerMeal} คาร์บ/มื้อ</span>
+                            </div>
+                            <p style="color:#888; font-size: 14px; margin-top: 20px;">กำลังปิดหน้าต่าง...</p>
+                        `;
+                    }
+                    successPage.style.display = "block";
+                    
+                    setTimeout(() => { liff.closeWindow(); }, 4000); // 🌟 ยืดเวลาให้ผู้ใช้อ่านค่าคาร์บ 4 วินาที
                 } else {
-                    throw new Error("API ตอบกลับผิดพลาด");
+                    const errData = await response.json().catch(() => ({}));
+                    throw new Error(errData.error || "API ตอบกลับผิดพลาด กรุณาลองใหม่");
                 }
             } else {
                 loadingOverlay.style.display = 'none';
