@@ -167,7 +167,7 @@ app.use(
 function hashCID(cid){
     return crypto
         .createHash("sha256")
-        .update(String(cid).trim())
+        .update(String(cid).trim() + SECRET)
         .digest("hex");
 }
 
