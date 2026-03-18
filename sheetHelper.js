@@ -3,11 +3,19 @@ const { GoogleSpreadsheet } = require('google-spreadsheet');
 const { JWT } = require('google-auth-library');
 const crypto = require("crypto"); 
 
+// 🌟 ฟังก์ชันสร้าง Hash สำหรับ CID (เพิ่มระบบป้องกันการ Hash ซ้ำซ้อน)
 function hashCID(cid){
     if (!cid) return "";
+    
+    const strCid = String(cid).trim();
+    // ตรวจสอบว่าถ้ามันเป็น hash 64 ตัวอักษร (SHA-256) อยู่แล้ว ไม่ต้อง hash ซ้ำ
+    if (strCid.length === 64 && /^[0-9a-fA-F]+$/.test(strCid)) {
+        return strCid;
+    }
+    
     return crypto
         .createHash("sha256")
-        .update(String(cid).trim())
+        .update(strCid)
         .digest("hex");
 }
 
@@ -40,7 +48,9 @@ const COL_USER = {
     CARB_PER_MEAL: 'carb_per_meal', REG_DATE: 'registered_date'
 };
 
-// 🌟 เพิ่มระบบ Cache โครงสร้าง Sheet เพื่อป้องกัน Error 429 (Too Many Requests)
+// =====================================
+// 🌟 ระบบลดการเรียก API (ป้องกัน Error 429 Too Many Requests)
+// =====================================
 let isDocLoaded = false;
 async function initDoc() {
     if (!isDocLoaded) {
@@ -49,35 +59,44 @@ async function initDoc() {
     }
 }
 
+// =====================================
+// 🌟 ฟังก์ชันแปลงเวลาสำหรับจัดการ พ.ศ. และ Timezone
+// =====================================
 function convertToISO(dateStr, timeStr) {
     if (!dateStr) return null;
     
     let d, m, y;
     const cleanDateStr = String(dateStr).trim();
     
+    // รองรับทั้งการคั่นด้วย / และ -
     if (cleanDateStr.includes('/')) {
         const parts = cleanDateStr.split('/');
         if (parts.length === 3) { d = parts[0]; m = parts[1]; y = parseInt(parts[2]); }
     } else if (cleanDateStr.includes('-')) {
         const parts = cleanDateStr.split('-');
         if (parts.length === 3) {
-            if (parts[0].length === 4) { y = parseInt(parts[0]); m = parts[1]; d = parts[2]; } 
-            else { d = parts[0]; m = parts[1]; y = parseInt(parts[2]); } 
+            if (parts[0].length === 4) { y = parseInt(parts[0]); m = parts[1]; d = parts[2]; } // YYYY-MM-DD
+            else { d = parts[0]; m = parts[1]; y = parseInt(parts[2]); } // DD-MM-YYYY
         }
     }
 
+    // ถ้าหารูปแบบไม่เจอ ให้ลองใช้ Date ของ JS แปลงดูเผื่อรอด
     if (!y || !m || !d) {
         const fallbackDate = new Date(cleanDateStr);
         if (!isNaN(fallbackDate.getTime())) return fallbackDate.toISOString();
         return null;
     }
 
+    // รองรับกรณีคนกรอก พ.ศ. ให้แปลงกลับเป็น ค.ศ.
     if (y > 2400) y = y - 543;
 
     const formattedTime = timeStr ? timeStr : "00:00:00";
     return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}T${formattedTime}`;
 }
 
+// =====================================
+// 🌟 ฟังก์ชันกรองดึง "ผลแล็บล่าสุด" เท่านั้น
+// =====================================
 function getLatestLab(rows, hashedCID, targetBirthday) {
     const map = {};
     let patientInfo = null;
@@ -90,6 +109,7 @@ function getLatestLab(rows, hashedCID, targetBirthday) {
         const rowBirthday = String(row.get(COL.BIRTHDAY) || '').trim();
 
         if (rowCID === safeHashedCID && rowBirthday === safeTargetBirthday) {
+            // เก็บข้อมูลคนไข้ (ดึงจากบรรทัดแรกที่เจอข้อมูลตรงกัน)
             if (!patientInfo) {
                 patientInfo = {
                     name: `${row.get(COL.FNAME) || ''} ${row.get(COL.LNAME) || ''}`.trim() || 'นักเรียน',
@@ -106,6 +126,7 @@ function getLatestLab(rows, hashedCID, targetBirthday) {
             
             const datetime = isoString ? new Date(isoString) : new Date(0);
 
+            // เช็กว่าถ้ายังไม่มีค่าของแล็บนี้ หรือมีแล้วแต่วันที่ใหม่กว่า ให้แทนที่ของเดิม
             if (!map[key] || datetime >= map[key].datetime) {
                 map[key] = {
                     result: row.get(COL.LAB_RESULT),
@@ -122,9 +143,10 @@ function getLatestLab(rows, hashedCID, targetBirthday) {
 
 async function getPatientHealthReport(targetCidHash, targetBirthday) {
     try {
-        const hashedCID = targetCidHash;
+        // hashCID ฉบับใหม่ป้องกันการซ้อน Hash ไว้ให้แล้ว ใส่เข้ามาได้อย่างปลอดภัย
+        const hashedCID = hashCID(targetCidHash);
 
-        await initDoc(); // 🌟 เปลี่ยนมาใช้ initDoc()
+        await initDoc(); // 🌟 โหลดโครงสร้าง Sheet (ใช้ของที่ Cache ไว้ถ้าเคยโหลดแล้ว)
         const sheet = doc.sheetsByIndex[0]; 
         const rows = await sheet.getRows(); 
         
@@ -146,7 +168,7 @@ async function getPatientHealthReport(targetCidHash, targetBirthday) {
 
 async function getRegisteredUser(userId) {
     try {
-        await initDoc(); // 🌟 เปลี่ยนมาใช้ initDoc()
+        await initDoc();
         const userSheet = doc.sheetsByTitle['users'];
         const rows = await userSheet.getRows();
         const userRow = rows.find(row => row.get(COL_USER.LINE_ID) === userId);
@@ -166,7 +188,7 @@ async function getRegisteredUser(userId) {
 
 async function registerNewUser(userId, cid, birthday, gender, weight, height, activity, dietType, carbPerMeal) {
     try {
-        await initDoc(); // 🌟 เปลี่ยนมาใช้ initDoc()
+        await initDoc();
         const userSheet = doc.sheetsByTitle['users'];
         const rows = await userSheet.getRows();
         const today = new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' });
@@ -194,12 +216,12 @@ async function registerNewUser(userId, cid, birthday, gender, weight, height, ac
 
 async function saveFoodLog(data) {
     try {
-        await initDoc(); // 🌟 เปลี่ยนมาใช้ initDoc()
+        await initDoc();
         const foodSheet = doc.sheetsByTitle['food_logs'];
         if (!foodSheet) return false;
 
         await foodSheet.addRow({
-            timestamp: data.timestamp || new Date().toISOString(),
+            timestamp: data.timestamp || new Date().toISOString(), // 🌟 รองรับการเรียงลำดับเวลา
             date: data.date, 
             time: data.time, 
             userId: data.userId, 
@@ -221,7 +243,7 @@ async function saveFoodLog(data) {
 
 async function getTodayCarbTotal(userId) {
     try {
-        await initDoc(); // 🌟 เปลี่ยนมาใช้ initDoc()
+        await initDoc();
         const sheet = doc.sheetsByTitle['food_logs'];
         if (!sheet) return 0;
 
@@ -244,7 +266,7 @@ async function getTodayCarbTotal(userId) {
 
 async function saveLog({ timestamp, time, userId, action, data }) {
     try {
-        await initDoc(); // 🌟 เปลี่ยนมาใช้ initDoc()
+        await initDoc();
         const sheet = doc.sheetsByTitle["LOG"];
         if (!sheet) {
             console.error("ไม่พบแท็บ LOG ใน Google Sheet");
@@ -267,7 +289,7 @@ async function saveLog({ timestamp, time, userId, action, data }) {
 
 async function getAllFoodLogs() {
     try {
-        await initDoc(); // 🌟 เปลี่ยนมาใช้ initDoc()
+        await initDoc();
         const sheet = doc.sheetsByTitle['food_logs'];
         if (!sheet) return [];
 
