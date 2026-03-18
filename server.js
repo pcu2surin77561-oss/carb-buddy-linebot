@@ -451,9 +451,15 @@ app.get('/api/getUser', async (req, res) => {
     const userId = req.query.userId;
     if(!userId) return res.status(400).json({error:"Missing userId"});
     
+    logger.info(`🔍 Checking line_id: ${userId}`);
     const userInfo = await getRegisteredUser(userId);
-    if(userInfo) res.json(userInfo);
-    else res.status(404).json({error:"User not found"});
+    if(userInfo) {
+        logger.info(`✅ Found existing user profile for: ${userId}`);
+        res.json(userInfo);
+    } else {
+        logger.info(`❌ User not found for: ${userId} (New User)`);
+        res.status(404).json({error:"User not found"});
+    }
 });
 
 const registerLimiter = rateLimit({ windowMs: 10 * 60 * 1000, max: 20 });
