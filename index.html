@@ -1,483 +1,381 @@
-<!DOCTYPE html>
-<html lang="th">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ลงทะเบียนนักเรียน - โรงเรียนเบาหวาน</title>
-    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Kanit', sans-serif; background-color: #f0f4f3; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; margin: 0; padding-top: 30px; padding-bottom: 30px; }
-        
-        /* 2️⃣ เพิ่ม Smooth Animation ให้ Container */
-        .container { background: white; width: 90%; max-width: 400px; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); overflow: hidden; position: relative; transition: .35s ease; }
-        
-        .header { text-align: center; margin-bottom: 10px; }
-        .header img { width: 80px; margin-bottom: 10px; }
-        .header h2 { color: #00897B; margin: 0; font-size: 22px; }
-        .header p { color: #777; font-size: 14px; margin-top: 5px; }
+// --- ไฟล์ sheetHelper.js ---
+const { GoogleSpreadsheet } = require('google-spreadsheet');
+const { JWT } = require('google-auth-library');
+const crypto = require("crypto"); 
 
-        /* 1️⃣ CSS สำหรับ Progress Step Indicator */
-        .step-progress { display: flex; justify-content: center; gap: 10px; margin-top: 10px; margin-bottom: 20px; }
-        .dot { width: 10px; height: 10px; border-radius: 50%; background: #ccc; transition: .3s; }
-        .dot.active { background: #00897B; transform: scale(1.2); }
-        
-        /* 3️⃣ CSS สำหรับ Skeleton Loading */
-        .skeleton { height: 45px; background: linear-gradient(90deg, #eee 25%, #f5f5f5 50%, #eee 75%); background-size: 200% 100%; border-radius: 10px; animation: shimmer 1.4s infinite linear; margin-bottom: 20px; }
-        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+const SECRET = process.env.CID_SECRET || "12345678901234567890123456789012";
 
-        #updateNotice { display: none; background-color: #e3f2fd; color: #00695c; padding: 10px; border-radius: 8px; font-size: 13px; text-align: center; margin-bottom: 20px; border: 1px solid #b2dfdb; }
-
-        .form-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 8px; font-size: 14px; color: #444; font-weight: 600; }
-        
-        /* Shadow ให้ Input ดูมีมิติเหมือน App */
-        input, select { width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 10px; font-size: 15px; box-sizing: border-box; outline: none; transition: 0.3s; font-family: 'Kanit', sans-serif; box-shadow: 0 2px 6px rgba(0,0,0,.04); }
-        input:focus, select:focus { border-color: #00897B; box-shadow: 0 0 0 3px rgba(0,137,123,0.1); }
-        
-        /* ปุ่มแบบ Mobile App */
-        .btn-primary { width: 100%; padding: 15px; background-color: #00897B; color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: 600; cursor: pointer; transition: 0.3s; margin-top: 10px; box-shadow: 0 6px 14px rgba(0,137,123,.3); }
-        .btn-primary:active { transform: scale(0.98); background-color: #00695C; }
-        .btn-primary:disabled { background-color: #cccccc; cursor: not-allowed; box-shadow: none; }
-        
-        .btn-secondary { width: 100%; padding: 12px; background-color: #f0f4f3; color: #555; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.3s; margin-top: 10px; }
-        
-        .footer-text { text-align: center; font-size: 11px; color: #aaa; margin-top: 20px; }
-        
-        /* Animation SlideIn แบบ App */
-        .step { display: none; animation: slideIn .35s ease; }
-        .step.active { display: block; }
-        @keyframes slideIn { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
-
-        #loadingOverlay {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255, 255, 255, 0.85); z-index: 9999; justify-content: center;
-            align-items: center; flex-direction: column; font-size: 18px; color: #00897B; font-weight: bold;
-        }
-
-        /* 6️⃣ CSS สำหรับ Toast Error UI */
-        .toast { position: fixed; bottom: -50px; left: 50%; transform: translateX(-50%); background: rgba(51, 51, 51, 0.95); color: #fff; padding: 12px 24px; border-radius: 30px; font-size: 14px; opacity: 0; transition: 0.3s ease-in-out; z-index: 9999; pointer-events: none; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-        .toast.show { bottom: 40px; opacity: 1; }
-    </style>
-</head>
-<body>
-
-<div id="loadingOverlay">
-    <span style="font-size: 30px; margin-bottom: 10px;">⏳</span>
-    กำลังบันทึกข้อมูล...
-</div>
-
-<div id="toast" class="toast"></div>
-
-<div class="container" id="mainContainer">
-    <div class="header">
-        <img src="https://cdn-icons-png.flaticon.com/512/3063/3063176.png" alt="logo">
-        <h2>ลงทะเบียนนักเรียน</h2>
-        <p id="subtitle">ส่วนที่ 1: ข้อมูลประจำตัว</p>
-    </div>
-
-    <div class="step-progress" id="stepIndicator">
-        <div class="dot active" id="dot1"></div>
-        <div class="dot" id="dot2"></div>
-    </div>
-
-    <div id="loading" class="skeleton" style="display:none;"></div>
-    <div id="updateNotice">💡 พบข้อมูลเดิมของคุณในระบบ<br>สามารถอัปเดตข้อมูลด้านล่างเพื่อคำนวณใหม่ได้เลยครับ</div>
-
-    <div id="step1" class="step active">
-        <div class="form-group">
-            <label>เลขบัตรประชาชน (13 หลัก)</label>
-            <input type="text" id="cid" maxlength="17" inputmode="numeric" placeholder="ตัวอย่าง 1-2345-67890-12-3">
-        </div>
-        <div class="form-group">
-            <label>วันเดือนปีเกิด (โปรดใส่ พ.ศ.)</label>
-            <input type="text" id="birthday" maxlength="10" inputmode="numeric" placeholder="ตัวอย่าง 01/01/2500">
-        </div>
-        <button class="btn-primary" onclick="nextStep()">ถัดไป ➔</button>
-    </div>
-
-    <div id="step2" class="step">
-        <div style="display: flex; gap: 10px;">
-            <div class="form-group" style="flex: 1;">
-                <label>เพศกำเนิด</label>
-                <select id="gender">
-                    <option value="">เลือก</option>
-                    <option value="ชาย">ชาย</option>
-                    <option value="หญิง">หญิง</option>
-                </select>
-            </div>
-            <div class="form-group" style="flex: 1;">
-                <label>น.น. (กก.)</label>
-                <input type="number" id="weight" placeholder="เช่น 65" inputmode="decimal">
-            </div>
-            <div class="form-group" style="flex: 1;">
-                <label>ส่วนสูง (ซม.)</label>
-                <input type="number" id="height" placeholder="เช่น 160" inputmode="numeric">
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label>ระดับกิจกรรมในชีวิตประจำวัน</label>
-            <select id="activity">
-                <option value="">-- เลือกระดับกิจกรรม --</option>
-                <option value="1.2">นั่งเป็นส่วนใหญ่ / ไม่ค่อยได้ออกกำลังกาย</option>
-                <option value="1.375">ออกกำลังกายเบาๆ (1-3 วัน/สัปดาห์)</option>
-                <option value="1.55">ออกกำลังกายปานกลาง (3-5 วัน/สัปดาห์)</option>
-                <option value="1.725">ออกกำลังกายอย่างหนัก (6-7 วัน/สัปดาห์)</option>
-                <option value="1.9">ออกกำลังกายเช้า-เย็น / ใช้แรงงานหนัก</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label>เป้าหมายการคุมอาหาร</label>
-            <select id="dietType">
-                <option value="0.2">Low Carb 20% (ลดน้ำหนัก / คุมเบาหวาน)</option>
-                <option value="0.5">Balanced Diet 50% (รักษาสุขภาพทั่วไป)</option>
-            </select>
-        </div>
-
-        <div class="form-group" style="font-size:13px; background:#f9f9f9; padding:15px; border-radius:10px; border: 1px solid #eee;">
-            <label style="display:flex;align-items:flex-start;gap:8px; cursor:pointer; margin:0;">
-                <input type="checkbox" id="pdpaConsent" style="width:20px; height:20px; margin-top:2px;">
-                <span style="color:#555;">
-                    ฉันยินยอมให้ระบบโรงเรียนเบาหวานเก็บและใช้ข้อมูลส่วนบุคคล เพื่อวิเคราะห์สุขภาพและให้คำแนะนำด้านโภชนาการ
-                </span>
-            </label>
-            <div style="font-size:12px;margin-top:6px; text-align:right;">
-                อ่านนโยบาย
-                <a href="https://pdpa.moph.go.th/" target="_blank" style="color:#00897B; text-decoration:underline;">คุ้มครองข้อมูลส่วนบุคคล</a>
-            </div>
-        </div>
-        
-        <button class="btn-primary" onclick="submitRegistration()" id="submitBtn">บันห์ทึกข้อมูลและคำนวณคาร์บ</button>
-        <button class="btn-secondary" onclick="prevStep()">ย้อนกลับ</button>
-    </div>
+// 🌟 ฟังก์ชันสร้าง Hash สำหรับ CID (เพิ่มระบบป้องกันการ Hash ซ้ำซ้อน)
+function hashCID(cid){
+    if (!cid) return "";
     
-    <p class="footer-text">ข้อมูลของคุณจะได้รับการคุ้มครองตามนโยบายความปลอดภัย</p>
-</div>
-
-<div id="successPage" style="display:none; text-align:center; padding:40px; margin-top: 50px;">
-    <h2 style="color:#00897B; font-size: 28px;">✅ ลงทะเบียนสำเร็จ</h2>
-    <p style="color:#555; font-size: 16px;">ระบบได้บันทึกข้อมูลโภชนาการของคุณเรียบร้อยแล้ว</p>
-    <p style="color:#888; font-size: 14px; margin-top: 20px;">กำลังกลับไปหน้า LINE...</p>
-</div>
-
-<script>
-    const MY_LIFF_ID = '2009419837-irqrUiU1'; 
-
-    // 6️⃣ ฟังก์ชันแสดง Toast
-    let toastTimeout;
-    function showToast(msg) {
-        const t = document.getElementById("toast");
-        t.innerText = msg;
-        t.classList.add("show");
-        clearTimeout(toastTimeout);
-        toastTimeout = setTimeout(() => {
-            t.classList.remove("show");
-        }, 2500);
+    const strCid = String(cid).trim();
+    // ตรวจสอบว่าถ้ามันเป็น hash 64 ตัวอักษร (SHA-256) อยู่แล้ว ไม่ต้อง hash ซ้ำ
+    if (strCid.length === 64 && /^[0-9a-fA-F]+$/.test(strCid)) {
+        return strCid;
     }
+    
+    return crypto
+        .createHash("sha256")
+        .update(strCid + SECRET)
+        .digest("hex");
+}
 
-    // 4️⃣ ปรับ CID Format ให้ถูกต้อง 100%
-    function formatCID(cid) {
-        cid = cid.replace(/\D/g, '').slice(0,13);
-        if(cid.length < 2) return cid;
-        let part1 = cid.slice(0,1);
-        let part2 = cid.slice(1,5);
-        let part3 = cid.slice(5,10);
-        let part4 = cid.slice(10,12);
-        let part5 = cid.slice(12,13);
-        let result = part1;
-        if(part2) result += "-" + part2;
-        if(part3) result += "-" + part3;
-        if(part4) result += "-" + part4;
-        if(part5) result += "-" + part5;
-        return result;
-    }
+let creds;
+try {
+    creds = require('./google-credentials.json'); 
+} catch (error) {
+    creds = require('/etc/secrets/google-credentials.json'); 
+}
 
-    // 5️⃣ ฟังก์ชัน Validate CID Checksum
-    function validateCID(cid) {
-        cid = cid.replace(/-/g,'');
-        if(cid.length !== 13) return false;
-        let sum = 0;
-        for(let i=0; i<12; i++){
-            sum += parseInt(cid[i]) * (13-i);
-        }
-        let mod = (11 - (sum % 11)) % 10;
-        return mod === parseInt(cid[12]);
-    }
+const SHEET_ID = '190jkS-78iiOg9UjYjpmlLnC90FdmiMi4lV4Wb-h2LS4';
 
-    function formatBirthday(value){
-        value = value.replace(/\D/g,'').slice(0,8);
-        if(value.length > 4) return value.replace(/(\d{2})(\d{2})(\d+)/,'$1/$2/$3');
-        if(value.length > 2) return value.replace(/(\d{2})(\d+)/,'$1/$2');
-        return value;
-    }
+const serviceAccountAuth = new JWT({
+    email: creds.client_email,
+    key: creds.private_key,
+    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+});
+const doc = new GoogleSpreadsheet(SHEET_ID, serviceAccountAuth);
 
-    window.onload = function () {
-        initializeLiff();
+const COL = {
+    CID: 'cid_hash', HN: 'hn', FNAME: 'fname', LNAME: 'lname', 
+    BIRTHDAY: 'birthday1', AGE: 'age_y', LAB_DATE: 'lab_date', LAB_TIME: 'lab_time',
+    LAB_NAME: 'lab_name', LAB_RESULT: 'lab_result', NORMAL_VAL: 'normal_value'
+};
 
-        const cidInput = document.getElementById("cid");
-        if (cidInput) {
-            cidInput.addEventListener("input", function () { this.value = formatCID(this.value); });
-            cidInput.addEventListener("paste", function(e) {
-                setTimeout(() => { this.value = formatCID(this.value); }, 10);
-            });
-        }
+const COL_USER = {
+    LINE_ID: 'line_id', CID: 'cid_hash', BIRTHDAY: 'birthday', 
+    GENDER: 'gender', WEIGHT: 'weight', HEIGHT: 'height', 
+    ACTIVITY: 'activity', DIET_TYPE: 'diet_type', 
+    CARB_PER_MEAL: 'carb_per_meal', REG_DATE: 'registered_date'
+};
 
-        const birthdayInput = document.getElementById("birthday");
-        if (birthdayInput) {
-            birthdayInput.addEventListener("input", function () { this.value = formatBirthday(this.value); });
-            birthdayInput.addEventListener("paste", function(e) {
-                setTimeout(() => { this.value = formatBirthday(this.value); }, 10);
-            });
-        }
-    };
-
-    async function initializeLiff() {
+// =====================================
+// 🌟 ระบบลดการเรียก API (ป้องกัน Error 429 Too Many Requests)
+// =====================================
+async function retryOperation(operation, maxRetries = 3) {
+    for (let i = 0; i < maxRetries; i++) {
         try {
-            await liff.init({ liffId: MY_LIFF_ID });
-            
-            if (!liff.isInClient()) {
-                console.warn("แนะนำให้เปิดระบบนี้ผ่านแอปพลิเคชัน LINE");
-            }
-
-            if (!liff.isInClient() && !liff.isLoggedIn()) {
-                liff.login();
-            }
-
-            if (liff.isLoggedIn()) {
-                const profile = await liff.getProfile();
-                await fetchExistingData(profile.userId);
-            }
+            return await operation();
         } catch (error) {
-            console.error('LIFF Error:', error);
-        }
-    }
-
-    async function fetchExistingData(userId) {
-        const loading = document.getElementById('loading');
-        // เปิดแสดง Skeleton
-        loading.style.display = 'block';
-        document.getElementById('step1').style.display = 'none';
-        document.getElementById('stepIndicator').style.display = 'none';
-
-        let isExistingUser = false;
-
-        try {
-            // 🌟 แก้ไข: ส่ง x-api-key ไปพร้อมกับ Request
-            const response = await fetch(`/api/getUser?userId=${userId}`, {
-                headers: {
-                    "x-api-key": "my_super_secret_key_2026" // ระบุ Key ให้ตรงกับค่า API_SECRET ใน Server
-                }
-            });
-            
-            if (!response.ok && response.status !== 404) {
-                showToast("⚠️ ไม่สามารถเชื่อมต่อฐานข้อมูลได้ชั่วคราว");
-                document.getElementById('step1').style.display = 'block';
-                return;
-            }
-
-            if (response.ok) {
-                const data = await response.json();
-                if (data && data.cid) {
-                    isExistingUser = true;
-                    // ดึงข้อมูลเดิมมาซ่อนไว้สำหรับคำนวณ
-                    document.getElementById('cid').value = '';
-                    document.getElementById('birthday').value = formatBirthday(data.birthday || '');
-                    if(data.gender) document.getElementById('gender').value = data.gender;
-                    if(data.weight) document.getElementById('weight').value = data.weight;
-                    if(data.height) document.getElementById('height').value = data.height;
-                    if(data.activity) document.getElementById('activity').value = data.activity;
-                    if(data.dietType) document.getElementById('dietType').value = data.dietType;
-
-                    document.getElementById('updateNotice').style.display = 'block';
-                    document.getElementById('submitBtn').innerText = 'อัปเดตข้อมูลและคำนวณคาร์บใหม่';
-
-                    // ข้ามไป Step 2 ทันที
-                    document.getElementById('step1').classList.remove('active');
-                    document.getElementById('step2').classList.add('active');
-                    document.getElementById('subtitle').innerText = 'ส่วนที่ 2: อัปเดตข้อมูลสุขภาพ';
-                    
-                    // ซ่อนปุ่มย้อนกลับใน Step 2
-                    const prevBtn = document.querySelector('.btn-secondary');
-                    if (prevBtn) prevBtn.style.display = 'none';
-
-                    setTimeout(() => {
-                        alert("💡 พบประวัติของคุณในระบบแล้ว!\n\nคุณสามารถแก้ไข 'น้ำหนัก ส่วนสูง ระดับกิจกรรม และเป้าหมาย' เพื่ออัปเดตโควตาคาร์บได้เลยครับ");
-                    }, 300);
-                } else {
-                    document.getElementById('step1').style.display = 'block';
-                }
+            const isRateLimit = error.response && error.response.status === 429;
+            const isNetworkError = error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT';
+            if ((isRateLimit || isNetworkError) && i < maxRetries - 1) {
+                const delay = Math.pow(2, i) * 1000 + Math.random() * 500;
+                await new Promise(res => setTimeout(res, delay));
             } else {
-                document.getElementById('step1').style.display = 'block';
-            }
-        } catch (error) {
-            console.error('Fetch error:', error);
-            document.getElementById('step1').style.display = 'block';
-        } finally {
-            // ซ่อน Skeleton และเปิดให้เห็น Indicator เฉพาะผู้ใช้ใหม่
-            loading.style.display = 'none';
-            if (!isExistingUser) {
-                document.getElementById('stepIndicator').style.display = 'flex';
+                throw error;
             }
         }
     }
+}
 
-    function nextStep() {
-        const rawCid = document.getElementById('cid').value.trim();
-        const cleanCid = rawCid.replace(/-/g, '');
-        const birthday = document.getElementById('birthday').value.trim();
+let isDocLoaded = false;
+async function initDoc() {
+    if (!isDocLoaded) {
+        await retryOperation(() => doc.loadInfo());
+        isDocLoaded = true;
+    }
+}
 
-        if (cleanCid.length !== 13) return showToast('กรุณากรอกเลขบัตรประชาชนให้ครบ 13 หลัก');
-        
-        // 5️⃣ ตรวจสอบ Checksum บัตรประชาชน
-        if(!validateCID(cleanCid)){
-            return showToast("เลขบัตรประชาชนไม่ถูกต้อง กรุณาตรวจสอบ");
+// =====================================
+// 🌟 ฟังก์ชันจัดการวันที่และเวลา
+// =====================================
+function normalizeDateStr(dateStr) {
+    if (!dateStr) return '';
+    const cleanStr = String(dateStr).trim();
+    const parts = cleanStr.split(/[\/-]/);
+    if (parts.length === 3) {
+        let d = parts[0];
+        let m = parts[1];
+        let y = parts[2];
+        if (d.length === 4) { // รองรับกรณี YYYY-MM-DD
+            y = parts[0];
+            m = parts[1];
+            d = parts[2];
         }
-        
-        const datePattern = /^[0-9]{2}\/[0-9]{2}\/[0-9]{4}$/;
-        if (!datePattern.test(birthday)) {
-            return showToast('กรุณากรอกวันเดือนปีเกิดให้ถูกต้อง (เช่น 01/01/2500)');
+        return `${d.padStart(2, '0')}/${m.padStart(2, '0')}/${y}`;
+    }
+    return cleanStr;
+}
+
+function convertToISO(dateStr, timeStr) {
+    if (!dateStr) return null;
+    
+    let d, m, y;
+    const cleanDateStr = String(dateStr).trim();
+    const cleanTimeStr = String(timeStr || '').trim();
+    
+    // รองรับทั้งการคั่นด้วย / และ -
+    if (cleanDateStr.includes('/')) {
+        const parts = cleanDateStr.split('/');
+        if (parts.length === 3) { d = parts[0]; m = parts[1]; y = parseInt(parts[2]); }
+    } else if (cleanDateStr.includes('-')) {
+        const parts = cleanDateStr.split('-');
+        if (parts.length === 3) {
+            if (parts[0].length === 4) { y = parseInt(parts[0]); m = parts[1]; d = parts[2]; } // YYYY-MM-DD
+            else { d = parts[0]; m = parts[1]; y = parseInt(parts[2]); } // DD-MM-YYYY
         }
-
-        // 1️⃣ & 2️⃣ อัปเดตจุด Indicator และ Animation เลื่อนหน้า
-        document.getElementById("dot1").classList.remove("active");
-        document.getElementById("dot2").classList.add("active");
-
-        const step1 = document.getElementById("step1");
-        const step2 = document.getElementById("step2");
-        step1.classList.remove("active");
-        setTimeout(() => { step2.classList.add("active"); }, 100);
-        document.getElementById('subtitle').innerText = 'ส่วนที่ 2: ข้อมูลสุขภาพเบื้องต้น';
     }
 
-    function prevStep() {
-        // อัปเดตจุด Indicator และ Animation เลื่อนหน้า
-        document.getElementById("dot2").classList.remove("active");
-        document.getElementById("dot1").classList.add("active");
-
-        const step1 = document.getElementById("step1");
-        const step2 = document.getElementById("step2");
-        step2.classList.remove("active");
-        setTimeout(() => { step1.classList.add("active"); }, 100);
-        document.getElementById('subtitle').innerText = 'ส่วนที่ 1: ข้อมูลประจำตัว';
+    // ถ้าหารูปแบบไม่เจอ ให้ลองใช้ Date ของ JS แปลงดูเผื่อรอด
+    if (!y || !m || !d) {
+        const fallbackDate = new Date(cleanDateStr);
+        if (!isNaN(fallbackDate.getTime())) return fallbackDate.toISOString();
+        return null;
     }
 
-    async function submitRegistration() {
-        const submitBtn = document.getElementById('submitBtn');
-        
-        // 🌟 แก้ไข: ป้องกันการกด submit ซ้ำ (Double Submit)
-        if (submitBtn.disabled) return;
-        
-        const rawCid = document.getElementById('cid').value.trim();
-        const cleanCid = rawCid.replace(/-/g, ''); 
-        const birthday = document.getElementById('birthday').value.trim();
-        const gender = document.getElementById('gender').value;
-        const weight = parseFloat(document.getElementById('weight').value);
-        const height = parseFloat(document.getElementById('height').value);
-        const activityMultiplier = parseFloat(document.getElementById('activity').value);
-        const dietMultiplier = parseFloat(document.getElementById('dietType').value);
-        const consent = document.getElementById('pdpaConsent').checked;
-        
-        const loadingOverlay = document.getElementById('loadingOverlay');
+    // รองรับกรณีคนกรอก พ.ศ. ให้แปลงกลับเป็น ค.ศ.
+    if (y > 2400) y = y - 543;
 
-        if (!gender) return showToast('กรุณาเลือกเพศครับ');
-        if (!weight || weight <= 0) return showToast('กรุณากรอกน้ำหนักให้ถูกต้องครับ');
-        if (!height || height <= 0) return showToast('กรุณากรอกส่วนสูงให้ถูกต้องครับ');
-        if (!activityMultiplier) return showToast('กรุณาเลือกระดับกิจกรรมครับ');
-        if (!consent) return showToast('กรุณากดยินยอมการใช้ข้อมูลส่วนบุคคลก่อนบันทึกข้อมูลครับ');
+    let formattedTime = "00:00:00";
+    if (cleanTimeStr && cleanTimeStr !== "undefined" && cleanTimeStr !== "-") {
+        const timeParts = cleanTimeStr.split(':');
+        if (timeParts.length >= 2) {
+            const th = timeParts[0].padStart(2, '0');
+            const tm = timeParts[1].padStart(2, '0');
+            const ts = timeParts[2] ? timeParts[2].padStart(2, '0') : '00';
+            formattedTime = `${th}:${tm}:${ts}`;
+        }
+    }
 
-        submitBtn.disabled = true;
-        submitBtn.innerText = 'กำลังประมวลผล...';
-        loadingOverlay.style.display = 'flex';
+    return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}T${formattedTime}`;
+}
 
-        try {
-            let birthYearMatch = birthday.match(/\d{4}/);
-            if (!birthYearMatch) throw new Error("รูปแบบวันเกิดไม่ถูกต้อง");
+// =====================================
+// 🌟 ฟังก์ชันกรองดึง "ผลแล็บล่าสุด" เท่านั้น
+// =====================================
+function getLatestLab(rows, hashedCID, targetBirthday) {
+    const map = {};
+    let patientInfo = null;
+    
+    const safeHashedCID = String(hashedCID).trim();
+    const safeTargetBirthday = normalizeDateStr(targetBirthday);
 
-            let birthYear = parseInt(birthYearMatch[0]);
-            if (birthYear > 2400) birthYear -= 543; 
-            let age = new Date().getFullYear() - birthYear;
+    rows.forEach(row => {
+        const rowCID = String(row.get(COL.CID) || '').trim();
+        const rowBirthday = normalizeDateStr(row.get(COL.BIRTHDAY));
 
-            if (age < 1 || age > 120) throw new Error("อายุที่คำนวณได้ไม่ถูกต้อง");
+        if (rowCID === safeHashedCID && rowBirthday === safeTargetBirthday) {
+            // เก็บข้อมูลคนไข้ (ดึงจากบรรทัดแรกที่เจอข้อมูลตรงกัน)
+            if (!patientInfo) {
+                patientInfo = {
+                    name: `${row.get(COL.FNAME) || ''} ${row.get(COL.LNAME) || ''}`.trim() || 'นักเรียน',
+                    age: row.get(COL.AGE) || '-',
+                    date: row.get(COL.LAB_DATE) || '-'
+                };
+            }
 
-            let bmr = (gender === 'ชาย') 
-                ? 66 + (13.7 * weight) + (5 * height) - (6.8 * age)
-                : 665 + (9.6 * weight) + (1.8 * height) - (4.7 * age);
-
-            let tdee = bmr * activityMultiplier;
-            let carbCalories = tdee * dietMultiplier;
-            let carbGrams = carbCalories / 4;
-            let totalCarbExchange = carbGrams / 15;
-            let carbPerMeal = Math.round(totalCarbExchange / 3);
+            const rawKey = row.get(COL.LAB_NAME);
+            if (!rawKey) return; 
             
-            if (carbPerMeal < 1) carbPerMeal = 1;
+            // ใช้ Uppercase เพื่อป้องกันปัญหาชื่อซ้ำซ้อนแบบ HbA1c กับ HbA1C
+            const key = String(rawKey).trim().toUpperCase();
 
-            if (liff.isInClient() || liff.isLoggedIn()) {
-                const profile = await liff.getProfile();
-                
-                const response = await fetch("/api/register", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        userId: profile.userId,
-                        cid: cleanCid,
-                        birthday: birthday,
-                        gender: gender,
-                        weight: weight,
-                        height: height,
-                        activityMultiplier: activityMultiplier,
-                        dietMultiplier: dietMultiplier,
-                        carbPerMeal: carbPerMeal
-                    })
-                });
+            const dateStr = row.get(COL.LAB_DATE);
+            const timeStr = row.get(COL.LAB_TIME);
+            const isoString = convertToISO(dateStr, timeStr);
+            
+            const datetime = isoString ? new Date(isoString) : new Date(0);
 
-                if (response.ok) {
-                    const resData = await response.json();
-                    loadingOverlay.style.display = 'none';
-                    document.getElementById("mainContainer").style.display = "none";
-                    
-                    const successPage = document.getElementById("successPage");
-                    if (resData.result === "updated") {
-                        successPage.innerHTML = `
-                            <h2 style="color:#00897B; font-size: 28px;">🔄 อัปเดตข้อมูลสำเร็จ</h2>
-                            <p style="color:#555; font-size: 16px;">ระบบได้ปรับปรุงข้อมูลสุขภาพของคุณเรียบร้อยแล้ว</p>
-                            <div style="background:#e0f2f1; padding:15px; border-radius:10px; margin-top:15px; color:#00695c;">
-                                <strong>โควตาคาร์บใหม่ของคุณ:</strong><br><span style="font-size:24px;">${resData.newCarbPerMeal} คาร์บ/มื้อ</span>
-                            </div>
-                            <p style="color:#888; font-size: 14px; margin-top: 20px;">กำลังปิดหน้าต่าง...</p>
-                        `;
-                    } else {
-                        successPage.innerHTML = `
-                            <h2 style="color:#00897B; font-size: 28px;">✅ ลงทะเบียนสำเร็จ</h2>
-                            <p style="color:#555; font-size: 16px;">ระบบได้บันทึกข้อมูลโภชนาการของคุณเรียบร้อยแล้ว</p>
-                            <div style="background:#e0f2f1; padding:15px; border-radius:10px; margin-top:15px; color:#00695c;">
-                                <strong>โควตาคาร์บที่แนะนำ:</strong><br><span style="font-size:24px;">${resData.newCarbPerMeal} คาร์บ/มื้อ</span>
-                            </div>
-                            <p style="color:#888; font-size: 14px; margin-top: 20px;">กำลังปิดหน้าต่าง...</p>
-                        `;
-                    }
-                    successPage.style.display = "block";
-                    
-                    setTimeout(() => { liff.closeWindow(); }, 4000); // 🌟 ยืดเวลาให้ผู้ใช้อ่านค่าคาร์บ 4 วินาที
-                } else {
-                    const errData = await response.json().catch(() => ({}));
-                    throw new Error(errData.error || "API ตอบกลับผิดพลาด กรุณาลองใหม่");
-                }
-            } else {
-                loadingOverlay.style.display = 'none';
-                alert(`(โหมดทดสอบ)\nบันทึก: ${cleanCid}\nเป้าหมาย: ${carbPerMeal} คาร์บ/มื้อ`);
-                submitBtn.disabled = false;
-                submitBtn.innerText = 'อัปเดตข้อมูลและคำนวณคาร์บใหม่';
+            // เช็กว่าถ้ายังไม่มีค่าของแล็บนี้ หรือมีแล้วแต่วันที่ใหม่กว่า ให้แทนที่ของเดิม
+            if (!map[key] || datetime >= map[key].datetime) {
+                map[key] = {
+                    name: String(rawKey).trim(),
+                    result: row.get(COL.LAB_RESULT),
+                    normal: row.get(COL.NORMAL_VAL) || 'ไม่ระบุ',
+                    date: dateStr || '-',
+                    datetime: datetime
+                };
             }
-        } catch (error) {
-            loadingOverlay.style.display = 'none';
-            showToast(error.message || 'เกิดข้อผิดพลาดในการประมวลผล');
-            submitBtn.disabled = false;
-            submitBtn.innerText = 'ลองใหม่อีกครั้ง';
         }
-    }
-</script>
+    });
 
-</body>
-</html>
+    return { patientInfo, latestLabs: Object.entries(map) }; // คงไว้ตามเดิมเพื่อให้โครงสร้างด้านล่างใช้ได้ต่อ
+}
+
+async function getPatientHealthReport(targetCidHash, targetBirthday) {
+    try {
+        // hashCID ฉบับใหม่ป้องกันการซ้อน Hash ไว้ให้แล้ว ใส่เข้ามาได้อย่างปลอดภัย
+        const hashedCID = hashCID(targetCidHash);
+
+        await initDoc(); // 🌟 โหลดโครงสร้าง Sheet (ใช้ของที่ Cache ไว้ถ้าเคยโหลดแล้ว)
+        const sheet = doc.sheetsByIndex[0]; 
+        const rows = await retryOperation(() => sheet.getRows()); 
+        
+        const { patientInfo, latestLabs } = getLatestLab(rows, hashedCID, targetBirthday);
+
+        if (!patientInfo || latestLabs.length === 0) return null;
+
+        let finalLabList = [];
+        for (const [key, data] of latestLabs) {
+            finalLabList.push(`- ${data.name}: ${data.result} (ค่าปกติ: ${data.normal}) [ตรวจเมื่อ: ${data.date}]`);
+        }
+
+        return { patientInfo, labTextSummary: finalLabList.join('\n') };
+    } catch (e) { 
+        console.error("Error in getPatientHealthReport:", e);
+        return null; 
+    }
+}
+
+async function getRegisteredUser(userId) {
+    try {
+        await initDoc();
+        const userSheet = doc.sheetsByTitle['users'];
+        const rows = await userSheet.getRows();
+        const userRow = rows.find(row => row.get(COL_USER.LINE_ID) === userId);
+        
+        return userRow ? { 
+            cid: userRow.get(COL_USER.CID), 
+            birthday: userRow.get(COL_USER.BIRTHDAY),
+            gender: userRow.get(COL_USER.GENDER),
+            weight: userRow.get(COL_USER.WEIGHT),
+            height: userRow.get(COL_USER.HEIGHT),
+            activity: userRow.get(COL_USER.ACTIVITY),
+            dietType: userRow.get(COL_USER.DIET_TYPE),
+            carbPerMeal: userRow.get(COL_USER.CARB_PER_MEAL)
+        } : null;
+    } catch (e) { 
+        console.error("❌ Error in getRegisteredUser (Check column line_id):", e);
+        return null; 
+    }
+}
+
+async function registerNewUser(userId, cid, birthday, gender, weight, height, activity, dietType, carbPerMeal) {
+    try {
+        await initDoc();
+        const userSheet = doc.sheetsByTitle['users'];
+        const rows = await userSheet.getRows();
+        const today = new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' });
+        
+        const existingUserRow = rows.find(row => row.get(COL_USER.LINE_ID) === userId || row.get(COL_USER.CID) === cid);
+        
+        if (existingUserRow) {
+            existingUserRow.assign({
+                [COL_USER.CID]: cid,
+                [COL_USER.WEIGHT]: weight, [COL_USER.HEIGHT]: height, [COL_USER.ACTIVITY]: activity,
+                [COL_USER.DIET_TYPE]: dietType, [COL_USER.CARB_PER_MEAL]: carbPerMeal, [COL_USER.REG_DATE]: today
+            });
+            await existingUserRow.save(); 
+            return "updated"; 
+        } else {
+            await userSheet.addRow({
+                [COL_USER.LINE_ID]: userId, [COL_USER.CID]: cid, [COL_USER.BIRTHDAY]: birthday,
+                [COL_USER.GENDER]: gender, [COL_USER.WEIGHT]: weight, [COL_USER.HEIGHT]: height,
+                [COL_USER.ACTIVITY]: activity, [COL_USER.DIET_TYPE]: dietType,
+                [COL_USER.CARB_PER_MEAL]: carbPerMeal, [COL_USER.REG_DATE]: today
+            });
+            return "success";
+        }
+    } catch (e) { return "error"; }
+}
+
+async function saveFoodLog(data) {
+    try {
+        await initDoc();
+        const foodSheet = doc.sheetsByTitle['food_logs'];
+        if (!foodSheet) return false;
+
+        await foodSheet.addRow({
+            timestamp: data.timestamp || new Date().toISOString(), // 🌟 รองรับการเรียงลำดับเวลา
+            date: data.date, 
+            time: data.time, 
+            userId: data.userId, 
+            cid_hash: data.cid,
+            food_name: data.food, 
+            estimated_carb: data.carb, 
+            portion: data.portion,
+            actual_carb: data.actual_carb, 
+            status: data.status, 
+            image_url: '-', 
+            note: data.note || '-'
+        });
+        return true;
+    } catch (error) { 
+        console.error("Error saving food log:", error);
+        return false; 
+    }
+}
+
+async function getTodayCarbTotal(userId) {
+    try {
+        await initDoc();
+        const sheet = doc.sheetsByTitle['food_logs'];
+        if (!sheet) return 0;
+
+        const rows = await sheet.getRows();
+        const today = new Date().toLocaleDateString('th-TH', {timeZone: 'Asia/Bangkok'});
+        let total = 0;
+
+        rows.forEach(r => {
+            if (r.get('userId') === userId && r.get('date') === today) {
+                total += Number(r.get('actual_carb') || 0);
+            }
+        });
+
+        return parseFloat(total.toFixed(1));
+    } catch (error) {
+        console.error("Error getting today carb:", error);
+        return 0;
+    }
+}
+
+async function saveLog({ timestamp, time, userId, action, data }) {
+    try {
+        await initDoc();
+        const sheet = doc.sheetsByTitle["LOG"];
+        if (!sheet) {
+            console.error("ไม่พบแท็บ LOG ใน Google Sheet");
+            return false;
+        }
+
+        await sheet.addRow({
+            timestamp: timestamp || new Date().toISOString(),
+            time: time,
+            userId: userId,
+            action: action,
+            data: data
+        });
+        return true;
+    } catch (error) {
+        console.error("Error saving log to sheet:", error);
+        return false;
+    }
+}
+
+async function getAllFoodLogs() {
+    try {
+        await initDoc();
+        const sheet = doc.sheetsByTitle['food_logs'];
+        if (!sheet) return [];
+
+        const rows = await sheet.getRows();
+        
+        const logs = rows.map(row => {
+            return {
+                date: row.get('date') || "",
+                time: row.get('time') || "",
+                userId: row.get('userId') || "",
+                food: row.get('food_name') || "unknown",
+                actual_carb: Number(row.get('actual_carb')) || 0,
+                status: row.get('status') || ""
+            };
+        });
+
+        return logs;
+    } catch (error) {
+        console.error("Error getting all food logs:", error);
+        return [];
+    }
+}
+
+module.exports = { 
+    getPatientHealthReport, 
+    getRegisteredUser, 
+    registerNewUser, 
+    saveFoodLog, 
+    getTodayCarbTotal,
+    saveLog,
+    getAllFoodLogs
+};
