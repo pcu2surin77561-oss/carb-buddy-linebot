@@ -164,10 +164,12 @@ app.use(
     })
 );
 
+// ✅ แก้ไขฟังก์ชัน hashCID ให้บังคับลบอักขระที่ไม่ใช่ตัวเลขออกให้หมด
 function hashCID(cid){
+    const cleanCID = String(cid).replace(/[^0-9]/g, '');
     return crypto
         .createHash("sha256")
-        .update(String(cid).trim() + SECRET)
+        .update(cleanCID + SECRET)
         .digest("hex");
 }
 
@@ -479,8 +481,6 @@ app.post('/api/register', async (req, res) => {
             const nutrition = calculateUserNutrition(tempUserInfo);
             const calculatedCarbPerMeal = nutrition.carbPerMeal;
 
-            // เมื่ออัปเดต, ถ้ามีการส่ง CID ดิบมาในฟอร์ม ให้ hash ใหม่เพื่อแก้ค่าที่อาจผิดพลาดในอดีต
-            // ถ้าไม่ส่งมา ให้ใช้ค่า hash เดิมที่มีอยู่ไปก่อน
             const cidToUpdate = cid ? hashCID(cid) : existingUser.cid;
 
             await registerNewUser(
@@ -557,7 +557,6 @@ async function handleEvent(event) {
 
             let statusStr = portion === 1 ? "กินหมด" : "กินบางส่วน";
 
-            // 🌟 แก้ Race Condition: บังคับให้เขียนเสร็จก่อน แล้วค่อยดึงผลรวมมาแสดง
             try {
                 await saveFoodLog({
                     timestamp: nowISO,
@@ -576,7 +575,6 @@ async function handleEvent(event) {
                 logger.error({ err: error }, "Save Food Log Error");
             }
 
-            // 🌟 ดึงข้อมูลหลังจากมั่นใจว่าเขียนเสร็จแล้ว
             const pastCarbToday = await getTodayCarbTotal(userId);
             const todayCarb = parseFloat((pastCarbToday).toFixed(1));
 
@@ -672,6 +670,7 @@ async function handleEvent(event) {
                     const tempUserInfo = { birthday: parts[2].trim(), gender: parts[3].trim(), weight: parts[4].trim(), height: parts[5].trim(), activity: parts[6].trim(), dietType: parts[7].trim() };
                     const nutrition = calculateUserNutrition(tempUserInfo);
                     const calculatedCarbPerMeal = nutrition.carbPerMeal;
+                    // ✅ hashCID จัดการตัดขีดให้เรียบร้อยแล้ว
                     const hashedCID = hashCID(parts[1].trim());
 
                     const result = await registerNewUser(userId, hashedCID, tempUserInfo.birthday, tempUserInfo.gender, tempUserInfo.weight, tempUserInfo.height, tempUserInfo.activity, tempUserInfo.dietType, calculatedCarbPerMeal);
@@ -767,49 +766,6 @@ async function handleEvent(event) {
             return lineClient.replyMessage(event.replyToken, { type: 'text', text: '📸 กรุณาส่งรูปภาพมื้ออาหารที่ชัดเจนมาได้เลยครับ/ค่ะ AI จะช่วยประเมินการนับคาร์บให้ครับ 🍲' });
         }
 
-        if (text === 'คลังความรู้เบาหวาน') {
-            logEvent(userId, "view_menu", "คลังความรู้เบาหวาน");
-            const lessonFlex = {
-              type: "flex", altText: "คลังความรู้โรคเบาหวาน 6 บทเรียน",
-              contents: {
-                "type": "carousel",
-                "contents": [
-                  {
-                    "type": "bubble", "size": "mega",
-                    "header": { "type": "box", "layout": "vertical", "backgroundColor": "#E04855", "paddingAll": "lg", "contents": [{ "type": "text", "text": "บทเรียนที่ 1", "color": "#ffffff", "size": "sm", "weight": "bold" }, { "type": "text", "text": "🩸 เบาหวานคืออะไร?", "color": "#ffffff", "size": "xl", "weight": "bold", "margin": "sm" }] },
-                    "body": { "type": "box", "layout": "vertical", "paddingAll": "lg", "contents": [{ "type": "text", "text": "ภาวะที่ร่างกายมี \"น้ำตาลในเลือดสูง\" เพราะผลิตอินซูลินไม่พอ หรือดื้ออินซูลิน ทำให้น้ำตาลตกค้าง", "wrap": true, "size": "sm", "color": "#333333" }, { "type": "separator", "margin": "md" }, { "type": "text", "text": "🚨 3 สัญญาณเตือน", "weight": "bold", "size": "md", "margin": "md", "color": "#E04855" }, { "type": "text", "text": "1. ปัสสาวะบ่อย หิวน้ำบ่อย\n2. อ่อนเพลีย น้ำหนักลด\n3. แผลหายช้า ชาปลายมือเท้า", "size": "sm", "wrap": true, "margin": "sm" }, { "type": "separator", "margin": "md" }, { "type": "text", "text": "📊 เกณฑ์การวินิจฉัย", "weight": "bold", "size": "md", "margin": "md", "color": "#007BFF" }, { "type": "text", "text": "• น้ำตาลอดอาหาร (FBS) ≥ 126\n• น้ำตาลสะสม (HbA1c) ≥ 6.5%", "wrap": true, "size": "sm", "margin": "sm" }] }
-                  },
-                  {
-                    "type": "bubble", "size": "mega",
-                    "header": { "type": "box", "layout": "vertical", "backgroundColor": "#28A745", "paddingAll": "lg", "contents": [{ "type": "text", "text": "บทเรียนที่ 2", "color": "#ffffff", "size": "sm", "weight": "bold" }, { "type": "text", "text": "🍚 การนับคาร์บ", "color": "#ffffff", "size": "xl", "weight": "bold", "margin": "sm" }] },
-                    "body": { "type": "box", "layout": "vertical", "paddingAll": "lg", "contents": [{ "type": "text", "text": "\"คาร์บ\" คือหมวด ข้าว แป้ง น้ำตาล ผลไม้ ที่กินแล้วเปลี่ยนเป็นน้ำตาล", "wrap": true, "size": "sm", "color": "#333333" }, { "type": "separator", "margin": "md" }, { "type": "text", "text": "💡 1 คาร์บ = 15 กรัม", "weight": "bold", "size": "md", "margin": "md", "color": "#28A745" }, { "type": "text", "text": "• หญิง: 3-4 คาร์บ / มื้อ\n• ชาย: 4-5 คาร์บ / มื้อ", "size": "sm", "wrap": true, "margin": "sm" }, { "type": "separator", "margin": "md" }, { "type": "text", "text": "🍱 เทียบปริมาณ \"1 คาร์บ\"", "weight": "bold", "size": "md", "margin": "md", "color": "#E67E22" }, { "type": "text", "text": "✅ ข้าวสวย 1 ทัพพี\n✅ ข้าวเหนียว ครึ่ง ทัพพี\n✅ ขนมปัง 1 แผ่น\n✅ กล้วยน้ำว้า 1 ผล", "wrap": true, "size": "sm", "margin": "sm" }, { "type": "text", "text": "*แนะนำทานข้าวกล้อง กากใยสูง ช่วยชะลอน้ำตาลได้ดีกว่า*", "wrap": true, "size": "xs", "color": "#888888", "margin": "md" }] }
-                  },
-                  {
-                    "type": "bubble", "size": "mega",
-                    "header": { "type": "box", "layout": "vertical", "backgroundColor": "#FD7E14", "paddingAll": "lg", "contents": [{ "type": "text", "text": "บทเรียนที่ 3", "color": "#ffffff", "size": "sm", "weight": "bold" }, { "type": "text", "text": "🏃‍♂️ ขยับกายสลายน้ำตาล", "color": "#ffffff", "size": "xl", "weight": "bold", "margin": "sm" }] },
-                    "body": { "type": "box", "layout": "vertical", "paddingAll": "lg", "contents": [{ "type": "text", "text": "การออกกำลังกายช่วยลดภาวะดื้ออินซูลิน ทำให้ร่างกายดึงน้ำตาลไปใช้ได้ดีขึ้น", "wrap": true, "size": "sm", "color": "#333333" }, { "type": "separator", "margin": "md" }, { "type": "text", "text": "⏱️ คำแนะนำ", "weight": "bold", "size": "md", "margin": "md", "color": "#FD7E14" }, { "type": "text", "text": "ออกกำลังกายระดับปานกลาง อย่างน้อย 150 นาที/สัปดาห์ (วันละ 30 นาที 5 วัน/สัปดาห์)", "wrap": true, "size": "sm", "margin": "sm" }, { "type": "separator", "margin": "md" }, { "type": "text", "text": "⚠️ ข้อควรระวัง", "weight": "bold", "size": "md", "margin": "md", "color": "#E04855" }, { "type": "text", "text": "• สวมรองเท้าหุ้มส้นเสมอ\n• พกลูกอมติดตัวเผื่อน้ำตาลตก\n• งดออกกำลังกายหากมีแผลที่เท้า", "wrap": true, "size": "sm", "margin": "sm" }] }
-                  },
-                  {
-                    "type": "bubble", "size": "mega",
-                    "header": { "type": "box", "layout": "vertical", "backgroundColor": "#17A2B8", "paddingAll": "lg", "contents": [{ "type": "text", "text": "บทเรียนที่ 4", "color": "#ffffff", "size": "sm", "weight": "bold" }, { "type": "text", "text": "🦶 การดูแลเท้า", "color": "#ffffff", "size": "xl", "weight": "bold", "margin": "sm" }] },
-                    "body": { "type": "box", "layout": "vertical", "paddingAll": "lg", "contents": [{ "type": "text", "text": "ผู้ป่วยเบาหวานมักมีอาการชาปลายเท้า ทำให้เกิดแผลได้ง่ายโดยไม่รู้ตัว", "wrap": true, "size": "sm", "color": "#333333" }, { "type": "separator", "margin": "md" }, { "type": "text", "text": "✨ วิธีดูแลเท้าทุกวัน", "weight": "bold", "size": "sm", "margin": "md", "color": "#17A2B8" }, { "type": "text", "text": "1. สำรวจรอยแตก บวม แดง\n2. ล้างเท้าด้วยสบู่อ่อน เช็ดให้แห้ง\n3. ทาโลชั่น (เว้นซอกนิ้ว)\n4. ตัดเล็บตรง ไม่สั้นเกินไป", "wrap": true, "size": "sm" }, { "type": "separator", "margin": "md" }, { "type": "text", "text": "👟 การเลือกรองเท้า", "weight": "bold", "size": "sm", "margin": "md", "color": "#17A2B8" }, { "type": "text", "text": "ใส่รองเท้าหุ้มส้นที่พอดี สวมถุงเท้า ห้ามเดินเท้าเปล่าเด็ดขาด", "wrap": true, "size": "sm" }] }
-                  },
-                  {
-                    "type": "bubble", "size": "mega",
-                    "header": { "type": "box", "layout": "vertical", "backgroundColor": "#6610F2", "paddingAll": "lg", "contents": [{ "type": "text", "text": "บทเรียนที่ 5", "color": "#ffffff", "size": "sm", "weight": "bold" }, { "type": "text", "text": "💊 ยาและน้ำตาลตก", "color": "#ffffff", "size": "xl", "weight": "bold", "margin": "sm" }] },
-                    "body": { "type": "box", "layout": "vertical", "paddingAll": "lg", "contents": [{ "type": "text", "text": "กินยาและฉีดยาตามแพทย์สั่ง ห้ามปรับยาหรือหยุดยาเอง", "wrap": true, "size": "sm", "color": "#333333" }, { "type": "separator", "margin": "md" }, { "type": "text", "text": "😨 ภาวะน้ำตาลต่ำ", "weight": "bold", "size": "sm", "margin": "md", "color": "#6610F2" }, { "type": "text", "text": "อาการ: ใจสั่น เหงื่อออก หน้ามืด หิวจัด มือสั่น กระวนกระวาย", "wrap": true, "size": "sm" }, { "type": "separator", "margin": "md" }, { "type": "text", "text": "🍬 กฎ 15-15 แก้น้ำตาลตก", "weight": "bold", "size": "sm", "margin": "md", "color": "#E67E22" }, { "type": "text", "text": "1. กินคาร์บ 15g (ลูกอม 3 เม็ด หรือน้ำหวานครึ่งแก้ว)\n2. รอ 15 นาที อาการควรดีขึ้น\n3. ถ้าไม่ดีขึ้นให้ทำซ้ำข้อ 1 แล้วไปหาหมอ", "wrap": true, "size": "sm" }] }
-                  },
-                  {
-                    "type": "bubble", "size": "mega",
-                    "header": { "type": "box", "layout": "vertical", "backgroundColor": "#6C757D", "paddingAll": "lg", "contents": [{ "type": "text", "text": "บทเรียนที่ 6", "color": "#ffffff", "size": "sm", "weight": "bold" }, { "type": "text", "text": "🛡️ ป้องกันไตเสื่อม", "color": "#ffffff", "size": "xl", "weight": "bold", "margin": "sm" }] },
-                    "body": { "type": "box", "layout": "vertical", "paddingAll": "lg", "contents": [{ "type": "text", "text": "เบาหวานลงไต ป้องกันได้! ยืดอายุการทำงานของไตง่ายๆ", "wrap": true, "size": "sm", "color": "#333333" }, { "type": "separator", "margin": "md" }, { "type": "text", "text": "1️⃣ คุมคู่อันตราย", "weight": "bold", "size": "sm", "margin": "md", "color": "#6C757D" }, { "type": "text", "text": "น้ำตาลสะสม (HbA1c < 7%) และความดัน (< 130/80)", "wrap": true, "size": "sm" }, { "type": "text", "text": "2️⃣ ลดเค็ม ยืดอายุไต", "weight": "bold", "size": "sm", "margin": "md", "color": "#6C757D" }, { "type": "text", "text": "โซเดียมไม่เกิน 2,000 มก./วัน งดซดน้ำซุป", "wrap": true, "size": "sm" }, { "type": "text", "text": "3️⃣ ระวังการใช้ยา", "weight": "bold", "size": "sm", "margin": "md", "color": "#6C757D" }, { "type": "text", "text": "เลี่ยงยาแก้ปวดกระดูก (NSAIDs) และยาสมุนไพร", "wrap": true, "size": "sm" }, { "type": "text", "text": "4️⃣ ตรวจเช็กค่าไต (eGFR)", "weight": "bold", "size": "sm", "margin": "md", "color": "#6C757D" }, { "type": "text", "text": "ตรวจเลือดและปัสสาวะอย่างสม่ำเสมอ", "wrap": true, "size": "sm" }] }
-                  }
-                ]
-              }
-            };
-            return lineClient.replyMessage(event.replyToken, lessonFlex);
-        }
-
         if (text === 'ดูสมุดพก') {
             logEvent(userId, "view_health", "report");
 
@@ -825,7 +781,6 @@ async function handleEvent(event) {
                 const patientName = healthData ? healthData.patientInfo.name : "นักเรียน (ไม่ระบุชื่อ)";
                 const patientDate = healthData ? healthData.patientInfo.date : "-";
 
-                // 🌟 เพิ่มคำสั่ง "ห้ามใช้ข้อมูลเก่าหรือเดา" เพื่อบังคับ AI ใช้ข้อมูลที่ดึงมาล่าสุด
                 const prompt = `
 คุณคือ "หมอ/ผู้ช่วย AI โรงเรียนเบาหวาน" ผู้เชี่ยวชาญด้านเบาหวานและโภชนาการ
 ชื่อคนไข้: ${patientName}
