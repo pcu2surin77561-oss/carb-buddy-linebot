@@ -449,10 +449,13 @@
                     
                     const successPage = document.getElementById("successPage");
                     if (resData.result === "updated") {
+                        // 🌟 เพิ่ม Alert แจ้งเตือนเด้งขึ้นมากลางหน้าจอ
+                        alert(`⚠️ แจ้งเตือน: คุณเคยลงทะเบียนแล้ว!\nระบบทำการแก้ไขเฉพาะ "น้ำหนัก ส่วนสูง กิจกรรม เป้าหมาย" ให้ใหม่เรียบร้อยครับ\n\n📌 โควตาคาร์บใหม่: ${resData.newCarbPerMeal} คาร์บ/มื้อ`);
+                        
                         successPage.innerHTML = `
-                            <h2 style="color:#00897B; font-size: 28px;">🔄 อัปเดตข้อมูลสำเร็จ</h2>
-                            <p style="color:#555; font-size: 16px;">ระบบได้ปรับปรุงข้อมูลสุขภาพของคุณเรียบร้อยแล้ว</p>
-                            <div style="background:#e0f2f1; padding:15px; border-radius:10px; margin-top:15px; color:#00695c;">
+                            <h2 style="color:#F39C12; font-size: 28px;">⚠️ อัปเดตข้อมูลสำเร็จ</h2>
+                            <p style="color:#555; font-size: 16px;">คุณเคยลงทะเบียนแล้ว<br>ระบบบันทึกเฉพาะข้อมูลส่วนที่ 2 ให้ใหม่ครับ</p>
+                            <div style="background:#fff3e0; padding:15px; border-radius:10px; margin-top:15px; color:#d35400; border: 1px solid #ffe0b2;">
                                 <strong>โควตาคาร์บใหม่ของคุณ:</strong><br><span style="font-size:24px;">${resData.newCarbPerMeal} คาร์บ/มื้อ</span>
                             </div>
                             <p style="color:#888; font-size: 14px; margin-top: 20px;">กำลังปิดหน้าต่าง...</p>
