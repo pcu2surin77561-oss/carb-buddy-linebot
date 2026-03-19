@@ -52,6 +52,76 @@ const COL_USER = {
 };
 
 // =====================================
+// 🚀 ระบบ In-Memory Caching & Indexing (O(1))
+// =====================================
+const userCache = new Map();
+let isUserCacheLoaded = false;
+let userCachePromise = null;
+
+async function loadUserCache() {
+    if (isUserCacheLoaded) return;
+    if (userCachePromise) { await userCachePromise; return; }
+    
+    userCachePromise = (async () => {
+        await initDoc();
+        const userSheet = doc.sheetsByTitle['users'];
+        if (!userSheet) return;
+
+        const rows = await retryOperation(() => userSheet.getRows());
+        userCache.clear();
+        rows.forEach(row => {
+            const lineId = String(row.get(COL_USER.LINE_ID) || '').trim();
+            if (lineId) userCache.set(lineId, row);
+        });
+        isUserCacheLoaded = true;
+        console.log(`✅ [Cache] Loaded ${userCache.size} users into memory (O(1) enabled).`);
+    })();
+    await userCachePromise;
+}
+
+const todayCarbCache = new Map();
+let currentCacheDate = new Date().toLocaleDateString('th-TH', {timeZone: 'Asia/Bangkok'});
+let isFoodCacheLoaded = false;
+let foodCachePromise = null;
+
+async function loadFoodCache() {
+    if (isFoodCacheLoaded) return;
+    if (foodCachePromise) { await foodCachePromise; return; }
+
+    foodCachePromise = (async () => {
+        await initDoc();
+        const sheet = doc.sheetsByTitle['food_logs'];
+        if (!sheet) return;
+
+        const rows = await retryOperation(() => sheet.getRows());
+        todayCarbCache.clear();
+        currentCacheDate = new Date().toLocaleDateString('th-TH', {timeZone: 'Asia/Bangkok'});
+        
+        rows.forEach(r => {
+            const rowDate = r.get('date');
+            if (rowDate === currentCacheDate) { 
+                const uid = r.get('userId');
+                const carb = Number(r.get('actual_carb') || 0);
+                const key = `${uid}_${currentCacheDate}`;
+                todayCarbCache.set(key, (todayCarbCache.get(key) || 0) + carb);
+            }
+        });
+        isFoodCacheLoaded = true;
+        console.log(`✅ [Cache] Loaded today's food logs into memory.`);
+    })();
+    await foodCachePromise;
+}
+
+function checkAndResetDailyCache() {
+    const today = new Date().toLocaleDateString('th-TH', {timeZone: 'Asia/Bangkok'});
+    if (today !== currentCacheDate) {
+        todayCarbCache.clear();
+        currentCacheDate = today;
+    }
+    return today;
+}
+
+// =====================================
 // 🌟 ระบบลดการเรียก API (ป้องกัน Error 429 Too Many Requests)
 // =====================================
 async function retryOperation(operation, maxRetries = 3) {
@@ -299,7 +369,7 @@ async function registerNewUser(userId, cid, birthday, gender, weight, height, ac
 
 async function saveFoodLog(data) {
     try {
-        await initDoc();
+        await loadFoodCache();
         const foodSheet = doc.sheetsByTitle['food_logs'];
         if (!foodSheet) return false;
 
@@ -317,6 +387,14 @@ async function saveFoodLog(data) {
             image_url: '-', 
             note: data.note || '-'
         });
+        
+        // อัปเดตยอดรวมวันนี้ลง Cache (O(1)) โดยไม่ต้องโหลดใหม่
+        const today = checkAndResetDailyCache();
+        if (data.date === today) {
+            const key = `${data.userId}_${today}`;
+            const currentCarb = todayCarbCache.get(key) || 0;
+            todayCarbCache.set(key, currentCarb + (Number(data.actual_carb) || 0));
+        }
         return true;
     } catch (error) { 
         console.error("Error saving food log:", error);
@@ -326,21 +404,10 @@ async function saveFoodLog(data) {
 
 async function getTodayCarbTotal(userId) {
     try {
-        await initDoc();
-        const sheet = doc.sheetsByTitle['food_logs'];
-        if (!sheet) return 0;
-
-        const rows = await sheet.getRows();
-        const today = new Date().toLocaleDateString('th-TH', {timeZone: 'Asia/Bangkok'});
-        let total = 0;
-
-        rows.forEach(r => {
-            if (r.get('userId') === userId && r.get('date') === today) {
-                total += Number(r.get('actual_carb') || 0);
-            }
-        });
-
-        return parseFloat(total.toFixed(1));
+        await loadFoodCache();
+        const today = checkAndResetDailyCache();
+        const key = `${userId}_${today}`;
+        return parseFloat((todayCarbCache.get(key) || 0).toFixed(1));
     } catch (error) {
         console.error("Error getting today carb:", error);
         return 0;
