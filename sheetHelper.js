@@ -257,7 +257,11 @@ async function registerNewUser(userId, cid, birthday, gender, weight, height, ac
         }
 
         const rows = await retryOperation(() => userSheet.getRows());
-        const today = new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' });
+        
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('th-TH', { timeZone: 'Asia/Bangkok' });
+        const timeStr = now.toLocaleTimeString('th-TH', { timeZone: 'Asia/Bangkok', hour12: false });
+        const today = `${dateStr} ${timeStr}`;
         
         const safeUserId = String(userId).trim();
         const safeCid = String(cid).trim();
