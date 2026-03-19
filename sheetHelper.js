@@ -9,15 +9,16 @@ const SECRET = process.env.CID_SECRET || "12345678901234567890123456789012";
 function hashCID(cid){
     if (!cid) return "";
     
-    const strCid = String(cid).trim();
     // ตรวจสอบว่าถ้ามันเป็น hash 64 ตัวอักษร (SHA-256) อยู่แล้ว ไม่ต้อง hash ซ้ำ
+    let strCid = String(cid).trim();
     if (strCid.length === 64 && /^[0-9a-fA-F]+$/.test(strCid)) {
         return strCid;
     }
     
+    strCid = strCid.replace(/[^0-9]/g, ''); // บังคับตัดขีดและเว้นวรรคทิ้ง
     return crypto
         .createHash("sha256")
-        .update(strCid + SECRET)
+        .update(strCid) // เอา SECRET ออกเพื่อให้ตรงกับ server.js และระบบ LAB
         .digest("hex");
 }
 
