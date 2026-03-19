@@ -223,7 +223,9 @@ async function getRegisteredUser(userId) {
     try {
         await initDoc();
         const userSheet = doc.sheetsByTitle['users'];
-        const rows = await userSheet.getRows();
+        if (!userSheet) return null;
+
+        const rows = await retryOperation(() => userSheet.getRows());
         
         // 🌟 บังคับลบเว้นวรรคซ้ายขวาทั้งฝั่งข้อมูลและฝั่งค้นหา ป้องกันปัญหาหาไม่เจอ
         const safeUserId = String(userId).trim();
@@ -249,15 +251,23 @@ async function registerNewUser(userId, cid, birthday, gender, weight, height, ac
     try {
         await initDoc();
         const userSheet = doc.sheetsByTitle['users'];
-        const rows = await userSheet.getRows();
+        if (!userSheet) {
+            console.error("❌ ไม่พบแท็บ 'users' ใน Google Sheet (ตรวจสอบตัวสะกด)");
+            return "error";
+        }
+
+        const rows = await retryOperation(() => userSheet.getRows());
         const today = new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' });
         
         const safeUserId = String(userId).trim();
         const safeCid = String(cid).trim();
-        const existingUserRow = rows.find(row => 
-            String(row.get(COL_USER.LINE_ID) || '').trim() === safeUserId || 
-            String(row.get(COL_USER.CID) || '').trim() === safeCid
-        );
+        
+        const existingUserRow = rows.find(row => {
+            const rowLineId = String(row.get(COL_USER.LINE_ID) || '').trim();
+            const rowCid = String(row.get(COL_USER.CID) || '').trim();
+            return (rowLineId !== '' && rowLineId === safeUserId) || 
+                   (safeCid !== '' && safeCid !== 'undefined' && rowCid !== '' && rowCid === safeCid);
+        });
         
         if (existingUserRow) {
             existingUserRow.assign({
@@ -265,18 +275,21 @@ async function registerNewUser(userId, cid, birthday, gender, weight, height, ac
                 [COL_USER.WEIGHT]: weight, [COL_USER.HEIGHT]: height, [COL_USER.ACTIVITY]: activity,
                 [COL_USER.DIET_TYPE]: dietType, [COL_USER.CARB_PER_MEAL]: carbPerMeal, [COL_USER.REG_DATE]: today
             });
-            await existingUserRow.save(); 
+            await retryOperation(() => existingUserRow.save()); 
             return "updated"; 
         } else {
-            await userSheet.addRow({
+            await retryOperation(() => userSheet.addRow({
                 [COL_USER.LINE_ID]: userId, [COL_USER.CID]: cid, [COL_USER.BIRTHDAY]: birthday,
                 [COL_USER.GENDER]: gender, [COL_USER.WEIGHT]: weight, [COL_USER.HEIGHT]: height,
                 [COL_USER.ACTIVITY]: activity, [COL_USER.DIET_TYPE]: dietType,
                 [COL_USER.CARB_PER_MEAL]: carbPerMeal, [COL_USER.REG_DATE]: today
-            });
+            }));
             return "success";
         }
-    } catch (e) { return "error"; }
+    } catch (e) { 
+        console.error("❌ Error in registerNewUser (เช็กชื่อหัวกระดาษหรือแท็บ):", e.message || e);
+        return "error"; 
+    }
 }
 
 async function saveFoodLog(data) {
