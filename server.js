@@ -32,7 +32,6 @@ const {
 
 // ❌ ปิด Cache ข้อมูลผู้ใช้: ตัวแปรด้านล่างนี้จะ Cache เฉพาะผลลัพธ์ AI (text อาหารและคาร์บ)
 const foodCache = new Map();
-const fingerprintCache = new Map(); 
 
 // =====================================
 // 🌟 1. ระบบ Load Balancing (สลับ API Key ปลอดภัย 100%)
@@ -194,6 +193,7 @@ app.use(
 // =====================================
 let thaiFoodDB = [];
 try {
+    // 💡 ตอนนี้เราใช้อ่านเพื่อตรวจคำในบรรทัดต่อไป แต่ฐานข้อมูลหลักเราจะใช้ MongoDB แทนแล้ว
     const rawData = fs.readFileSync(path.join(__dirname, 'foods.json'), 'utf8');
     thaiFoodDB = JSON.parse(rawData).foods;
     logger.info(`✅ โหลดข้อมูลอาหารสำเร็จ: ${thaiFoodDB.length} เมนู`);
@@ -252,13 +252,6 @@ function detectRicePortion(text) {
         return parseFloat(riceMatch[1]);
     }
     return 0;
-}
-
-function createFoodFingerprint(foods) {
-    if (!foods || foods.length === 0) {
-        return null;
-    }
-    return [...new Set(foods.map(f => f.trim()))].sort().join("|");
 }
 
 function calculateUserNutrition(userInfo) {
@@ -422,7 +415,7 @@ async function callGeminiWithFallback(userId, prompt, imageParts = []) {
         
         while (attempts < maxAttempts) {
             attempts++;
-            const currentApiKey = getNextApiKey(); // 🌟 ดึงคีย์แบบ Round-Robin
+            const currentApiKey = getNextApiKey(); 
 
             try {
                 const result = await aiQueue.add(async () => {
@@ -523,6 +516,70 @@ function authenticateAPI(req, res, next) {
     logger.warn({ ip: req.ip }, "🚨 Unauthorized API Access Attempt");
     return res.status(401).json({ error: "Unauthorized" });
 }
+
+// =====================================
+// 🛠️ เมนูพิเศษ: จัดการล้างข้อมูลอาหารและยัดลง MongoDB ทันที (ออนไลน์)
+// =====================================
+app.get('/api/setup-foods', async (req, res) => {
+    if (req.query.pass !== '1234') return res.status(401).send('รหัสผ่านไม่ถูกต้อง');
+
+    try {
+        const mongoose = require('mongoose');
+        const rawData = fs.readFileSync(path.join(__dirname, 'foods.json'), 'utf8');
+        const data = JSON.parse(rawData).foods;
+
+        const grouped = {};
+        data.forEach(f => {
+            const name = f.name.split('#')[0].trim().toLowerCase();
+            if (!grouped[name]) grouped[name] = [];
+            grouped[name].push(f);
+        });
+
+        const avg = (arr, key) => arr.reduce((sum, x) => sum + (x[key] || 0), 0) / arr.length;
+        const finalData = Object.entries(grouped).map(([name, items]) => {
+            const carbAvg = avg(items, 'carb_g');
+            return {
+                name: name,
+                keywords: [name],
+                nutrition: {
+                    carb_g: {
+                        avg: Number(carbAvg.toFixed(1)),
+                        min: Math.min(...items.map(x => x.carb_g || 0)),
+                        max: Math.max(...items.map(x => x.carb_g || 0))
+                    },
+                    protein_g: Number(avg(items, 'protein_g').toFixed(1)),
+                    fat_g: Number(avg(items, 'fat_g').toFixed(1)),
+                    sodium_mg: Number(avg(items, 'sodium_mg').toFixed(0)),
+                    calories: Number(avg(items, 'calories').toFixed(0))
+                },
+                portion: { standard: "1 จาน", carb_exchange: Number((carbAvg / 15).toFixed(2)) },
+                count: items.length
+            };
+        });
+
+        const foodSchema = new mongoose.Schema({
+            name: { type: String, index: true },
+            keywords: [String],
+            nutrition: Object,
+            portion: Object,
+            count: Number
+        }, { timestamps: true });
+
+        const FoodMaster = mongoose.models.FoodMaster || mongoose.model('FoodMaster', foodSchema);
+        
+        await FoodMaster.deleteMany({}); 
+        await FoodMaster.insertMany(finalData); 
+
+        res.json({ 
+            status: "success", 
+            message: `ล้างขยะและจัดกลุ่มสำเร็จ! อัปโหลดลง MongoDB แล้วจำนวน ${finalData.length} เมนูหลัก (จากเดิม ${data.length} รายการย่อย)`
+        });
+
+    } catch (error) {
+        logger.error({ err: error }, "Setup Foods Error");
+        res.status(500).json({ error: error.message });
+    }
+});
 
 app.get('/api/dashboard/data', authenticateAPI, async (req, res) => {
     try {
@@ -1254,11 +1311,6 @@ ${userCarbContext}
                     }
                 });
                 finalText += `\n\n📌 หมายเหตุ: 1 คาร์บ = คาร์โบไฮเดรต 15 กรัม (เทียบเท่าข้าวสวย 1 ทัพพี)`;
-            }
-
-            const fingerprint = createFoodFingerprint(detectedFoods);
-            if (fingerprint) {
-                setCacheWithTTL(fingerprintCache, fingerprint, { text: finalText, carb: estimatedCarb });
             }
 
             setCacheWithTTL(foodCache, imageHash, finalText);
