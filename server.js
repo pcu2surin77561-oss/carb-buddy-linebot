@@ -294,7 +294,7 @@ function calculateUserNutrition(userInfo) {
 }
 
 // =====================================
-// 🔥 3. ฟังก์ชัน Auto-Discovery รุ่นของ AI (พร้อมระบบ Test)
+// 🔥 3. ฟังก์ชัน Auto-Discovery รุ่นของ AI
 // =====================================
 let availableGeminiModels = [];
 
@@ -306,53 +306,32 @@ async function discoverGeminiModels() {
         );
         const data = await res.json();
 
-        if (!data.models) {
-            logger.error("❌ No models returned from API");
-            return;
-        }
+        if (!data.models) return;
 
         const candidateModels = data.models
-            .filter(m =>
-                m.supportedGenerationMethods &&
-                m.supportedGenerationMethods.includes("generateContent")
-            )
+            .filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent"))
             .map(m => m.name.replace("models/", ""));
 
-        logger.info(`📋 Found ${candidateModels.length} models`);
         const working = [];
+        // เทสต์แบบไวๆ แค่ 3 โมเดลแรกก็พอ จะได้ไม่ติด Rate Limit (429) ตั้งแต่เปิดเครื่อง
+        const topCandidates = candidateModels.slice(0, 3);
 
-        for (const modelName of candidateModels) {
+        for (const modelName of topCandidates) {
             try {
-                logger.info(`🧪 Testing model: ${modelName}`);
                 const model = genAI.getGenerativeModel({ model: modelName });
-                
                 const result = await Promise.race([
                     model.generateContent("ping"),
-                    new Promise((_, reject) =>
-                        setTimeout(() => reject(new Error("timeout")), 6000)
-                    )
+                    new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 4000))
                 ]);
-
                 if (result?.response) {
                     working.push(modelName);
                     logger.info(`✅ WORKING: ${modelName}`);
                 }
             } catch (err) {
-                if (err.status === 429) {
-                    logger.warn(`⚠️ QUOTA LIMIT: ${modelName}`);
-                } else {
-                    logger.warn(`❌ FAILED: ${modelName}`);
-                }
+                // ปล่อยผ่าน
             }
         }
-
-        if (working.length === 0) {
-            logger.error("❌ No usable Gemini models found!");
-            return;
-        }
-
-        availableGeminiModels = working;
-        logger.info(`🚀 Active Gemini models: ${working.join(", ")}`);
+        if (working.length > 0) availableGeminiModels = working;
     } catch (err) {
         logger.error({ err }, "Gemini discovery error");
     }
@@ -360,24 +339,33 @@ async function discoverGeminiModels() {
 discoverGeminiModels();
 
 // =====================================
-// 🔥 4. ฟังก์ชัน AI แบบฉลาด (สลับรุ่นอัตโนมัติพร้อมระบบ Queue & Retry)
+// 🔥 4. ฟังก์ชัน AI แบบฉลาด (ยัดโมเดลที่ชัวร์ที่สุดไว้เป็นตัวหลัก)
 // =====================================
 async function callGeminiWithFallback(prompt, imageParts = []) {
-    let modelsToTry = availableGeminiModels.length > 0 
-        ? [...availableGeminiModels] 
-        : ["gemini-1.5-flash"]; 
+    // 🌟 รายชื่อโมเดลพื้นฐานที่เปิดให้ใช้ชัวร์ 100% ในตอนนี้
+    const reliableModels = [
+        "gemini-1.5-flash",
+        "gemini-2.0-flash",
+        "gemini-1.5-flash-latest",
+        "gemini-1.5-pro",
+        "gemini-1.5-pro-latest"
+    ];
+
+    // ผสมกันระหว่างตัวที่หาเจออัตโนมัติ กับ ตัวที่เรา Hardcode ไว้กันเหนียว
+    let modelsToTry = [...new Set([...availableGeminiModels, ...reliableModels])];
 
     if (imageParts.length > 0) {
         modelsToTry = modelsToTry.filter(m => 
-            m.includes('flash') || m.includes('vision') || m.includes('1.5-pro') || m.includes('2.0') || m.includes('2.5') || m.includes('3.1')
+            m.includes('flash') || m.includes('pro') || m.includes('vision')
         );
-        if(modelsToTry.length === 0) modelsToTry = ["gemini-1.5-flash"];
+        if(modelsToTry.length === 0) modelsToTry = ["gemini-1.5-flash-latest", "gemini-1.5-flash"];
     }
 
-    const priority = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro", "gemini-pro-vision", "gemini-pro"];
+    // จัดลำดับ: เอา flash รุ่นเสถียรขึ้นก่อน เพราะทำงานเร็วและพังยาก
+    const priority = ["gemini-1.5-flash-latest", "gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"];
     modelsToTry.sort((a, b) => {
-        let indexA = priority.findIndex(p => a.includes(p));
-        let indexB = priority.findIndex(p => b.includes(p));
+        let indexA = priority.indexOf(a);
+        let indexB = priority.indexOf(b);
         indexA = indexA === -1 ? 99 : indexA;
         indexB = indexB === -1 ? 99 : indexB;
         return indexA - indexB;
@@ -409,16 +397,18 @@ async function callGeminiWithFallback(prompt, imageParts = []) {
             return result.response.text(); 
         } catch (error) {
             if (error.status === 429) {
-                logger.warn(`⚠️ Gemini rate limit (429) ใน ${modelName}, waiting 30s...`);
-                await new Promise(r => setTimeout(r, 30000));
+                logger.warn(`⚠️ Gemini ติด Rate Limit (429) ใน ${modelName}, ข้ามไปตัวถัดไป...`);
                 continue; 
+            } else if (error.status === 404) {
+                logger.warn(`⚠️ โมเดล ${modelName} ใช้งานไม่ได้ (404), ข้ามไปตัวถัดไป...`);
+                continue;
             }
-            logger.warn({ err: error.message }, `⚠️ โมเดล ${modelName} ไม่พร้อมใช้งาน`);
+            logger.warn({ err: error.message }, `⚠️ โมเดล ${modelName} เออเร่อ`);
             lastError = error;
         }
     }
 
-    throw new Error(`ไม่สามารถเชื่อมต่อ AI ได้เลย ล่าสุด Error: ${lastError?.message}`);
+    throw new Error(`ไม่สามารถเชื่อมต่อ AI ได้เลย ล่าสุด Error: ${lastError?.message || "หมดรายชื่อโมเดลที่จะลองแล้ว"}`);
 }
 
 const apiLimiter = rateLimit({ windowMs: 60 * 1000, max: 30 });
