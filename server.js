@@ -300,14 +300,15 @@ async function discoverGeminiModels() {
     logger.info("🔍 Discovering Gemini models (SAFE MODE)...");
 
     const SAFE_MODELS = [
-        "gemini-1.5-flash"
+        "gemini-1.5-flash-latest",
+        "gemini-1.5-pro-latest"
     ];
 
     let working = [];
 
     try {
         const res = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`
+            `https://generativelanguage.googleapis.com/v1/models?key=${GEMINI_API_KEY}`
         );
 
         const data = await res.json();
@@ -388,10 +389,10 @@ async function callGeminiWithFallback(userId, prompt, imageParts = []) {
 
     let modelsToTry = availableGeminiModels.length > 0 
         ? [...availableGeminiModels] 
-        : ["gemini-1.5-flash"]; // ✅ FIX 5: Fallback ปลอดภัย ไม่เสี่ยงโควตาเต็ม
+        : ["gemini-1.5-flash-latest"]; 
 
     if (imageParts.length > 0) {
-        modelsToTry = ["gemini-1.5-flash"]; // 🔥 FIX 3: ล็อก 1.5-flash สำหรับรูปภาพ 100%
+        modelsToTry = ["gemini-1.5-flash-latest"]; 
     }
 
     // ✅ FIX 8: Priority model จัดให้ 1.5 เป็นตัวหลัก
@@ -402,7 +403,7 @@ async function callGeminiWithFallback(userId, prompt, imageParts = []) {
     });
 
     if (!modelsToTry || modelsToTry.length === 0) {
-        modelsToTry = ["gemini-1.5-flash"];
+        modelsToTry = ["gemini-1.5-flash-latest"];
     }
 
     const safetySettings = [
@@ -426,13 +427,17 @@ async function callGeminiWithFallback(userId, prompt, imageParts = []) {
                 logger.warn(`⏭️ ข้าม model ${modelName} (อยู่ในช่วง Cooldown 60s)`);
                 return false;
             }
+            if (state.status === "invalid") {
+                logger.warn(`⏭️ ข้าม model ${modelName} (ไม่มีอยู่จริง/404)`);
+                return false;
+            }
         }
         return true;
     });
 
     if (modelsToTry.length === 0) {
-        logger.warn("⚠️ ทุกโมเดลพัง → fallback ไป gemini-1.5-flash");
-        modelsToTry = ["gemini-1.5-flash"];
+        logger.warn("⚠️ ทุกโมเดลพัง → fallback ไป gemini-1.5-flash-latest");
+        modelsToTry = ["gemini-1.5-flash-latest"];
     }
 
     for (let i = 0; i < modelsToTry.length; i++) {
@@ -477,14 +482,14 @@ async function callGeminiWithFallback(userId, prompt, imageParts = []) {
                 
                 logger.warn(`🚨 429/Quota ใน ${modelName}, ข้ามไปตัวถัดไปเลย...`);
                 continue; // ✅ FIX 7: ไม่ Retry Model เดิมให้เสียโควตาและเวลา
+            } else if (isNotFound) {
+                // ✅ FIX 4: กันพังในอนาคต (404) แบนถาวร
+                logger.warn(`❌ โมเดล ${modelName} ไม่มี (404) → ข้ามและแบนถาวร`);
+                modelState.set(modelName, { status: "invalid", time: Date.now() });
+                continue;
             } else {
-                if (isNotFound) {
-                    logger.warn(`⚠️ โมเดล ${modelName} ใช้งานไม่ได้ (404), ข้ามไปตัวถัดไป...`);
-                    continue;
-                } else {
-                    logger.warn({ err: error.message }, `⚠️ โมเดล ${modelName} ไม่พร้อมใช้งาน, ข้ามไปตัวถัดไป...`);
-                    continue;
-                }
+                logger.warn({ err: error.message }, `⚠️ โมเดล ${modelName} ไม่พร้อมใช้งาน, ข้ามไปตัวถัดไป...`);
+                continue;
             }
         }
     }
