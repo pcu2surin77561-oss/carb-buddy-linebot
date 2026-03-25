@@ -18,7 +18,7 @@ const logger = pino();
 
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
-// 👇 เปลี่ยนมาใช้ dbHelper (MongoDB + Sheets)
+// 👇 เปลี่ยนมาใช้ dbHelper (MongoDB + Sheets) ตรงนี้ครับ
 const { 
     getPatientHealthReport, 
     getRegisteredUser, 
@@ -40,9 +40,9 @@ let aiQueue = { add: (fn) => fn() };
     try {
         const { default: PQueue } = await import('p-queue');
         aiQueue = new PQueue({ 
-            concurrency: 2,  // ✅ ขยายคิว รองรับผู้ใช้งานหลายคนพร้อมกัน
+            concurrency: 2,  
             intervalCap: 10, 
-            interval: 60000  // รีเซ็ตทุกๆ 1 นาที (60,000 ms)
+            interval: 60000  
         });
         logger.info("✅ โหลดระบบ AI Queue (Concurrency: 2, RateLimit: 10/min) สำเร็จ");
     } catch (err) {
@@ -279,7 +279,6 @@ let availableGeminiModels = [];
 async function discoverGeminiModels() {
     logger.info("🔍 Discovering Gemini models (SAFE MODE 2.5/3.0)...");
 
-    // 🌟 อัปเดตรายชื่อโมเดลเป็นรุ่นล่าสุดทั้งหมด
     const SAFE_MODELS = [
         "gemini-2.5-flash",
         "gemini-3-flash",
@@ -296,7 +295,7 @@ async function discoverGeminiModels() {
         const data = await res.json();
 
         if (!data.models) {
-            logger.warn("⚠️ ใช้ SAFE MODELS แทน");
+            logger.warn("⚠️ ไม่สามารถดึงรายชื่อได้ ใช้ SAFE MODELS แทน");
             availableGeminiModels = SAFE_MODELS;
             return;
         }
@@ -362,7 +361,6 @@ async function callGeminiWithFallback(userId, prompt, imageParts = []) {
         throw new Error(`⚠️ คิวของคุณเต็มและกำลังจัดระเบียบ กรุณารอ ${remain} วินาที แล้วลองใหม่ครับ 🙏`);
     }
 
-    // ✅ FIX: ลบชื่อรุ่นเก่า (1.5) ทิ้งทั้งหมด และตั้งค่า Default เป็น 2.5
     let modelsToTry = availableGeminiModels.length > 0 
         ? [...availableGeminiModels] 
         : ["gemini-2.5-flash"]; 
@@ -371,7 +369,6 @@ async function callGeminiWithFallback(userId, prompt, imageParts = []) {
         modelsToTry = ["gemini-2.5-flash"]; 
     }
 
-    // จัดลำดับความสำคัญ เอา 2.5 และ 3.0 ขึ้นก่อน
     const priority = ["gemini-2.5-flash", "gemini-3-flash", "gemini-3.1-flash-lite"];
     modelsToTry.sort((a, b) => {
         let indexA = priority.findIndex(p => a.includes(p));
@@ -499,7 +496,6 @@ app.post('/webhook', middleware(config), (req, res) => {
 
 app.use(express.json({ limit: "1mb" }));
 
-// 🌟 Middleware ตรวจสอบสิทธิ์สำหรับ API ป้องกันคนนอกเข้าถึงข้อมูล
 function authenticateAPI(req, res, next) {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
@@ -971,22 +967,137 @@ ${labSummary}
 
         if (text === 'คลังความรู้' || text === 'คลังความรู้เบาหวาน') {
             logEvent(userId, "view_menu", "คลังความรู้");
-            const knowledgeText = `📚 คลังความรู้เบาหวานเบื้องต้น
-
-🍚 คาร์บ 1 ส่วน (15 กรัม) เทียบเท่ากับ:
-- ข้าวสวย/ข้าวกล้อง 1 ทัพพี
-- ขนมปังแผ่น 1 แผ่น
-- เส้นก๋วยเตี๋ยว 1 ทัพพี
-- ผลไม้ (เช่น แอปเปิล 1 ลูกเล็ก หรือ ฝรั่ง 1/2 ผล)
-- นมรสจืด 1 กล่อง (240 ml)
-
-🩸 เป้าหมายระดับน้ำตาล:
-- ก่อนมื้ออาหาร: 80 - 130 mg/dL
-- หลังอาหาร 2 ชม.: น้อยกว่า 180 mg/dL
-- น้ำตาลสะสม (HbA1c): ควรต่ำกว่า 7.0%
-
-💬 หากมีข้อสงสัยเรื่องโภชนาการเมนูไหน สามารถถ่ายรูปอาหารส่งมาให้ผู้ช่วย AI ช่วยวิเคราะห์ได้เลยครับ 😊`;
-            return lineClient.replyMessage(event.replyToken, { type: 'text', text: knowledgeText });
+            
+            const carouselMessage = {
+                type: "flex",
+                altText: "คลังความรู้เบาหวาน (6 บทเรียน)",
+                contents: {
+                    type: "carousel",
+                    contents: [
+                        // บทที่ 1
+                        {
+                            type: "bubble",
+                            size: "micro",
+                            header: {
+                                type: "box", layout: "vertical", backgroundColor: "#00897B", paddingAll: "10px",
+                                contents: [
+                                    { type: "text", text: "บทที่ 1", color: "#ffffff", size: "sm", weight: "bold" },
+                                    { type: "text", text: "คาร์บ คืออะไร?", color: "#e0f2f1", size: "xxs" }
+                                ]
+                            },
+                            body: {
+                                type: "box", layout: "vertical", paddingAll: "15px", spacing: "md",
+                                contents: [
+                                    { type: "text", text: "🍚 คาร์โบไฮเดรต", weight: "bold", size: "md", color: "#D35400" },
+                                    { type: "text", text: "คือสารอาหารที่เปลี่ยนเป็น 'น้ำตาล' ในเลือด", wrap: true, size: "sm", color: "#333333" },
+                                    { type: "text", text: "ตัวอย่าง: ข้าว แป้ง เผือก มัน น้ำตาล น้ำหวาน ผลไม้ นม", wrap: true, size: "xs", color: "#666666" }
+                                ]
+                            }
+                        },
+                        // บทที่ 2
+                        {
+                            type: "bubble",
+                            size: "micro",
+                            header: {
+                                type: "box", layout: "vertical", backgroundColor: "#D35400", paddingAll: "10px",
+                                contents: [
+                                    { type: "text", text: "บทที่ 2", color: "#ffffff", size: "sm", weight: "bold" },
+                                    { type: "text", text: "1 ส่วน มีเท่าไหร่?", color: "#fae5d3", size: "xxs" }
+                                ]
+                            },
+                            body: {
+                                type: "box", layout: "vertical", paddingAll: "15px", spacing: "sm",
+                                contents: [
+                                    { type: "text", text: "⚖️ คาร์บ 1 ส่วน", weight: "bold", size: "md", color: "#00897B" },
+                                    { type: "text", text: "เทียบเท่าคาร์บ 15 กรัม", size: "sm", color: "#333333" },
+                                    { type: "text", text: "• ข้าวสวย 1 ทัพพี\n• ข้าวเหนียว 1 ทัพพี\n• ขนมปัง 1 แผ่น\n• เส้นก๋วยเตี๋ยว 1 ทัพพี", wrap: true, size: "xs", color: "#666666" }
+                                ]
+                            }
+                        },
+                        // บทที่ 3
+                        {
+                            type: "bubble",
+                            size: "micro",
+                            header: {
+                                type: "box", layout: "vertical", backgroundColor: "#8E44AD", paddingAll: "10px",
+                                contents: [
+                                    { type: "text", text: "บทที่ 3", color: "#ffffff", size: "sm", weight: "bold" },
+                                    { type: "text", text: "ผลไม้ก็มีน้ำตาล", color: "#f3e5f5", size: "xxs" }
+                                ]
+                            },
+                            body: {
+                                type: "box", layout: "vertical", paddingAll: "15px", spacing: "sm",
+                                contents: [
+                                    { type: "text", text: "🍎 ผลไม้ 1 ส่วน", weight: "bold", size: "md", color: "#D35400" },
+                                    { type: "text", text: "เทียบเท่าคาร์บ 15 กรัม", size: "sm", color: "#333333" },
+                                    { type: "text", text: "• กล้วย/แอปเปิล 1 ผลเล็ก\n• ส้มโอ/ฝรั่ง 1/2 ผล\n• มะละกอ 2-3 ชิ้นใหญ่\n• เงาะ/แตงโม 4-6 ชิ้นคำ", wrap: true, size: "xs", color: "#666666" }
+                                ]
+                            }
+                        },
+                        // บทที่ 4
+                        {
+                            type: "bubble",
+                            size: "micro",
+                            header: {
+                                type: "box", layout: "vertical", backgroundColor: "#2980B9", paddingAll: "10px",
+                                contents: [
+                                    { type: "text", text: "บทที่ 4", color: "#ffffff", size: "sm", weight: "bold" },
+                                    { type: "text", text: "เครื่องดื่มต้องระวัง", color: "#e3f2fd", size: "xxs" }
+                                ]
+                            },
+                            body: {
+                                type: "box", layout: "vertical", paddingAll: "15px", spacing: "sm",
+                                contents: [
+                                    { type: "text", text: "🥛 นม 1 ส่วน", weight: "bold", size: "md", color: "#00897B" },
+                                    { type: "text", text: "เทียบเท่าคาร์บ 12-15 กรัม", size: "sm", color: "#333333" },
+                                    { type: "text", text: "• นมวัวจืด 1 กล่อง (240ml)\n• นมถั่วเหลืองจืด 1 กล่อง\n\n⚠️ ควรงด: นมหวาน นมเปรี้ยวผสมน้ำตาล", wrap: true, size: "xs", color: "#666666" }
+                                ]
+                            }
+                        },
+                        // บทที่ 5
+                        {
+                            type: "bubble",
+                            size: "micro",
+                            header: {
+                                type: "box", layout: "vertical", backgroundColor: "#27AE60", paddingAll: "10px",
+                                contents: [
+                                    { type: "text", text: "บทที่ 5", color: "#ffffff", size: "sm", weight: "bold" },
+                                    { type: "text", text: "กินได้ไม่อั้น", color: "#e8f8f5", size: "xxs" }
+                                ]
+                            },
+                            body: {
+                                type: "box", layout: "vertical", paddingAll: "15px", spacing: "sm",
+                                contents: [
+                                    { type: "text", text: "🥦 อาหาร 0 คาร์บ", weight: "bold", size: "md", color: "#8E44AD" },
+                                    { type: "text", text: "ทานได้ ไม่ทำให้น้ำตาลขึ้น", size: "sm", color: "#333333" },
+                                    { type: "text", text: "• เนื้อสัตว์ทุกชนิด\n• ไข่ไก่/ไข่เป็ด\n• ผักใบเขียว (กะหล่ำ, ผักกาด, คะน้า, ตำลึง)", wrap: true, size: "xs", color: "#666666" }
+                                ]
+                            }
+                        },
+                        // บทที่ 6
+                        {
+                            type: "bubble",
+                            size: "micro",
+                            header: {
+                                type: "box", layout: "vertical", backgroundColor: "#C0392B", paddingAll: "10px",
+                                contents: [
+                                    { type: "text", text: "บทที่ 6", color: "#ffffff", size: "sm", weight: "bold" },
+                                    { type: "text", text: "เป้าหมายการรักษา", color: "#ffebee", size: "xxs" }
+                                ]
+                            },
+                            body: {
+                                type: "box", layout: "vertical", paddingAll: "15px", spacing: "sm",
+                                contents: [
+                                    { type: "text", text: "🩸 ระดับน้ำตาล", weight: "bold", size: "md", color: "#2980B9" },
+                                    { type: "text", text: "เป้าหมายผู้ป่วยเบาหวาน", size: "sm", color: "#333333" },
+                                    { type: "text", text: "• ก่อนอาหาร: 80-130\n• หลังอาหาร 2 ชม.: < 180\n• น้ำตาลสะสม (HbA1c): ควรต่ำกว่า 7.0%", wrap: true, size: "xs", color: "#666666" }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            };
+            return lineClient.replyMessage(event.replyToken, carouselMessage);
         }
 
         return Promise.resolve(null);
