@@ -4,7 +4,6 @@
 
 const express = require('express');
 const { middleware, Client } = require('@line/bot-sdk');
-const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require('@google/generative-ai');
 const path = require('path');
 const crypto = require("crypto"); 
 const fs = require('fs'); 
@@ -130,7 +129,6 @@ if (!API_SECRET) {
 }
 
 const lineClient = new Client(config);
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const app = express();
 
 // 🌟 ตั้งค่าให้ Express เชื่อใจ Proxy (แก้ปัญหา ERR_ERL_UNEXPECTED_X_FORWARDED_FOR บน Cloud/Render)
@@ -406,12 +404,6 @@ async function callGeminiWithFallback(userId, prompt, imageParts = []) {
         modelsToTry = ["gemini-1.5-flash-latest"];
     }
 
-    const safetySettings = [
-        { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
-        { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH }
-    ];
-
-    const generationConfig = { temperature: 0.0, topK: 1, topP: 0.1 };
     let lastError;
 
     // ✅ Fast Fail: กรองโมเดลที่ติด State ออกก่อนเริ่มลูป
@@ -445,25 +437,48 @@ async function callGeminiWithFallback(userId, prompt, imageParts = []) {
         
         try {
             const result = await aiQueue.add(async () => {
-                const model = genAI.getGenerativeModel({ model: modelName, safetySettings, generationConfig });
-                const requestContent = imageParts.length > 0 ? [prompt, ...imageParts] : prompt;
-                
-                const res = await Promise.race([
-                    model.generateContent(requestContent),
-                    new Promise((_, reject) =>
-                        setTimeout(() => reject(new Error("AI timeout")), 20000) 
-                    )
-                ]);
+                const res = await fetch(
+                    `https://generativelanguage.googleapis.com/v1/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`,
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            contents: [
+                                {
+                                    role: "user",
+                                    parts: imageParts.length > 0
+                                        ? [{ text: prompt }, ...imageParts]
+                                        : [{ text: prompt }]
+                                }
+                            ],
+                            generationConfig: { temperature: 0.0, topK: 1, topP: 0.1 },
+                            safetySettings: [
+                                { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_ONLY_HIGH" },
+                                { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_ONLY_HIGH" }
+                            ]
+                        })
+                    }
+                );
 
-                // ✅ นับเฉพาะ “สำเร็จจริง”
+                const data = await res.json();
+
+                if (!res.ok) {
+                    const err = new Error(data.error?.message || "AI error");
+                    err.status = res.status;
+                    throw err;
+                }
+
+                // ✅ นับ quota เฉพาะ success
                 dailyUsage++;
                 if (isImage) imageUsage++;
 
-                return res;
+                return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
             });
 
             logger.info(`✅ ประมวลผลสำเร็จด้วยโมเดล: ${modelName}`);
-            return result.response.text(); 
+            return result; 
         } catch (error) {
             lastError = error;
             const isRateLimit = error.status === 429 || (error.message && error.message.includes("429"));
