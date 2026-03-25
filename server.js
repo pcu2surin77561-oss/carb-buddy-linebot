@@ -306,7 +306,7 @@ async function discoverGeminiModels() {
 
     try {
         const res = await fetch(
-            `https://generativelanguage.googleapis.com/v1/models?key=${GEMINI_API_KEY}`
+            `https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`
         );
 
         const data = await res.json();
@@ -438,7 +438,7 @@ async function callGeminiWithFallback(userId, prompt, imageParts = []) {
         try {
             const result = await aiQueue.add(async () => {
                 const res = await fetch(
-                    `https://generativelanguage.googleapis.com/v1/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`,
+                    `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`,
                     {
                         method: "POST",
                         headers: {
