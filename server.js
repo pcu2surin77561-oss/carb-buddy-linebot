@@ -16,6 +16,7 @@ const pino = require('pino');
 
 const logger = pino(); 
 
+// 👇 เปลี่ยนมาใช้ dbHelper (MongoDB + Sheets) ตรงนี้ครับ
 const { 
     getPatientHealthReport, 
     getRegisteredUser, 
@@ -24,7 +25,7 @@ const {
     getTodayCarbTotal,
     saveLog,
     getAllFoodLogs 
-} = require('./sheetHelper');
+} = require('./dbHelper');
 
 // ❌ 4. ปิด Cache ข้อมูลผู้ใช้: ตัวแปรด้านล่างนี้จะ Cache เฉพาะผลลัพธ์ AI (text อาหารและคาร์บ) เท่านั้น ห้ามนำไปผูกกับ Health Data เด็ดขาด
 const foodCache = new Map();
