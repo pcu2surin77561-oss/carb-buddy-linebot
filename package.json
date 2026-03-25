@@ -16,7 +16,8 @@
     "ai",
     "diabetes",
     "carb-counting",
-    "google-sheets"
+    "google-sheets",
+    "mongodb"
   ],
   "author": "",
   "license": "ISC",
@@ -28,6 +29,7 @@
     "google-auth-library": "^9.6.3",
     "google-spreadsheet": "^4.1.1",
     "helmet": "^8.0.0",
+    "mongoose": "^8.2.0",
     "node-fetch": "^2.7.0",
     "pino": "^9.0.0",
     "sharp": "^0.33.2"
