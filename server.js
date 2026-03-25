@@ -24,7 +24,8 @@ const {
     saveFoodLog, 
     getTodayCarbTotal,
     saveLog,
-    getAllFoodLogs 
+    getAllFoodLogs,
+    hashCID
 } = require('./dbHelper');
 
 // ❌ 4. ปิด Cache ข้อมูลผู้ใช้: ตัวแปรด้านล่างนี้จะ Cache เฉพาะผลลัพธ์ AI (text อาหารและคาร์บ) เท่านั้น ห้ามนำไปผูกกับ Health Data เด็ดขาด
@@ -163,15 +164,6 @@ app.use(
     })
 );
 
-// ✅ แก้ไขฟังก์ชัน hashCID : ตัด SECRET ออก ให้รหัสเหมือนฝั่ง LAB 100%
-function hashCID(cid){
-    const cleanCID = String(cid).replace(/[^0-9]/g, ''); // บังคับตัดขีดและเว้นวรรคทิ้ง
-    return crypto
-        .createHash("sha256")
-        .update(cleanCID) // เอา + SECRET ออกแล้ว!
-        .digest("hex");
-}
-
 // =====================================
 // 2. Thai Food Nutrition Database (โหลดจาก foods.json)
 // =====================================
@@ -294,7 +286,7 @@ function calculateUserNutrition(userInfo) {
 }
 
 // =====================================
-// 🔥 3. ฟังก์ชัน Auto-Discovery รุ่นของ AI
+// 🔥 3. ฟังก์ชัน Auto-Discovery รุ่นของ AI (พร้อมระบบ Test)
 // =====================================
 let availableGeminiModels = [];
 
@@ -306,32 +298,54 @@ async function discoverGeminiModels() {
         );
         const data = await res.json();
 
-        if (!data.models) return;
+        if (!data.models) {
+            logger.error("❌ No models returned from API");
+            return;
+        }
 
         const candidateModels = data.models
-            .filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent"))
+            .filter(m =>
+                m.supportedGenerationMethods &&
+                m.supportedGenerationMethods.includes("generateContent")
+            )
             .map(m => m.name.replace("models/", ""));
 
+        logger.info(`📋 Found ${candidateModels.length} models`);
         const working = [];
-        // เทสต์แบบไวๆ แค่ 3 โมเดลแรกก็พอ จะได้ไม่ติด Rate Limit (429) ตั้งแต่เปิดเครื่อง
-        const topCandidates = candidateModels.slice(0, 3);
 
-        for (const modelName of topCandidates) {
+        for (const modelName of candidateModels) {
             try {
+                logger.info(`🧪 Testing model: ${modelName}`);
                 const model = genAI.getGenerativeModel({ model: modelName });
+                
                 const result = await Promise.race([
                     model.generateContent("ping"),
-                    new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 4000))
+                    new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error("timeout")), 6000)
+                    )
                 ]);
+
                 if (result?.response) {
                     working.push(modelName);
                     logger.info(`✅ WORKING: ${modelName}`);
                 }
             } catch (err) {
-                // ปล่อยผ่าน
+                if (err.status === 429) {
+                    logger.warn(`⚠️ QUOTA LIMIT: ${modelName}`);
+                    working.push(modelName); // เก็บโมเดลไว้ใช้งานต่อแม้จะติด Rate Limit
+                } else {
+                    logger.warn(`❌ FAILED: ${modelName}`);
+                }
             }
         }
-        if (working.length > 0) availableGeminiModels = working;
+
+        if (working.length === 0) {
+            logger.error("❌ No usable Gemini models found!");
+            return;
+        }
+
+        availableGeminiModels = working;
+        logger.info(`🚀 Active Gemini models: ${working.join(", ")}`);
     } catch (err) {
         logger.error({ err }, "Gemini discovery error");
     }
@@ -339,33 +353,24 @@ async function discoverGeminiModels() {
 discoverGeminiModels();
 
 // =====================================
-// 🔥 4. ฟังก์ชัน AI แบบฉลาด (ยัดโมเดลที่ชัวร์ที่สุดไว้เป็นตัวหลัก)
+// 🔥 4. ฟังก์ชัน AI แบบฉลาด (สลับรุ่นอัตโนมัติพร้อมระบบ Queue & Retry)
 // =====================================
 async function callGeminiWithFallback(prompt, imageParts = []) {
-    // 🌟 รายชื่อโมเดลพื้นฐานที่เปิดให้ใช้ชัวร์ 100% ในตอนนี้
-    const reliableModels = [
-        "gemini-1.5-flash",
-        "gemini-2.0-flash",
-        "gemini-1.5-flash-latest",
-        "gemini-1.5-pro",
-        "gemini-1.5-pro-latest"
-    ];
-
-    // ผสมกันระหว่างตัวที่หาเจออัตโนมัติ กับ ตัวที่เรา Hardcode ไว้กันเหนียว
-    let modelsToTry = [...new Set([...availableGeminiModels, ...reliableModels])];
+    let modelsToTry = availableGeminiModels.length > 0 
+        ? [...availableGeminiModels] 
+        : ["gemini-1.5-flash"]; 
 
     if (imageParts.length > 0) {
         modelsToTry = modelsToTry.filter(m => 
-            m.includes('flash') || m.includes('pro') || m.includes('vision')
+            m.includes('flash') || m.includes('vision') || m.includes('1.5-pro') || m.includes('2.0') || m.includes('2.5') || m.includes('3.1')
         );
-        if(modelsToTry.length === 0) modelsToTry = ["gemini-1.5-flash-latest", "gemini-1.5-flash"];
+        if(modelsToTry.length === 0) modelsToTry = ["gemini-1.5-flash"];
     }
 
-    // จัดลำดับ: เอา flash รุ่นเสถียรขึ้นก่อน เพราะทำงานเร็วและพังยาก
-    const priority = ["gemini-1.5-flash-latest", "gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"];
+    const priority = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro", "gemini-pro-vision", "gemini-pro"];
     modelsToTry.sort((a, b) => {
-        let indexA = priority.indexOf(a);
-        let indexB = priority.indexOf(b);
+        let indexA = priority.findIndex(p => a.includes(p));
+        let indexB = priority.findIndex(p => b.includes(p));
         indexA = indexA === -1 ? 99 : indexA;
         indexB = indexB === -1 ? 99 : indexB;
         return indexA - indexB;
@@ -380,35 +385,52 @@ async function callGeminiWithFallback(prompt, imageParts = []) {
     let lastError;
 
     for (const modelName of modelsToTry) {
-        try {
-            const result = await aiQueue.add(async () => {
-                const model = genAI.getGenerativeModel({ model: modelName, safetySettings, generationConfig });
-                const requestContent = imageParts.length > 0 ? [prompt, ...imageParts] : prompt;
-                
-                return await Promise.race([
-                    model.generateContent(requestContent),
-                    new Promise((_, reject) =>
-                        setTimeout(() => reject(new Error("AI timeout")), 15000)
-                    )
-                ]);
-            });
+        let attempts = 0;
+        const maxAttempts = 2; // จำนวนครั้งที่จะลองซ้ำเมื่อเจอปัญหา Rate Limit
+        
+        while (attempts < maxAttempts) {
+            attempts++;
+            try {
+                const result = await aiQueue.add(async () => {
+                    const model = genAI.getGenerativeModel({ model: modelName, safetySettings, generationConfig });
+                    const requestContent = imageParts.length > 0 ? [prompt, ...imageParts] : prompt;
+                    
+                    return await Promise.race([
+                        model.generateContent(requestContent),
+                        new Promise((_, reject) =>
+                            setTimeout(() => reject(new Error("AI timeout")), 20000) // ขยายเวลา Timeout เป็น 20 วินาที
+                        )
+                    ]);
+                });
 
-            logger.info(`✅ ประมวลผลสำเร็จด้วยโมเดล: ${modelName}`);
-            return result.response.text(); 
-        } catch (error) {
-            if (error.status === 429) {
-                logger.warn(`⚠️ Gemini ติด Rate Limit (429) ใน ${modelName}, ข้ามไปตัวถัดไป...`);
-                continue; 
-            } else if (error.status === 404) {
-                logger.warn(`⚠️ โมเดล ${modelName} ใช้งานไม่ได้ (404), ข้ามไปตัวถัดไป...`);
-                continue;
+                logger.info(`✅ ประมวลผลสำเร็จด้วยโมเดล: ${modelName}`);
+                return result.response.text(); 
+            } catch (error) {
+                lastError = error;
+                const isRateLimit = error.status === 429 || (error.message && error.message.includes("429"));
+                const isNotFound = error.status === 404 || (error.message && error.message.includes("404"));
+
+                if (isRateLimit) {
+                    if (attempts < maxAttempts) {
+                        logger.warn(`⚠️ Gemini ติด Rate Limit (429) ใน ${modelName}, รอ 15 วินาทีแล้วลองใหม่ (ครั้งที่ ${attempts}/${maxAttempts})...`);
+                        await new Promise(r => setTimeout(r, 15000));
+                        continue; // ลองใหม่โมเดลเดิม
+                    } else {
+                        logger.warn(`⚠️ Gemini ติด Rate Limit (429) ใน ${modelName} เกินกำหนด, ข้ามไปตัวถัดไป...`);
+                        break; 
+                    }
+                } else if (isNotFound) {
+                    logger.warn(`⚠️ โมเดล ${modelName} ใช้งานไม่ได้ (404), ข้ามไปตัวถัดไป...`);
+                    break; 
+                } else {
+                    logger.warn({ err: error.message }, `⚠️ โมเดล ${modelName} ไม่พร้อมใช้งาน, ข้ามไปตัวถัดไป...`);
+                    break; 
+                }
             }
-            logger.warn({ err: error.message }, `⚠️ โมเดล ${modelName} เออเร่อ`);
-            lastError = error;
         }
     }
 
-    throw new Error(`ไม่สามารถเชื่อมต่อ AI ได้เลย ล่าสุด Error: ${lastError?.message || "หมดรายชื่อโมเดลที่จะลองแล้ว"}`);
+    throw new Error(`ไม่สามารถเชื่อมต่อ AI ได้เลย ล่าสุด Error: ${lastError?.message}`);
 }
 
 const apiLimiter = rateLimit({ windowMs: 60 * 1000, max: 30 });
@@ -427,7 +449,19 @@ app.post('/webhook', middleware(config), (req, res) => {
 
 app.use(express.json({ limit: "1mb" }));
 
-app.get('/api/dashboard/data', async (req, res) => {
+// 🌟 Middleware ตรวจสอบสิทธิ์สำหรับ API ป้องกันคนนอกเข้าถึงข้อมูล
+function authenticateAPI(req, res, next) {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    
+    if (token === API_SECRET || req.query.secret === API_SECRET) {
+        return next();
+    }
+    logger.warn({ ip: req.ip }, "🚨 Unauthorized API Access Attempt");
+    return res.status(401).json({ error: "Unauthorized" });
+}
+
+app.get('/api/dashboard/data', authenticateAPI, async (req, res) => {
     try {
         const logs = await getAllFoodLogs(); 
         res.json({ status: "success", logs: logs });
@@ -438,7 +472,7 @@ app.get('/api/dashboard/data', async (req, res) => {
 });
 
 app.use('/api/getUser', rateLimit({ windowMs: 10 * 60 * 1000, max: 100 }));
-app.get('/api/getUser', async (req, res) => {
+app.get('/api/getUser', authenticateAPI, async (req, res) => {
     const userId = req.query.userId;
     if(!userId) return res.status(400).json({error:"Missing userId"});
     
@@ -456,7 +490,7 @@ app.get('/api/getUser', async (req, res) => {
 const registerLimiter = rateLimit({ windowMs: 10 * 60 * 1000, max: 20 });
 app.use('/api/register', registerLimiter);
 
-app.post('/api/register', async (req, res) => {
+app.post('/api/register', authenticateAPI, async (req, res) => {
     try {
         const { userId, cid, birthday, gender, weight, height, activityMultiplier, dietMultiplier } = req.body;
         if (!userId) return res.status(400).json({ error: "ข้อมูลไม่ครบถ้วน (ไม่มี userId)" });
@@ -639,7 +673,7 @@ async function handleEvent(event) {
                     });
                 } else {
                     const parts = text.split(' ');
-                    if (parts.length < 9) return lineClient.replyMessage(event.replyToken, { type: 'text', text: '⚠️ ข้อมูลไม่ครบถ้วน แนะนำให้ทำรายการผ่านเมนูลงทะเบียนครับ' });
+                    if (parts.length < 8) return lineClient.replyMessage(event.replyToken, { type: 'text', text: '⚠️ ข้อมูลไม่ครบถ้วน แนะนำให้ทำรายการผ่านเมนูลงทะเบียนครับ' });
                     
                     const weight = parts[4].trim(); const height = parts[5].trim();
                     const activityMultiplier = parts[6].trim(); const dietMultiplier = parts[7].trim();
@@ -660,7 +694,7 @@ async function handleEvent(event) {
                     return lineClient.replyMessage(event.replyToken, { type: 'text', text: '📝 กรุณากดปุ่ม "ลงทะเบียน" จากเมนูด้านล่าง เพื่อกรอกข้อมูลผ่านหน้าเว็บครับ' });
                 } else {
                     const parts = text.split(' ');
-                    if (parts.length < 9) return lineClient.replyMessage(event.replyToken, { type: 'text', text: '⚠️ ข้อมูลไม่ครบถ้วน แนะนำให้ทำรายการผ่านเมนูลงทะเบียนครับ' });
+                    if (parts.length < 8) return lineClient.replyMessage(event.replyToken, { type: 'text', text: '⚠️ ข้อมูลไม่ครบถ้วน แนะนำให้ทำรายการผ่านเมนูลงทะเบียนครับ' });
 
                     const tempUserInfo = { birthday: parts[2].trim(), gender: parts[3].trim(), weight: parts[4].trim(), height: parts[5].trim(), activity: parts[6].trim(), dietType: parts[7].trim() };
                     const nutrition = calculateUserNutrition(tempUserInfo);
