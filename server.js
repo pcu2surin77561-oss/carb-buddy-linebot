@@ -298,8 +298,8 @@ async function discoverGeminiModels() {
     logger.info("🔍 Discovering Gemini models (SAFE MODE)...");
 
     const SAFE_MODELS = [
-        "gemini-1.5-flash-latest",
-        "gemini-1.5-pro-latest"
+        "gemini-1.5-flash",
+        "gemini-1.5-pro"
     ];
 
     let working = [];
@@ -387,10 +387,10 @@ async function callGeminiWithFallback(userId, prompt, imageParts = []) {
 
     let modelsToTry = availableGeminiModels.length > 0 
         ? [...availableGeminiModels] 
-        : ["gemini-1.5-flash-latest"]; 
+        : ["gemini-1.5-flash"]; 
 
     if (imageParts.length > 0) {
-        modelsToTry = ["gemini-1.5-flash-latest"]; 
+        modelsToTry = ["gemini-1.5-flash"]; 
     }
 
     // ✅ FIX 8: Priority model จัดให้ 1.5 เป็นตัวหลัก
@@ -401,7 +401,7 @@ async function callGeminiWithFallback(userId, prompt, imageParts = []) {
     });
 
     if (!modelsToTry || modelsToTry.length === 0) {
-        modelsToTry = ["gemini-1.5-flash-latest"];
+        modelsToTry = ["gemini-1.5-flash"];
     }
 
     let lastError;
@@ -428,8 +428,8 @@ async function callGeminiWithFallback(userId, prompt, imageParts = []) {
     });
 
     if (modelsToTry.length === 0) {
-        logger.warn("⚠️ ทุกโมเดลพัง → fallback ไป gemini-1.5-flash-latest");
-        modelsToTry = ["gemini-1.5-flash-latest"];
+        logger.warn("⚠️ ทุกโมเดลพัง → fallback ไป gemini-1.5-flash");
+        modelsToTry = ["gemini-1.5-flash"];
     }
 
     for (let i = 0; i < modelsToTry.length; i++) {
