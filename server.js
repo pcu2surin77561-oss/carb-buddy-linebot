@@ -4,6 +4,7 @@
 
 const express = require('express');
 const { middleware, Client } = require('@line/bot-sdk');
+const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require('@google/generative-ai');
 const path = require('path');
 const crypto = require("crypto"); 
 const fs = require('fs'); 
@@ -17,7 +18,7 @@ const logger = pino();
 
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
-// 👇 เปลี่ยนมาใช้ dbHelper (MongoDB + Sheets) ตรงนี้ครับ
+// 👇 เปลี่ยนมาใช้ dbHelper (MongoDB + Sheets)
 const { 
     getPatientHealthReport, 
     getRegisteredUser, 
@@ -29,12 +30,12 @@ const {
     hashCID
 } = require('./dbHelper');
 
-// ❌ 4. ปิด Cache ข้อมูลผู้ใช้: ตัวแปรด้านล่างนี้จะ Cache เฉพาะผลลัพธ์ AI (text อาหารและคาร์บ) เท่านั้น ห้ามนำไปผูกกับ Health Data เด็ดขาด
+// ❌ 4. ปิด Cache ข้อมูลผู้ใช้: ตัวแปรด้านล่างนี้จะ Cache เฉพาะผลลัพธ์ AI (text อาหารและคาร์บ)
 const foodCache = new Map();
 const fingerprintCache = new Map(); 
 
 // 🌟 ระบบคิวสำหรับ AI (จำกัด Concurrency ป้องกัน 429)
-let aiQueue = { add: (fn) => fn() }; // Fallback ชั่วคราวถ้าโหลดยังไม่เสร็จ
+let aiQueue = { add: (fn) => fn() }; 
 (async () => {
     try {
         const { default: PQueue } = await import('p-queue');
@@ -61,7 +62,7 @@ function setCacheWithTTL(cache, key, value, ttl = 3600000) {
     }
 }
 
-// 🌟 ฟังก์ชันดึงเวลาแบบ ISO (ป้องกันบั๊ก Timezone และเรียงลำดับได้)
+// 🌟 ฟังก์ชันดึงเวลาแบบ ISO
 function getNowISO() {
     return new Date().toISOString();
 }
@@ -125,13 +126,13 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 const API_SECRET = process.env.API_SECRET;
 if (!API_SECRET) {
-   throw new Error("🚨 SECURITY ALERT: API_SECRET is not set in Environment Variables!");
+   logger.warn("⚠️ API_SECRET is not set in Environment Variables!");
 }
 
 const lineClient = new Client(config);
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const app = express();
 
-// 🌟 ตั้งค่าให้ Express เชื่อใจ Proxy (แก้ปัญหา ERR_ERL_UNEXPECTED_X_FORWARDED_FOR บน Cloud/Render)
 app.set('trust proxy', 1);
 
 app.use(
@@ -139,37 +140,19 @@ app.use(
         contentSecurityPolicy: {
             directives: {
                 defaultSrc: ["'self'"],
-                scriptSrc: [
-                    "'self'",
-                    "'unsafe-inline'",
-                    "https://static.line-scdn.net"
-                ],
+                scriptSrc: ["'self'", "'unsafe-inline'", "https://static.line-scdn.net"],
                 scriptSrcAttr: ["'unsafe-inline'"], 
-                imgSrc: [
-                    "'self'",
-                    "data:",
-                    "https://cdn-icons-png.flaticon.com"
-                ],
-                styleSrc: [
-                    "'self'",
-                    "'unsafe-inline'",
-                    "https://fonts.googleapis.com"
-                ],
-                fontSrc: [
-                    "'self'",
-                    "https://fonts.gstatic.com"
-                ],
-                connectSrc: [
-                    "'self'",
-                    "https://api.line.me"
-                ]
+                imgSrc: ["'self'", "data:", "https://cdn-icons-png.flaticon.com"],
+                styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+                fontSrc: ["'self'", "https://fonts.gstatic.com"],
+                connectSrc: ["'self'", "https://api.line.me"]
             }
         }
     })
 );
 
 // =====================================
-// 2. Thai Food Nutrition Database (โหลดจาก foods.json)
+// 2. Thai Food Nutrition Database
 // =====================================
 let thaiFoodDB = [];
 try {
@@ -182,7 +165,6 @@ try {
 
 function detectThaiFoods(text) {
     let foundFoods = [];
-    
     const aiItems = text.split('\n')
         .filter(l => l.trim().startsWith('-'))
         .map(l => l.replace('-', '').split(':')[0].trim());
@@ -290,16 +272,18 @@ function calculateUserNutrition(userInfo) {
 }
 
 // =====================================
-// 🔥 3. ฟังก์ชัน Auto-Discovery รุ่นของ AI (พร้อมระบบ Test)
+// 🔥 3. ฟังก์ชัน Auto-Discovery รุ่นของ AI 
 // =====================================
 let availableGeminiModels = [];
 
 async function discoverGeminiModels() {
-    logger.info("🔍 Discovering Gemini models (SAFE MODE)...");
+    logger.info("🔍 Discovering Gemini models (SAFE MODE 2.5/3.0)...");
 
+    // 🌟 อัปเดตรายชื่อโมเดลเป็นรุ่นล่าสุดทั้งหมด
     const SAFE_MODELS = [
-        "gemini-1.5-flash",
-        "gemini-1.5-pro"
+        "gemini-2.5-flash",
+        "gemini-3-flash",
+        "gemini-3.1-flash-lite"
     ];
 
     let working = [];
@@ -318,17 +302,12 @@ async function discoverGeminiModels() {
         }
 
         const candidateModels = data.models
-            .filter(m =>
-                m.supportedGenerationMethods?.includes("generateContent")
-            )
+            .filter(m => m.supportedGenerationMethods?.includes("generateContent"))
             .map(m => m.name.replace("models/", ""))
-            .filter(name =>
-                name.includes("flash") || name.includes("pro")
-            );
+            .filter(name => name.includes("gemini") && !name.includes("tts"));
 
         logger.info(`📋 Found ${candidateModels.length} models`);
         
-        // ✅ FIX 1: ข้ามการ Test (No Self-DDoS) แล้วรวบไปใช้ใน Runtime เลย
         if (candidateModels.length === 0) {
             logger.warn("⚠️ ไม่มี model ใช้ได้ → fallback");
             availableGeminiModels = SAFE_MODELS;
@@ -348,10 +327,10 @@ async function discoverGeminiModels() {
 })();
 
 // =====================================
-// 🔥 4. ฟังก์ชัน AI แบบฉลาด (สลับรุ่นอัตโนมัติพร้อมระบบ Queue & Retry)
+// 🔥 4. ฟังก์ชัน AI แบบฉลาด (ใช้รุ่นใหม่ล่าสุด)
 // =====================================
-const modelState = new Map(); // ✅ FIX 4: รวม State ป้องกันซ้อนทับ (cooldown/quota)
-const userCooldown = new Map(); // ✅ เปลี่ยนจาก Global เป็น Per-User ป้องกัน User คนเดียวทำระบบล่ม
+const modelState = new Map(); 
+const userCooldown = new Map(); 
 
 let dailyUsage = 0;
 let imageUsage = 0;
@@ -363,64 +342,62 @@ function canUseGeminiDaily(isImage) {
         dailyUsage = 0;
         imageUsage = 0;
         dailyReset = today;
-        modelState.clear(); // ✅ FIX 3: เคลียร์ระหว่างวันได้เลยเมื่อขึ้นวันใหม่
+        modelState.clear(); 
     }
     if (isImage && imageUsage > 10) return false;
-    return dailyUsage < 18; // เผื่อ margin จาก limit 20
+    return dailyUsage < 18; 
 }
 
 async function callGeminiWithFallback(userId, prompt, imageParts = []) {
     const isImage = imageParts && imageParts.length > 0;
 
-    // ✅ FIX 1 & 3: เช็ค Quota รายวันก่อนยิง AI
     if (!canUseGeminiDaily(isImage)) {
         if (isImage) throw new Error("⚠️ ระบบวิเคราะห์ภาพครบโควตาแล้ววันนี้ กรุณาลองใหม่พรุ่งนี้ครับ");
         throw new Error("⚠️ ระบบ AI ใช้งานครบโควตาวันนี้แล้ว กรุณาลองใหม่พรุ่งนี้ครับ");
     }
 
-    // ✅ เช็ค User Cooldown ป้องกันยิงรัวเฉพาะรายบุคคล
     const uCooldown = userCooldown.get(userId) || 0;
     if (Date.now() < uCooldown) {
         const remain = Math.ceil((uCooldown - Date.now()) / 1000);
         throw new Error(`⚠️ คิวของคุณเต็มและกำลังจัดระเบียบ กรุณารอ ${remain} วินาที แล้วลองใหม่ครับ 🙏`);
     }
 
+    // ✅ FIX: ลบชื่อรุ่นเก่า (1.5) ทิ้งทั้งหมด และตั้งค่า Default เป็น 2.5
     let modelsToTry = availableGeminiModels.length > 0 
         ? [...availableGeminiModels] 
-        : ["gemini-1.5-flash"]; 
+        : ["gemini-2.5-flash"]; 
 
     if (imageParts.length > 0) {
-        modelsToTry = ["gemini-1.5-flash"]; 
+        modelsToTry = ["gemini-2.5-flash"]; 
     }
 
-    // ✅ FIX 8: Priority model จัดให้ 1.5 เป็นตัวหลัก
-    modelsToTry = modelsToTry.sort((a, b) => {
-        if (a.includes("1.5") && !b.includes("1.5")) return -1;
-        if (b.includes("1.5") && !a.includes("1.5")) return 1;
-        return 0;
+    // จัดลำดับความสำคัญ เอา 2.5 และ 3.0 ขึ้นก่อน
+    const priority = ["gemini-2.5-flash", "gemini-3-flash", "gemini-3.1-flash-lite"];
+    modelsToTry.sort((a, b) => {
+        let indexA = priority.findIndex(p => a.includes(p));
+        let indexB = priority.findIndex(p => b.includes(p));
+        indexA = indexA === -1 ? 99 : indexA;
+        indexB = indexB === -1 ? 99 : indexB;
+        return indexA - indexB;
     });
 
     if (!modelsToTry || modelsToTry.length === 0) {
-        modelsToTry = ["gemini-1.5-flash"];
+        modelsToTry = ["gemini-2.5-flash"];
     }
 
     let lastError;
 
-    // ✅ Fast Fail: กรองโมเดลที่ติด State ออกก่อนเริ่มลูป
     modelsToTry = modelsToTry.filter(modelName => {
         const state = modelState.get(modelName);
         if (state) {
             const elapsed = Date.now() - state.time;
             if (state.status === "quota" && elapsed < 3600000) {
-                logger.warn(`⏭️ ข้าม model ${modelName} (โควตาเต็ม พัก 1 ชม.)`);
                 return false;
             }
             if (state.status === "cooldown" && elapsed < 60000) {
-                logger.warn(`⏭️ ข้าม model ${modelName} (อยู่ในช่วง Cooldown 60s)`);
                 return false;
             }
             if (state.status === "invalid") {
-                logger.warn(`⏭️ ข้าม model ${modelName} (ไม่มีอยู่จริง/404)`);
                 return false;
             }
         }
@@ -428,8 +405,8 @@ async function callGeminiWithFallback(userId, prompt, imageParts = []) {
     });
 
     if (modelsToTry.length === 0) {
-        logger.warn("⚠️ ทุกโมเดลพัง → fallback ไป gemini-1.5-flash");
-        modelsToTry = ["gemini-1.5-flash"];
+        logger.warn("⚠️ ทุกโมเดลพัง → fallback ไป gemini-2.5-flash");
+        modelsToTry = ["gemini-2.5-flash"];
     }
 
     for (let i = 0; i < modelsToTry.length; i++) {
@@ -470,7 +447,6 @@ async function callGeminiWithFallback(userId, prompt, imageParts = []) {
                     throw err;
                 }
 
-                // ✅ นับ quota เฉพาะ success
                 dailyUsage++;
                 if (isImage) imageUsage++;
 
@@ -486,19 +462,14 @@ async function callGeminiWithFallback(userId, prompt, imageParts = []) {
             const isNotFound = error.status === 404 || (error.message && error.message.includes("404"));
 
             if (isRateLimit || isQuota) {
-                // ✅ FIX 4: อัปเดต State (Quota/Cooldown) แทนการใช้สองตัวแปร
                 modelState.set(modelName, {
                     status: isQuota ? "quota" : "cooldown",
                     time: Date.now()
                 });
-
-                // ✅ แบน Cooldown เฉพาะ User ที่ทำให้เกิด 429 ป้องกันคนอื่นโดนหางเลข
                 userCooldown.set(userId, Date.now() + (5000 * (i + 1)));
-                
-                logger.warn(`🚨 429/Quota ใน ${modelName}, ข้ามไปตัวถัดไปเลย...`);
-                continue; // ✅ FIX 7: ไม่ Retry Model เดิมให้เสียโควตาและเวลา
+                logger.warn(`🚨 429/Quota ใน ${modelName}, ข้ามไปตัวถัดไป...`);
+                continue; 
             } else if (isNotFound) {
-                // ✅ FIX 4: กันพังในอนาคต (404) แบนถาวร
                 logger.warn(`❌ โมเดล ${modelName} ไม่มี (404) → ข้ามและแบนถาวร`);
                 modelState.set(modelName, { status: "invalid", time: Date.now() });
                 continue;
@@ -1197,6 +1168,8 @@ process.on("unhandledRejection", (err) => {
 // =====================================
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
+    setInterval(discoverGeminiModels, 15 * 60 * 1000);
+
     setInterval(() => {
         const mem = process.memoryUsage().heapUsed / 1024 / 1024;
         logger.info(`Memory usage: ${mem.toFixed(2)} MB`);
