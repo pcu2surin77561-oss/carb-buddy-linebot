@@ -303,41 +303,45 @@ async function discoverGeminiModels() {
             return;
         }
 
+        // 🌟 กรองเอาเฉพาะโมเดลรุ่นใหม่ที่ใช้งานได้จริง (Flash, Pro) เพื่อไม่ให้เสียเวลาเทสโมเดลเก่าหรือโมเดลที่ไม่ได้ใช้
         const candidateModels = data.models
             .filter(m =>
                 m.supportedGenerationMethods &&
                 m.supportedGenerationMethods.includes("generateContent")
             )
-            .map(m => m.name.replace("models/", ""));
+            .map(m => m.name.replace("models/", ""))
+            .filter(name => name.includes("gemini-1.5") || name.includes("gemini-2") || name.includes("gemini-pro"));
 
-        logger.info(`📋 Found ${candidateModels.length} models`);
-        const working = [];
-
-        for (const modelName of candidateModels) {
-            try {
-                logger.info(`🧪 Testing model: ${modelName}`);
+        logger.info(`📋 Testing ${candidateModels.length} candidate models concurrently...`);
+        
+        // 🚀 ยิงทดสอบ "พร้อมกันทีเดียว" (Concurrent) แทนการรอทีละตัว เพื่อความรวดเร็วที่สุด
+        const testPromises = candidateModels.map(async (modelName) => {
                 const model = genAI.getGenerativeModel({ model: modelName });
-                
-                const result = await Promise.race([
-                    model.generateContent("ping"),
-                    new Promise((_, reject) =>
-                        setTimeout(() => reject(new Error("timeout")), 6000)
-                    )
+                await Promise.race([
+                    model.generateContent("test"),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 4000)) // ให้เวลาเทสแค่ 4 วิ
                 ]);
+                return modelName;
+        });
 
-                if (result?.response) {
-                    working.push(modelName);
-                    logger.info(`✅ WORKING: ${modelName}`);
-                }
-            } catch (err) {
-                if (err.status === 429) {
-                    logger.warn(`⚠️ QUOTA LIMIT: ${modelName}`);
-                    working.push(modelName); // เก็บโมเดลไว้ใช้งานต่อแม้จะติด Rate Limit
+        const results = await Promise.allSettled(testPromises);
+        const working = [];
+        
+        results.forEach((result, index) => {
+            const modelName = candidateModels[index];
+            if (result.status === 'fulfilled') {
+                working.push(modelName);
+                logger.info(`✅ WORKING: ${modelName}`);
+            } else {
+                const err = result.reason;
+                if (err.status === 429 || (err.message && err.message.includes("429"))) {
+                    logger.warn(`⚠️ QUOTA LIMIT (แต่เก็บไว้ใช้): ${modelName}`);
+                    working.push(modelName); 
                 } else {
-                    logger.warn(`❌ FAILED: ${modelName}`);
+                    logger.warn(`❌ FAILED/TIMEOUT: ${modelName}`);
                 }
             }
-        }
+        });
 
         if (working.length === 0) {
             logger.error("❌ No usable Gemini models found!");
@@ -1092,8 +1096,6 @@ process.on("unhandledRejection", (err) => {
 // =====================================
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
-    setInterval(discoverGeminiModels, 15 * 60 * 1000);
-
     setInterval(() => {
         const mem = process.memoryUsage().heapUsed / 1024 / 1024;
         logger.info(`Memory usage: ${mem.toFixed(2)} MB`);
