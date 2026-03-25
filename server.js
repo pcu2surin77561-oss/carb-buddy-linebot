@@ -300,8 +300,10 @@ async function discoverGeminiModels() {
     logger.info("🔍 Discovering Gemini models (SAFE MODE)...");
 
     const SAFE_MODELS = [
-        "gemini-1.5-flash",
-        "gemini-1.5-pro"
+        "gemini-3-flash",
+        "gemini-2.5-flash",
+        "gemini-2.0-flash",
+        "gemini-1.5-flash"
     ];
 
     let working = [];
@@ -325,9 +327,12 @@ async function discoverGeminiModels() {
             )
             .map(m => m.name.replace("models/", ""))
             .filter(name => 
-                name === "gemini-1.5-flash" || 
-                name === "gemini-2.0-flash" || 
-                name === "gemini-1.5-pro"
+                name === "gemini-3.1-flash-lite" ||
+                name === "gemini-3-flash" ||
+                name === "gemini-2.5-flash" ||
+                name === "gemini-2.5-flash-lite" ||
+                name === "gemini-2.0-flash" ||
+                name === "gemini-1.5-flash"
             );
 
         logger.info(`📋 Found ${candidateModels.length} models`);
@@ -390,16 +395,20 @@ async function discoverGeminiModels() {
 async function callGeminiWithFallback(prompt, imageParts = []) {
     let modelsToTry = availableGeminiModels.length > 0 
         ? [...availableGeminiModels] 
-        : ["gemini-1.5-flash"]; 
+        : ["gemini-2.5-flash", "gemini-1.5-flash"]; 
 
     if (imageParts.length > 0) {
         modelsToTry = modelsToTry.filter(m => 
-            m.includes('flash') || m.includes('vision') || m.includes('1.5-pro') || m.includes('2.0') || m.includes('2.5') || m.includes('3.1')
+            m.includes('flash') || m.includes('vision') || m.includes('pro') || m.includes('2.0') || m.includes('2.5') || m.includes('3.0') || m.includes('3.1')
         );
-        if(modelsToTry.length === 0) modelsToTry = ["gemini-1.5-flash"];
+        if(modelsToTry.length === 0) modelsToTry = ["gemini-2.5-flash", "gemini-1.5-flash"];
     }
 
-    const priority = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro", "gemini-pro-vision", "gemini-pro"];
+    const priority = [
+        "gemini-3.1-flash-lite", "gemini-3-flash", 
+        "gemini-2.5-flash-lite", "gemini-2.5-flash", 
+        "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"
+    ];
     modelsToTry.sort((a, b) => {
         let indexA = priority.findIndex(p => a.includes(p));
         let indexB = priority.findIndex(p => b.includes(p));
@@ -409,7 +418,7 @@ async function callGeminiWithFallback(prompt, imageParts = []) {
     });
 
     if (!modelsToTry || modelsToTry.length === 0) {
-        modelsToTry = ["gemini-1.5-flash"];
+        modelsToTry = ["gemini-2.5-flash"];
     }
 
     const safetySettings = [
