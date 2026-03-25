@@ -18,7 +18,7 @@ const logger = pino();
 
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
-// 👇 เปลี่ยนมาใช้ dbHelper (MongoDB + Sheets) ตรงนี้ครับ
+// 👇 เปลี่ยนมาใช้ dbHelper (MongoDB + Sheets)
 const { 
     getPatientHealthReport, 
     getRegisteredUser, 
@@ -30,21 +30,40 @@ const {
     hashCID
 } = require('./dbHelper');
 
-// ❌ 4. ปิด Cache ข้อมูลผู้ใช้: ตัวแปรด้านล่างนี้จะ Cache เฉพาะผลลัพธ์ AI (text อาหารและคาร์บ)
+// ❌ ปิด Cache ข้อมูลผู้ใช้: ตัวแปรด้านล่างนี้จะ Cache เฉพาะผลลัพธ์ AI (text อาหารและคาร์บ)
 const foodCache = new Map();
 const fingerprintCache = new Map(); 
 
-// 🌟 ระบบคิวสำหรับ AI (จำกัด Concurrency ป้องกัน 429)
+// =====================================
+// 🌟 1. ระบบ Load Balancing (สลับ API Key ปลอดภัย 100%)
+// =====================================
+// ดึง API Keys ทั้ง 3 ตัวมาจาก Render (ห้ามเขียนคีย์ลงไปตรงๆ ในนี้เด็ดขาด)
+const GEMINI_API_KEYS = [...new Set([
+    process.env.GEMINI_API_KEY,   // คีย์หลัก
+    process.env.GEMINI_API_KEY_2, // คีย์สำรอง 1
+    process.env.GEMINI_API_KEY_3  // คีย์สำรอง 2
+].filter(k => k && k.length > 20))];
+
+let currentKeyIndex = 0;
+function getNextApiKey() {
+    if (GEMINI_API_KEYS.length === 0) throw new Error("🚨 ไม่พบ Gemini API Key ในระบบ!");
+    const key = GEMINI_API_KEYS[currentKeyIndex];
+    currentKeyIndex = (currentKeyIndex + 1) % GEMINI_API_KEYS.length;
+    return key;
+}
+
+// 🌟 ระบบคิวสำหรับ AI (ปรับสเกลตามจำนวน API Key แบบไดนามิก)
 let aiQueue = { add: (fn) => fn() }; 
 (async () => {
     try {
         const { default: PQueue } = await import('p-queue');
         aiQueue = new PQueue({ 
-            concurrency: 2,  
-            intervalCap: 10, 
+            // จำนวนคีย์ = จำนวนที่ทำงานพร้อมกันได้
+            concurrency: Math.min(3, Math.max(1, GEMINI_API_KEYS.length)), 
+            intervalCap: 12 * Math.max(1, GEMINI_API_KEYS.length), 
             interval: 60000  
         });
-        logger.info("✅ โหลดระบบ AI Queue (Concurrency: 2, RateLimit: 10/min) สำเร็จ");
+        logger.info(`✅ โหลดระบบ AI Queue (Concurrency: ${aiQueue.concurrency}, RateLimit: ${aiQueue.intervalCap}/min) สำเร็จ`);
     } catch (err) {
         logger.error("❌ ไม่สามารถโหลด p-queue ได้ กรุณารัน npm install p-queue");
     }
@@ -95,34 +114,54 @@ function getTodayTH() {
     });
 }
 
-let currentDay = getTodayTH();
-const userUsage = new Map();
+// =====================================
+// 🌟 2. ระบบคุมโควตารายบุคคล (Per-User Quota)
+// =====================================
+const userDailyUsage = new Map();
+let dailyReset = getTodayTH();
+let globalDailyUsage = 0;
 
-function canUseAI(userId) {
+function checkAndRecordUsage(userId, isImage = false) {
     const today = getTodayTH();
-    
-    if (today !== currentDay) {
-        logger.info("🔄 Reset AI usage (new day TH)");
-        userUsage.clear();
-        currentDay = today;
+    if (today !== dailyReset) {
+        userDailyUsage.clear();
+        globalDailyUsage = 0;
+        dailyReset = today;
+        modelState.clear();
     }
 
-    const count = userUsage.get(userId) || 0;
+    // โควตารวมทั้งระบบ
+    const maxGlobal = 1400 * Math.max(1, GEMINI_API_KEYS.length); 
+    if (globalDailyUsage >= maxGlobal) {
+        throw new Error("⚠️ โควตา AI รวมของระบบเต็มแล้วสำหรับวันนี้ กรุณาลองใหม่พรุ่งนี้ครับ");
+    }
+
+    const usage = userDailyUsage.get(userId) || { text: 0, image: 0 };
     
-    if (count >= 20) return false;
+    // โควตารายบุคคล
+    if (isImage && usage.image >= 30) {
+        throw new Error("⚠️ วันนี้คุณส่งรูปให้ AI วิเคราะห์ครบ 30 ครั้งแล้ว กรุณาลองใหม่พรุ่งนี้ครับ");
+    }
+    if (!isImage && usage.text >= 50) {
+        throw new Error("⚠️ วันนี้คุณให้ AI อ่านสมุดพกครบ 50 ครั้งแล้ว กรุณาลองใหม่พรุ่งนี้ครับ");
+    }
+
+    if (isImage) usage.image++;
+    else usage.text++;
     
-    userUsage.set(userId, count + 1);
+    userDailyUsage.set(userId, usage);
+    globalDailyUsage++;
+
     return true;
 }
 
 // =====================================
-// 1. ตั้งค่า Keys และ Tokens
+// 3. ตั้งค่า Keys และ Tokens ของ LINE
 // =====================================
 const config = {
     channelAccessToken: process.env.LINE_ACCESS_TOKEN,
     channelSecret: process.env.LINE_CHANNEL_SECRET
 };
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 const API_SECRET = process.env.API_SECRET;
 if (!API_SECRET) {
@@ -130,7 +169,6 @@ if (!API_SECRET) {
 }
 
 const lineClient = new Client(config);
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const app = express();
 
 app.set('trust proxy', 1);
@@ -152,7 +190,7 @@ app.use(
 );
 
 // =====================================
-// 2. Thai Food Nutrition Database
+// 4. Thai Food Nutrition Database
 // =====================================
 let thaiFoodDB = [];
 try {
@@ -272,7 +310,7 @@ function calculateUserNutrition(userInfo) {
 }
 
 // =====================================
-// 🔥 3. ฟังก์ชัน Auto-Discovery รุ่นของ AI 
+// 🔥 5. ฟังก์ชัน Auto-Discovery รุ่นของ AI (ใช้ 2.5/3.0)
 // =====================================
 let availableGeminiModels = [];
 
@@ -288,8 +326,9 @@ async function discoverGeminiModels() {
     let working = [];
 
     try {
+        // ใช้ Key ตัวแรกในการสแกนโมเดล
         const res = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`
+            `https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEYS[0]}`
         );
 
         const data = await res.json();
@@ -322,39 +361,16 @@ async function discoverGeminiModels() {
 }
 
 (async () => {
-    await discoverGeminiModels();
+    if(GEMINI_API_KEYS.length > 0) await discoverGeminiModels();
 })();
 
 // =====================================
-// 🔥 4. ฟังก์ชัน AI แบบฉลาด (ใช้รุ่นใหม่ล่าสุด)
+// 🔥 6. ฟังก์ชัน AI แบบฉลาด (ยิงสลับ API Key อัตโนมัติ)
 // =====================================
 const modelState = new Map(); 
 const userCooldown = new Map(); 
 
-let dailyUsage = 0;
-let imageUsage = 0;
-let dailyReset = new Date().toDateString();
-
-function canUseGeminiDaily(isImage) {
-    const today = new Date().toDateString();
-    if (today !== dailyReset) {
-        dailyUsage = 0;
-        imageUsage = 0;
-        dailyReset = today;
-        modelState.clear(); 
-    }
-    if (isImage && imageUsage > 10) return false;
-    return dailyUsage < 18; 
-}
-
 async function callGeminiWithFallback(userId, prompt, imageParts = []) {
-    const isImage = imageParts && imageParts.length > 0;
-
-    if (!canUseGeminiDaily(isImage)) {
-        if (isImage) throw new Error("⚠️ ระบบวิเคราะห์ภาพครบโควตาแล้ววันนี้ กรุณาลองใหม่พรุ่งนี้ครับ");
-        throw new Error("⚠️ ระบบ AI ใช้งานครบโควตาวันนี้แล้ว กรุณาลองใหม่พรุ่งนี้ครับ");
-    }
-
     const uCooldown = userCooldown.get(userId) || 0;
     if (Date.now() < uCooldown) {
         const remain = Math.ceil((uCooldown - Date.now()) / 1000);
@@ -388,91 +404,91 @@ async function callGeminiWithFallback(userId, prompt, imageParts = []) {
         const state = modelState.get(modelName);
         if (state) {
             const elapsed = Date.now() - state.time;
-            if (state.status === "quota" && elapsed < 3600000) {
-                return false;
-            }
-            if (state.status === "cooldown" && elapsed < 60000) {
-                return false;
-            }
-            if (state.status === "invalid") {
-                return false;
-            }
+            if (state.status === "invalid") return false;
+            if (state.status === "cooldown" && elapsed < 30000) return false; 
         }
         return true;
     });
 
     if (modelsToTry.length === 0) {
-        logger.warn("⚠️ ทุกโมเดลพัง → fallback ไป gemini-2.5-flash");
+        logger.warn("⚠️ ทุกโมเดลติดคูลดาวน์ → บังคับใช้ gemini-2.5-flash โดยดึงคีย์สำรอง");
         modelsToTry = ["gemini-2.5-flash"];
     }
 
     for (let i = 0; i < modelsToTry.length; i++) {
         const modelName = modelsToTry[i];
+        let attempts = 0;
+        const maxAttempts = 2; 
         
-        try {
-            const result = await aiQueue.add(async () => {
-                const res = await fetch(
-                    `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`,
-                    {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify({
-                            contents: [
-                                {
-                                    role: "user",
-                                    parts: imageParts.length > 0
-                                        ? [{ text: prompt }, ...imageParts]
-                                        : [{ text: prompt }]
-                                }
-                            ],
-                            generationConfig: { temperature: 0.0, topK: 1, topP: 0.1 },
-                            safetySettings: [
-                                { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_ONLY_HIGH" },
-                                { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_ONLY_HIGH" }
-                            ]
-                        })
+        while (attempts < maxAttempts) {
+            attempts++;
+            const currentApiKey = getNextApiKey(); // 🌟 ดึงคีย์แบบ Round-Robin
+
+            try {
+                const result = await aiQueue.add(async () => {
+                    const res = await fetch(
+                        `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${currentApiKey}`,
+                        {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({
+                                contents: [
+                                    {
+                                        role: "user",
+                                        parts: imageParts.length > 0
+                                            ? [{ text: prompt }, ...imageParts]
+                                            : [{ text: prompt }]
+                                    }
+                                ],
+                                generationConfig: { temperature: 0.0, topK: 1, topP: 0.1 },
+                                safetySettings: [
+                                    { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_ONLY_HIGH" },
+                                    { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_ONLY_HIGH" }
+                                ]
+                            })
+                        }
+                    );
+
+                    const data = await res.json();
+
+                    if (!res.ok) {
+                        const err = new Error(data.error?.message || "AI error");
+                        err.status = res.status;
+                        throw err;
                     }
-                );
 
-                const data = await res.json();
-
-                if (!res.ok) {
-                    const err = new Error(data.error?.message || "AI error");
-                    err.status = res.status;
-                    throw err;
-                }
-
-                dailyUsage++;
-                if (isImage) imageUsage++;
-
-                return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-            });
-
-            logger.info(`✅ ประมวลผลสำเร็จด้วยโมเดล: ${modelName}`);
-            return result; 
-        } catch (error) {
-            lastError = error;
-            const isRateLimit = error.status === 429 || (error.message && error.message.includes("429"));
-            const isQuota = error.message && error.message.toLowerCase().includes("quota");
-            const isNotFound = error.status === 404 || (error.message && error.message.includes("404"));
-
-            if (isRateLimit || isQuota) {
-                modelState.set(modelName, {
-                    status: isQuota ? "quota" : "cooldown",
-                    time: Date.now()
+                    return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
                 });
-                userCooldown.set(userId, Date.now() + (5000 * (i + 1)));
-                logger.warn(`🚨 429/Quota ใน ${modelName}, ข้ามไปตัวถัดไป...`);
-                continue; 
-            } else if (isNotFound) {
-                logger.warn(`❌ โมเดล ${modelName} ไม่มี (404) → ข้ามและแบนถาวร`);
-                modelState.set(modelName, { status: "invalid", time: Date.now() });
-                continue;
-            } else {
-                logger.warn({ err: error.message }, `⚠️ โมเดล ${modelName} ไม่พร้อมใช้งาน, ข้ามไปตัวถัดไป...`);
-                continue;
+
+                logger.info(`✅ ประมวลผลสำเร็จด้วย: ${modelName} (สลับใช้ Key Index: ${currentKeyIndex})`);
+                return result; 
+
+            } catch (error) {
+                lastError = error;
+                const isRateLimit = error.status === 429 || (error.message && error.message.includes("429"));
+                const isQuota = error.message && error.message.toLowerCase().includes("quota");
+                const isNotFound = error.status === 404 || (error.message && error.message.includes("404"));
+
+                if (isRateLimit || isQuota) {
+                    if (attempts < maxAttempts) {
+                        logger.warn(`⚠️ 429 สลับ Key ลองใหม่ทันที... (ครั้งที่ ${attempts}/${maxAttempts})`);
+                        continue; 
+                    } else {
+                        modelState.set(modelName, { status: "cooldown", time: Date.now() });
+                        userCooldown.set(userId, Date.now() + 3000); 
+                        logger.warn(`🚨 429 ใน ${modelName} (ลองครบ 2 รอบแล้ว) ข้ามไปตัวถัดไป...`);
+                        break; 
+                    }
+                } else if (isNotFound) {
+                    logger.warn(`❌ โมเดล ${modelName} ไม่มี (404) → ข้ามและแบนถาวร`);
+                    modelState.set(modelName, { status: "invalid", time: Date.now() });
+                    break;
+                } else {
+                    logger.warn({ err: error.message }, `⚠️ โมเดล ${modelName} ไม่พร้อมใช้งาน, ข้ามไปตัวถัดไป...`);
+                    break;
+                }
             }
         }
     }
@@ -496,6 +512,7 @@ app.post('/webhook', middleware(config), (req, res) => {
 
 app.use(express.json({ limit: "1mb" }));
 
+// 🌟 Middleware ตรวจสอบสิทธิ์สำหรับ API ป้องกันคนนอกเข้าถึงข้อมูล
 function authenticateAPI(req, res, next) {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
@@ -843,6 +860,12 @@ async function handleEvent(event) {
         if (text === 'ดูสมุดพก') {
             logEvent(userId, "view_health", "report");
 
+            try {
+                checkAndRecordUsage(userId, false); 
+            } catch (e) {
+                return lineClient.replyMessage(event.replyToken, { type: 'text', text: e.message });
+            }
+
             const userInfo = await getRegisteredUser(userId);
 
             if (!userInfo) return lineClient.replyMessage(event.replyToken, { type: 'text', text: '🔒 คุณยังไม่ได้ลงทะเบียนครับ กรุณากดปุ่ม "ลงทะเบียน" จากเมนูด้านล่างก่อนนะครับ' });
@@ -958,7 +981,7 @@ ${labSummary}
             } catch (error) {
                 console.error("Error generating health report:", error);
                 logEvent(userId, "error", "Health report generation failed");
-                const replyMsg = error.message.includes("คิว AI เต็ม") 
+                const replyMsg = error.message.includes("คิวของคุณเต็ม") 
                     ? error.message 
                     : 'ขออภัยครับ เกิดข้อผิดพลาดในการดึงข้อมูลสมุดพก 🙏';
                 return lineClient.replyMessage(event.replyToken, { type: 'text', text: replyMsg });
@@ -1105,9 +1128,10 @@ ${labSummary}
 
     if (event.message.type === 'image') {
         
-        if (!canUseAI(userId)) {
-            logEvent(userId, "error", "AI Rate limit exceeded");
-            return lineClient.replyMessage(event.replyToken, { type: 'text', text: '⚠️ วันนี้คุณใช้ระบบวิเคราะห์ภาพครบ 20 ครั้งแล้ว\n\nกรุณาลองใหม่พรุ่งนี้ครับ' });
+        try {
+            checkAndRecordUsage(userId, true); 
+        } catch (e) {
+            return lineClient.replyMessage(event.replyToken, { type: 'text', text: e.message });
         }
         
         try {
@@ -1122,7 +1146,10 @@ ${labSummary}
             }
             const buffer = Buffer.concat(chunks);
             
-            const resizedImage = await sharp(buffer).resize({ width: 640, withoutEnlargement: true }).jpeg({ quality: 80 }).toBuffer();
+            const resizedImage = await sharp(buffer)
+                .resize({ width: 512, withoutEnlargement: true }) 
+                .jpeg({ quality: 70 }) 
+                .toBuffer();
             const base64Image = resizedImage.toString('base64');
             
             const imageHash = crypto.createHash("sha256").update(resizedImage).digest("hex");
@@ -1255,7 +1282,7 @@ ${userCarbContext}
         } catch (error) {
             logger.error({ err: error }, "Error processing image");
             logEvent(userId, "error", error.message);
-            const replyMsg = error.message.includes("คิว AI เต็ม") 
+            const replyMsg = error.message.includes("คิวของคุณเต็ม") 
                 ? error.message 
                 : 'ขออภัยครับ/ค่ะ ระบบวิเคราะห์ภาพมีปัญหาชั่วคราว กรุณาลองส่งรูปใหม่อีกครั้งในภายหลังนะคะ 🛠️';
             return lineClient.replyMessage(event.replyToken, { type: 'text', text: replyMsg });
