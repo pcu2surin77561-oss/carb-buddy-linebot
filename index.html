@@ -77,7 +77,6 @@
 
 <div id="toast" class="toast"></div>
 
-<!-- 🌟 เพิ่มหน้าจอโหลดดักไว้จนกว่าจะเช็ก line_id เสร็จ -->
 <div id="initLoading">
     <img src="https://cdn-icons-png.flaticon.com/512/3063/3063176.png" style="width: 80px; margin-bottom: 20px; animation: pulse 1.5s infinite;">
     <h3 style="color: #00897B; margin: 0;">กำลังตรวจสอบบัญชี...</h3>
@@ -448,8 +447,11 @@
                     document.getElementById("mainContainer").style.display = "none";
                     
                     const successPage = document.getElementById("successPage");
+                    let msgToBot = ""; // ข้อความที่จะให้ LIFF ส่งเข้าห้องแชท
+
                     if (resData.result === "updated") {
-                        // 🌟 เพิ่ม Alert แจ้งเตือนเด้งขึ้นมากลางหน้าจอ
+                        msgToBot = "อัปเดตข้อมูลสำเร็จ"; // คำสำคัญที่ Webhook รอจับ
+                        
                         alert(`⚠️ แจ้งเตือน: คุณเคยลงทะเบียนแล้ว!\nระบบทำการแก้ไขเฉพาะ "น้ำหนัก ส่วนสูง กิจกรรม เป้าหมาย" ให้ใหม่เรียบร้อยครับ\n\n📌 โควตาคาร์บใหม่: ${resData.newCarbPerMeal} คาร์บ/มื้อ`);
                         
                         successPage.innerHTML = `
@@ -458,21 +460,39 @@
                             <div style="background:#fff3e0; padding:15px; border-radius:10px; margin-top:15px; color:#d35400; border: 1px solid #ffe0b2;">
                                 <strong>โควตาคาร์บใหม่ของคุณ:</strong><br><span style="font-size:24px;">${resData.newCarbPerMeal} คาร์บ/มื้อ</span>
                             </div>
-                            <p style="color:#888; font-size: 14px; margin-top: 20px;">กำลังปิดหน้าต่าง...</p>
+                            <p style="color:#888; font-size: 14px; margin-top: 20px;">กำลังกลับสู่หน้าแชท...</p>
                         `;
                     } else {
+                        msgToBot = "ลงทะเบียนสำเร็จ"; // คำสำคัญที่ Webhook รอจับ
+
                         successPage.innerHTML = `
                             <h2 style="color:#00897B; font-size: 28px;">✅ ลงทะเบียนสำเร็จ</h2>
                             <p style="color:#555; font-size: 16px;">ระบบได้บันทึกข้อมูลโภชนาการของคุณเรียบร้อยแล้ว</p>
                             <div style="background:#e0f2f1; padding:15px; border-radius:10px; margin-top:15px; color:#00695c;">
                                 <strong>โควตาคาร์บที่แนะนำ:</strong><br><span style="font-size:24px;">${resData.newCarbPerMeal} คาร์บ/มื้อ</span>
                             </div>
-                            <p style="color:#888; font-size: 14px; margin-top: 20px;">กำลังปิดหน้าต่าง...</p>
+                            <p style="color:#888; font-size: 14px; margin-top: 20px;">กำลังกลับสู่หน้าแชท...</p>
                         `;
                     }
                     successPage.style.display = "block";
                     
-                    setTimeout(() => { liff.closeWindow(); }, 4000); // 🌟 ยืดเวลาให้ผู้ใช้อ่านค่าคาร์บ 4 วินาที
+                    // 🚀 โค้ดพระเอก: สั่งให้ LIFF พิมพ์ข้อความหาบอทแทนผู้ใช้ แล้วค่อยปิดหน้าต่าง
+                    setTimeout(() => { 
+                        if (liff.isInClient()) {
+                            liff.sendMessages([{
+                                type: 'text',
+                                text: msgToBot
+                            }]).then(() => {
+                                liff.closeWindow(); 
+                            }).catch((err) => {
+                                console.error('LIFF sendMessages Error:', err);
+                                liff.closeWindow();
+                            });
+                        } else {
+                            liff.closeWindow();
+                        }
+                    }, 4000); 
+
                 } else {
                     const errData = await response.json().catch(() => ({}));
                     throw new Error(errData.error || "API ตอบกลับผิดพลาด กรุณาลองใหม่");
