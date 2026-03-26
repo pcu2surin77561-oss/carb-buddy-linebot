@@ -30,9 +30,6 @@ const {
     hashCID
 } = require('./dbHelper');
 
-// ❌ ปิด Cache ข้อมูลผู้ใช้: ตัวแปรด้านล่างนี้จะ Cache เฉพาะผลลัพธ์ AI (text อาหารและคาร์บ)
-const foodCache = new Map();
-
 // =====================================
 // 🌟 1. ระบบ Load Balancing (สลับ API Key ปลอดภัย 100%)
 // =====================================
@@ -68,18 +65,6 @@ let aiQueue = { add: (fn) => fn() };
     }
 })();
 
-function setCacheWithTTL(cache, key, value, ttl = 3600000) { 
-    cache.set(key, value);
-    setTimeout(() => {
-        cache.delete(key);
-    }, ttl);
-
-    if (cache.size > 500) {
-        const firstKey = cache.keys().next().value;
-        cache.delete(firstKey);
-    }
-}
-
 // 🌟 ฟังก์ชันดึงเวลาแบบ ISO
 function getNowISO() {
     return new Date().toISOString();
@@ -114,42 +99,42 @@ function getTodayTH() {
 }
 
 // =====================================
-// 🌟 2. ระบบคุมโควตารายบุคคล (Per-User Quota)
+// 🌟 2. ระบบ Redis (คุมโควตา + แคช + สถานะ AI ป้องกันข้อมูลหาย 100%)
 // =====================================
-const userDailyUsage = new Map();
-let dailyReset = getTodayTH();
-let globalDailyUsage = 0;
+const { Redis } = require('@upstash/redis');
 
-function checkAndRecordUsage(userId, isImage = false) {
+// ดึงคีย์จาก Environment ของ Render
+const redis = new Redis({
+    url: process.env.UPSTASH_REDIS_REST_URL,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN,
+});
+
+// ฟังก์ชันเช็กโควตาแบบใช้ฐานข้อมูลกลาง (Redis)
+async function checkAndRecordUsage(userId, isImage = false, keyCount = 1) {
     const today = getTodayTH();
-    if (today !== dailyReset) {
-        userDailyUsage.clear();
-        globalDailyUsage = 0;
-        dailyReset = today;
-        modelState.clear();
-    }
+    const globalKey = `usage:global:${today}`;
+    const userKey = `usage:${isImage ? 'image' : 'text'}:${today}:${userId}`;
 
-    // โควตารวมทั้งระบบ
-    const maxGlobal = 1400 * Math.max(1, GEMINI_API_KEYS.length); 
-    if (globalDailyUsage >= maxGlobal) {
-        throw new Error("⚠️ โควตา AI รวมของระบบเต็มแล้วสำหรับวันนี้ กรุณาลองใหม่พรุ่งนี้ครับ");
-    }
+    const maxGlobal = 1400 * Math.max(1, keyCount);
+    const maxUserText = 50;
+    const maxUserImage = 30;
 
-    const usage = userDailyUsage.get(userId) || { text: 0, image: 0 };
-    
-    // โควตารายบุคคล
-    if (isImage && usage.image >= 30) {
-        throw new Error("⚠️ วันนี้คุณส่งรูปให้ AI วิเคราะห์ครบ 30 ครั้งแล้ว กรุณาลองใหม่พรุ่งนี้ครับ");
-    }
-    if (!isImage && usage.text >= 50) {
-        throw new Error("⚠️ วันนี้คุณให้ AI อ่านสมุดพกครบ 50 ครั้งแล้ว กรุณาลองใหม่พรุ่งนี้ครับ");
-    }
+    // 1. เช็กโควตารวมของระบบ
+    const currentGlobal = await redis.get(globalKey) || 0;
+    if (currentGlobal >= maxGlobal) throw new Error("⚠️ โควตา AI รวมของระบบเต็มแล้วสำหรับวันนี้ กรุณาลองใหม่พรุ่งนี้ครับ");
 
-    if (isImage) usage.image++;
-    else usage.text++;
-    
-    userDailyUsage.set(userId, usage);
-    globalDailyUsage++;
+    // 2. เช็กโควตารายบุคคล
+    const currentUser = await redis.get(userKey) || 0;
+    if (isImage && currentUser >= maxUserImage) throw new Error("⚠️ วันนี้คุณส่งรูปให้ AI วิเคราะห์ครบ 30 ครั้งแล้ว กรุณาลองใหม่พรุ่งนี้ครับ");
+    if (!isImage && currentUser >= maxUserText) throw new Error("⚠️ วันนี้คุณให้ AI อ่านสมุดพกครบ 50 ครั้งแล้ว กรุณาลองใหม่พรุ่งนี้ครับ");
+
+    // 3. ถ้าผ่าน ให้บวกเพิ่มทีละ 1 และตั้งเวลาลบอัตโนมัติ (24 ชม. = 86400 วินาที)
+    const p = redis.pipeline();
+    p.incr(globalKey);
+    p.expire(globalKey, 86400); 
+    p.incr(userKey);
+    p.expire(userKey, 86400);
+    await p.exec();
 
     return true;
 }
@@ -193,7 +178,6 @@ app.use(
 // =====================================
 let thaiFoodDB = [];
 try {
-    // 💡 ตอนนี้เราใช้อ่านเพื่อตรวจคำในบรรทัดต่อไป แต่ฐานข้อมูลหลักเราจะใช้ MongoDB แทนแล้ว
     const rawData = fs.readFileSync(path.join(__dirname, 'foods.json'), 'utf8');
     thaiFoodDB = JSON.parse(rawData).foods;
     logger.info(`✅ โหลดข้อมูลอาหารสำเร็จ: ${thaiFoodDB.length} เมนู`);
@@ -316,10 +300,7 @@ async function discoverGeminiModels() {
         "gemini-3.1-flash-lite"
     ];
 
-    let working = [];
-
     try {
-        // ใช้ Key ตัวแรกในการสแกนโมเดล
         const res = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEYS[0]}`
         );
@@ -358,15 +339,14 @@ async function discoverGeminiModels() {
 })();
 
 // =====================================
-// 🔥 6. ฟังก์ชัน AI แบบฉลาด (ยิงสลับ API Key อัตโนมัติ)
+// 🔥 6. ฟังก์ชัน AI แบบฉลาด (ยิงสลับ API Key อัตโนมัติ + Redis State)
 // =====================================
-const modelState = new Map(); 
-const userCooldown = new Map(); 
-
 async function callGeminiWithFallback(userId, prompt, imageParts = []) {
-    const uCooldown = userCooldown.get(userId) || 0;
-    if (Date.now() < uCooldown) {
-        const remain = Math.ceil((uCooldown - Date.now()) / 1000);
+    // ⏳ 1. เช็ก Cooldown ของผู้ใช้จาก Redis
+    const userCooldownKey = `cooldown:user:${userId}`;
+    const uCooldownMs = await redis.pttl(userCooldownKey);
+    if (uCooldownMs > 0) {
+        const remain = Math.ceil(uCooldownMs / 1000);
         throw new Error(`⚠️ คิวของคุณเต็มและกำลังจัดระเบียบ กรุณารอ ${remain} วินาที แล้วลองใหม่ครับ 🙏`);
     }
 
@@ -391,25 +371,32 @@ async function callGeminiWithFallback(userId, prompt, imageParts = []) {
         modelsToTry = ["gemini-2.5-flash"];
     }
 
-    let lastError;
+    // 🤖 2. คัดกรอง Model ที่พังหรือติด Cooldown (ดึง State จาก Redis)
+    let availableModels = [];
+    for (const modelName of modelsToTry) {
+        const invalidKey = `modelstate:invalid:${modelName}`;
+        const cooldownKey = `modelstate:cooldown:${modelName}`;
+        
+        const [isInvalid, isCooldown] = await Promise.all([
+            redis.get(invalidKey),
+            redis.get(cooldownKey)
+        ]);
 
-    modelsToTry = modelsToTry.filter(modelName => {
-        const state = modelState.get(modelName);
-        if (state) {
-            const elapsed = Date.now() - state.time;
-            if (state.status === "invalid") return false;
-            if (state.status === "cooldown" && elapsed < 30000) return false; 
-        }
-        return true;
-    });
-
-    if (modelsToTry.length === 0) {
-        logger.warn("⚠️ ทุกโมเดลติดคูลดาวน์ → บังคับใช้ gemini-2.5-flash โดยดึงคีย์สำรอง");
-        modelsToTry = ["gemini-2.5-flash"];
+        if (isInvalid) continue;
+        if (isCooldown) continue;
+        
+        availableModels.push(modelName);
     }
 
-    for (let i = 0; i < modelsToTry.length; i++) {
-        const modelName = modelsToTry[i];
+    if (availableModels.length === 0) {
+        logger.warn("⚠️ ทุกโมเดลติดคูลดาวน์ → บังคับใช้ gemini-2.5-flash โดยดึงคีย์สำรอง");
+        availableModels = ["gemini-2.5-flash"];
+    }
+
+    let lastError;
+
+    for (let i = 0; i < availableModels.length; i++) {
+        const modelName = availableModels[i];
         let attempts = 0;
         const maxAttempts = 2; 
         
@@ -469,14 +456,18 @@ async function callGeminiWithFallback(userId, prompt, imageParts = []) {
                         logger.warn(`⚠️ 429 สลับ Key ลองใหม่ทันที... (ครั้งที่ ${attempts}/${maxAttempts})`);
                         continue; 
                     } else {
-                        modelState.set(modelName, { status: "cooldown", time: Date.now() });
-                        userCooldown.set(userId, Date.now() + 3000); 
+                        // 🚨 บันทึก Cooldown ลง Redis 
+                        const p = redis.pipeline();
+                        p.set(`modelstate:cooldown:${modelName}`, "1", { ex: 30 }); 
+                        p.set(`cooldown:user:${userId}`, "1", { px: 3000 }); 
+                        await p.exec();
+
                         logger.warn(`🚨 429 ใน ${modelName} (ลองครบ 2 รอบแล้ว) ข้ามไปตัวถัดไป...`);
                         break; 
                     }
                 } else if (isNotFound) {
-                    logger.warn(`❌ โมเดล ${modelName} ไม่มี (404) → ข้ามและแบนถาวร`);
-                    modelState.set(modelName, { status: "invalid", time: Date.now() });
+                    logger.warn(`❌ โมเดล ${modelName} ไม่มี (404) → แบนชั่วคราว 1 ชั่วโมง`);
+                    await redis.set(`modelstate:invalid:${modelName}`, "1", { ex: 3600 });
                     break;
                 } else {
                     logger.warn({ err: error.message }, `⚠️ โมเดล ${modelName} ไม่พร้อมใช้งาน, ข้ามไปตัวถัดไป...`);
@@ -499,18 +490,20 @@ app.get('/health', (req, res) => {
 });
 
 app.post('/webhook', middleware(config), (req, res) => {
+    // ส่ง HTTP 200 OK ให้ LINE ทันที ป้องกัน LINE Timeout ระหว่างที่ AI กำลังคิด
     res.status(200).send('OK');
     Promise.allSettled(req.body.events.map(handleEvent)).catch((err) => logger.error({ err }, "Background Event Error"));
 });
 
 app.use(express.json({ limit: "1mb" }));
 
-// 🌟 Middleware ตรวจสอบสิทธิ์สำหรับ API ป้องกันคนนอกเข้าถึงข้อมูล
+// 🌟 Middleware ตรวจสอบสิทธิ์สำหรับ API ป้องกันคนนอกเข้าถึงข้อมูล (เพิ่ม Security Header Token)
 function authenticateAPI(req, res, next) {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
     
-    if (token === API_SECRET || req.query.secret === API_SECRET) {
+    // ลบการรับ Secret ผ่าน Query ทิ้งเพื่อความปลอดภัย
+    if (token === API_SECRET) {
         return next();
     }
     logger.warn({ ip: req.ip }, "🚨 Unauthorized API Access Attempt");
@@ -918,7 +911,7 @@ async function handleEvent(event) {
             logEvent(userId, "view_health", "report");
 
             try {
-                checkAndRecordUsage(userId, false); 
+                await checkAndRecordUsage(userId, false, GEMINI_API_KEYS.length); 
             } catch (e) {
                 return lineClient.replyMessage(event.replyToken, { type: 'text', text: e.message });
             }
@@ -1186,7 +1179,7 @@ ${labSummary}
     if (event.message.type === 'image') {
         
         try {
-            checkAndRecordUsage(userId, true); 
+            await checkAndRecordUsage(userId, true, GEMINI_API_KEYS.length); 
         } catch (e) {
             return lineClient.replyMessage(event.replyToken, { type: 'text', text: e.message });
         }
@@ -1211,12 +1204,12 @@ ${labSummary}
             
             const imageHash = crypto.createHash("sha256").update(resizedImage).digest("hex");
 
-            if (foodCache.has(imageHash)) {
-                logger.info("⚡ Image cache hit");
+            // ⚡ เช็กรูปภาพจาก Redis Cache
+            const cachedText = await redis.get(`foodcache:${imageHash}`);
+            if (cachedText) {
+                logger.info("⚡ Image cache hit (Redis)");
                 logEvent(userId, "scan_food_cache", "Cache hit");
-                const cached = foodCache.get(imageHash);
-                
-                return lineClient.replyMessage(event.replyToken, { type: 'text', text: cached });
+                return lineClient.replyMessage(event.replyToken, { type: 'text', text: cachedText });
             }
             
             const userInfo = await getRegisteredUser(userId);
@@ -1313,7 +1306,8 @@ ${userCarbContext}
                 finalText += `\n\n📌 หมายเหตุ: 1 คาร์บ = คาร์โบไฮเดรต 15 กรัม (เทียบเท่าข้าวสวย 1 ทัพพี)`;
             }
 
-            setCacheWithTTL(foodCache, imageHash, finalText);
+            // เซฟคำตอบ AI ลง Redis ตั้งเวลาจำไว้ 7 วัน (604800 วินาที)
+            await redis.set(`foodcache:${imageHash}`, finalText, { ex: 604800 });
 
             if (estimatedCarb > 0) {
                 const safeFoodName = encodeURIComponent(foodNameToSave.substring(0, 50));
@@ -1359,16 +1353,5 @@ process.on("unhandledRejection", (err) => {
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
     setInterval(discoverGeminiModels, 15 * 60 * 1000);
-
-    setInterval(() => {
-        const mem = process.memoryUsage().heapUsed / 1024 / 1024;
-        logger.info(`Memory usage: ${mem.toFixed(2)} MB`);
-        if(mem > 400){
-            logger.warn("⚠️ High memory usage");
-            if (global.gc) {
-                global.gc(); 
-            }
-        }
-    }, 60000);
     logger.info(`Webhook server listening on port ${port}`);
 });
