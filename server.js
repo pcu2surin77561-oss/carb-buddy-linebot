@@ -194,8 +194,7 @@ app.use(
                 imgSrc: ["'self'", "data:", "https://cdn-icons-png.flaticon.com"],
                 styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
                 fontSrc: ["'self'", "https://fonts.gstatic.com"],
-                // ✅ เพิ่มลิงก์เพื่อรองรับ LIFF
-                connectSrc: ["'self'", "https://api.line.me", "https://liffsdk.line-scdn.net", "https://*.line.me", "https://*.line-apps.com"]
+                connectSrc: ["'self'", "https://api.line.me"]
             }
         }
     })
@@ -237,7 +236,14 @@ function detectThaiFoods(text) {
     return foundFoods;
 }
 
-// ✅ ลบ decodeFoodName ที่ซ้ำซ้อนและอาจทำให้เกิด URIError ทิ้งไป
+function decodeFoodName(encodedStr) {
+    try {
+        if (!encodedStr) return "AI_Analyzed";
+        return decodeURIComponent(encodedStr);
+    } catch (e) {
+        return "ไม่ทราบชื่ออาหาร";
+    }
+}
 
 function extractFoodsFromAI(text) {
     const foods = [];
@@ -309,6 +315,7 @@ function calculateUserNutrition(userInfo) {
 let availableGeminiModels = [];
 
 async function discoverGeminiModels() {
+    // ✅ ตรวจสอบ API Key ว่ามีพร้อมก่อนที่จะเริ่มดึงข้อมูล
     if (GEMINI_API_KEYS.length === 0) {
         logger.error("🚨 ไม่มี Gemini API Key — ข้าม discoverGeminiModels");
         return;
@@ -499,13 +506,6 @@ app.post('/api/setup-foods', authenticateAPI, async (req, res) => {
 
     try {
         const mongoose = require('mongoose');
-        
-        // ✅ ป้องกัน Database Timeout: สร้าง Connection ชั่วคราวหากยังไม่ได้เชื่อมต่อ
-        if (mongoose.connection.readyState === 0) {
-            if (!process.env.MONGODB_URI) throw new Error("MONGODB_URI is not set. Cannot connect to Database.");
-            await mongoose.connect(process.env.MONGODB_URI);
-        }
-
         const rawData = fs.readFileSync(path.join(__dirname, 'foods.json'), 'utf8');
         const data = JSON.parse(rawData).foods;
 
@@ -674,9 +674,7 @@ async function handlePostback(event) {
         const portion = parseFloat(data.get('p'));
         const estimatedCarb = parseFloat(data.get('c'));
         const actualCarb = parseFloat((estimatedCarb * portion).toFixed(1));
-        
-        // ✅ นำโค้ด decode ที่อาจสร้างบั๊กออก
-        const foodName = data.get('f') || "AI_Analyzed"; 
+        const foodName = decodeFoodName(data.get('f')); 
         
         const nowISO = getNowISO();
         const now = new Date();
@@ -754,6 +752,7 @@ async function handlePostback(event) {
         }
     }
 
+    // ✅ บันทึก Log เมื่อเจอ Postback ลึกลับด้วยรหัสที่ปลอดภัย
     const safeId = crypto.createHash("sha256").update(userId).digest("hex").substring(0, 10);
     logger.warn({ userId: safeId, action }, "⚠️ Unknown postback action received");
     return null;
@@ -764,6 +763,7 @@ async function handleTextMessage(event) {
     const userId = event.source.userId;
     const text = event.message.text.trim();
     
+    // ✅ ดึงข้อมูลผู้ใช้แค่ครั้งเดียวต่อ 1 Request
     const userInfo = await getCachedUser(userId);
 
     if (text === COMMANDS.REGISTER_SUCCESS || text === COMMANDS.UPDATE_SUCCESS) {
@@ -1148,10 +1148,12 @@ async function handleImageMessage(event) {
     if (cachedText) {
         logger.info("⚡ Image cache hit (Redis)");
         await logEvent(userId, "scan_food_cache", "Cache hit");
+        // ✅ ป้องกัน Object Serialization
         const textToSend = typeof cachedText === 'string' ? cachedText : JSON.stringify(cachedText);
         return lineClient.replyMessage(event.replyToken, { type: 'text', text: textToSend });
     }
 
+    // ✅ ครอบ sharp ด้วย try-catch ป้องกัน Server ล่ม
     let resizedImage;
     try {
         resizedImage = await sharp(buffer)
@@ -1261,6 +1263,7 @@ ${userCarbContext}
             finalText += `\n\n📌 หมายเหตุ: 1 คาร์บ = คาร์โบไฮเดรต 15 กรัม (เทียบเท่าข้าวสวย 1 ทัพพี)`;
         }
 
+        // ✅ ป้องกันไม่ให้ AI แอบส่งข้อความเปล่าๆ กลับมาเซฟลง Cache
         if (finalText && finalText.trim().length > 10) {
             await redis.set(cacheKey, finalText, { ex: 604800 });
         }
