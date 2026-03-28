@@ -7,6 +7,7 @@ const { middleware, Client } = require('@line/bot-sdk');
 const path = require('path');
 const crypto = require("crypto"); 
 const fs = require('fs'); 
+const mongoose = require('mongoose'); // ✅ เพิ่ม Mongoose เข้ามาจัดการ Connection ระดับ Global
 
 const sharp = require('sharp');
 const rateLimit = require('express-rate-limit');
@@ -266,7 +267,6 @@ function calculateUserNutrition(userInfo) {
     const w = parseFloat(userInfo.weight) || 60;
     const h = parseFloat(userInfo.height) || 160;
     
-    // ✅ แก้ไขให้รองรับชื่อตัวแปรทั้งแบบใหม่และแบบเก่า
     const act = parseFloat(userInfo.activity || userInfo.activityMultiplier) || 1.2;
     const diet = parseFloat(userInfo.dietType || userInfo.dietMultiplier) || 0.5;
 
@@ -497,8 +497,6 @@ app.post('/api/setup-foods', authenticateAPI, async (req, res) => {
     }
 
     try {
-        const mongoose = require('mongoose');
-        
         if (mongoose.connection.readyState === 0) {
             if (!process.env.MONGODB_URI) throw new Error("MONGODB_URI is not set. Cannot connect to Database.");
             await mongoose.connect(process.env.MONGODB_URI);
@@ -588,7 +586,6 @@ const registerLimiter = rateLimit({ windowMs: 10 * 60 * 1000, max: 20 });
 app.use('/api/register', registerLimiter);
 app.post('/api/register', authenticateAPI, async (req, res) => {
     try {
-        // ✅ ปรับจับตัวแปรให้ครอบคลุมเผื่อหน้าเว็บส่งมาในชื่อเก่าหรือใหม่
         const { userId, cid, birthday, gender, weight, height, activityMultiplier, dietMultiplier, activity, dietType } = req.body;
         if (!userId) return res.status(400).json({ error: "ข้อมูลไม่ครบถ้วน (ไม่มี userId)" });
 
@@ -617,7 +614,7 @@ app.post('/api/register', authenticateAPI, async (req, res) => {
             );
 
             await logEvent(userId, "update_profile", `updated_user_part2: newCarb=${calculatedCarbPerMeal}`);
-            await redis.del(`user:cache:${userId}`); // ✅ เคลียร์แคชทันทีที่อัปเดตข้อมูลเสร็จ
+            await redis.del(`user:cache:${userId}`); 
             
             return res.json({ status: "ok", result: "updated", newCarbPerMeal: calculatedCarbPerMeal });
 
@@ -1312,11 +1309,29 @@ process.on("unhandledRejection", (err) => {
 // =====================================
 const port = process.env.PORT || 3000;
 
-if (GEMINI_API_KEYS.length > 0) {
-    discoverGeminiModels().catch(err => logger.error({ err }, "Initial Discovery Error"));
+async function startApp() {
+    if (GEMINI_API_KEYS.length > 0) {
+        await discoverGeminiModels().catch(err => logger.error({ err }, "Initial Discovery Error"));
+    }
+
+    try {
+        const mongoose = require('mongoose');
+        if (process.env.MONGODB_URI) {
+            await mongoose.connect(process.env.MONGODB_URI, {
+                serverSelectionTimeoutMS: 5000,
+            });
+            logger.info("✅ Connected to MongoDB successfully!");
+        } else {
+            logger.warn("⚠️ MONGODB_URI is not set in .env!");
+        }
+    } catch (err) {
+        logger.error({ err }, "❌ MongoDB Connection Error!");
+    }
+
+    app.listen(port, () => {
+        setInterval(discoverGeminiModels, 15 * 60 * 1000); // อัปเดตทุก 15 นาที
+        logger.info(`🚀 Webhook server listening on port ${port}`);
+    });
 }
 
-app.listen(port, () => {
-    setInterval(discoverGeminiModels, 15 * 60 * 1000); // อัปเดตทุก 15 นาที
-    logger.info(`Webhook server listening on port ${port}`);
-});
+startApp();
