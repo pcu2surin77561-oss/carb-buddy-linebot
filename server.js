@@ -194,7 +194,7 @@ app.use(
                 imgSrc: ["'self'", "data:", "https://cdn-icons-png.flaticon.com"],
                 styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
                 fontSrc: ["'self'", "https://fonts.gstatic.com"],
-                connectSrc: ["'self'", "https://api.line.me"]
+                connectSrc: ["'self'", "https://api.line.me", "https://liffsdk.line-scdn.net", "https://*.line.me", "https://*.line-apps.com"]
             }
         }
     })
@@ -236,15 +236,6 @@ function detectThaiFoods(text) {
     return foundFoods;
 }
 
-function decodeFoodName(encodedStr) {
-    try {
-        if (!encodedStr) return "AI_Analyzed";
-        return decodeURIComponent(encodedStr);
-    } catch (e) {
-        return "ไม่ทราบชื่ออาหาร";
-    }
-}
-
 function extractFoodsFromAI(text) {
     const foods = [];
     const lines = text.split("\n");
@@ -274,8 +265,10 @@ function calculateUserNutrition(userInfo) {
     }
     const w = parseFloat(userInfo.weight) || 60;
     const h = parseFloat(userInfo.height) || 160;
-    const act = parseFloat(userInfo.activity) || 1.2;
-    const diet = parseFloat(userInfo.dietType) || 0.5;
+    
+    // ✅ แก้ไขให้รองรับชื่อตัวแปรทั้งแบบใหม่และแบบเก่า
+    const act = parseFloat(userInfo.activity || userInfo.activityMultiplier) || 1.2;
+    const diet = parseFloat(userInfo.dietType || userInfo.dietMultiplier) || 0.5;
 
     let bmr = (userInfo.gender === 'ชาย') 
         ? 66 + (13.7 * w) + (5 * h) - (6.8 * age) 
@@ -315,7 +308,6 @@ function calculateUserNutrition(userInfo) {
 let availableGeminiModels = [];
 
 async function discoverGeminiModels() {
-    // ✅ ตรวจสอบ API Key ว่ามีพร้อมก่อนที่จะเริ่มดึงข้อมูล
     if (GEMINI_API_KEYS.length === 0) {
         logger.error("🚨 ไม่มี Gemini API Key — ข้าม discoverGeminiModels");
         return;
@@ -506,6 +498,12 @@ app.post('/api/setup-foods', authenticateAPI, async (req, res) => {
 
     try {
         const mongoose = require('mongoose');
+        
+        if (mongoose.connection.readyState === 0) {
+            if (!process.env.MONGODB_URI) throw new Error("MONGODB_URI is not set. Cannot connect to Database.");
+            await mongoose.connect(process.env.MONGODB_URI);
+        }
+
         const rawData = fs.readFileSync(path.join(__dirname, 'foods.json'), 'utf8');
         const data = JSON.parse(rawData).foods;
 
@@ -590,8 +588,12 @@ const registerLimiter = rateLimit({ windowMs: 10 * 60 * 1000, max: 20 });
 app.use('/api/register', registerLimiter);
 app.post('/api/register', authenticateAPI, async (req, res) => {
     try {
-        const { userId, cid, birthday, gender, weight, height, activityMultiplier, dietMultiplier } = req.body;
+        // ✅ ปรับจับตัวแปรให้ครอบคลุมเผื่อหน้าเว็บส่งมาในชื่อเก่าหรือใหม่
+        const { userId, cid, birthday, gender, weight, height, activityMultiplier, dietMultiplier, activity, dietType } = req.body;
         if (!userId) return res.status(400).json({ error: "ข้อมูลไม่ครบถ้วน (ไม่มี userId)" });
+
+        const inputActivity = activityMultiplier || activity;
+        const inputDiet = dietMultiplier || dietType;
 
         const existingUser = await getRegisteredUser(userId);
 
@@ -601,8 +603,8 @@ app.post('/api/register', authenticateAPI, async (req, res) => {
                 gender: existingUser.gender,     
                 weight: weight || existingUser.weight,
                 height: height || existingUser.height,
-                activity: activityMultiplier || existingUser.activity,
-                dietType: dietMultiplier || existingUser.dietType
+                activity: inputActivity || existingUser.activity,
+                dietType: inputDiet || existingUser.dietType
             };
 
             const nutrition = calculateUserNutrition(tempUserInfo);
@@ -615,20 +617,20 @@ app.post('/api/register', authenticateAPI, async (req, res) => {
             );
 
             await logEvent(userId, "update_profile", `updated_user_part2: newCarb=${calculatedCarbPerMeal}`);
-            await redis.del(`user:cache:${userId}`);
+            await redis.del(`user:cache:${userId}`); // ✅ เคลียร์แคชทันทีที่อัปเดตข้อมูลเสร็จ
             
             return res.json({ status: "ok", result: "updated", newCarbPerMeal: calculatedCarbPerMeal });
 
         } else {
             if (!cid || !birthday || !gender) return res.status(400).json({ error: "ข้อมูลไม่ครบถ้วนสำหรับการลงทะเบียนใหม่" });
 
-            const tempUserInfo = { birthday, gender, weight, height, activity: activityMultiplier, dietType: dietMultiplier };
+            const tempUserInfo = { birthday, gender, weight, height, activity: inputActivity, dietType: inputDiet };
             const nutrition = calculateUserNutrition(tempUserInfo);
             const calculatedCarbPerMeal = nutrition.carbPerMeal;
             const hashedCID = hashCID(cid);
             
             const result = await registerNewUser(
-                userId, hashedCID, birthday, gender, weight, height, activityMultiplier, dietMultiplier, calculatedCarbPerMeal
+                userId, hashedCID, birthday, gender, weight, height, inputActivity, inputDiet, calculatedCarbPerMeal
             );
 
             if (result === "success") {
@@ -674,7 +676,7 @@ async function handlePostback(event) {
         const portion = parseFloat(data.get('p'));
         const estimatedCarb = parseFloat(data.get('c'));
         const actualCarb = parseFloat((estimatedCarb * portion).toFixed(1));
-        const foodName = decodeFoodName(data.get('f')); 
+        const foodName = data.get('f') || "AI_Analyzed"; 
         
         const nowISO = getNowISO();
         const now = new Date();
@@ -752,7 +754,6 @@ async function handlePostback(event) {
         }
     }
 
-    // ✅ บันทึก Log เมื่อเจอ Postback ลึกลับด้วยรหัสที่ปลอดภัย
     const safeId = crypto.createHash("sha256").update(userId).digest("hex").substring(0, 10);
     logger.warn({ userId: safeId, action }, "⚠️ Unknown postback action received");
     return null;
@@ -763,7 +764,6 @@ async function handleTextMessage(event) {
     const userId = event.source.userId;
     const text = event.message.text.trim();
     
-    // ✅ ดึงข้อมูลผู้ใช้แค่ครั้งเดียวต่อ 1 Request
     const userInfo = await getCachedUser(userId);
 
     if (text === COMMANDS.REGISTER_SUCCESS || text === COMMANDS.UPDATE_SUCCESS) {
@@ -1148,12 +1148,10 @@ async function handleImageMessage(event) {
     if (cachedText) {
         logger.info("⚡ Image cache hit (Redis)");
         await logEvent(userId, "scan_food_cache", "Cache hit");
-        // ✅ ป้องกัน Object Serialization
         const textToSend = typeof cachedText === 'string' ? cachedText : JSON.stringify(cachedText);
         return lineClient.replyMessage(event.replyToken, { type: 'text', text: textToSend });
     }
 
-    // ✅ ครอบ sharp ด้วย try-catch ป้องกัน Server ล่ม
     let resizedImage;
     try {
         resizedImage = await sharp(buffer)
@@ -1263,7 +1261,6 @@ ${userCarbContext}
             finalText += `\n\n📌 หมายเหตุ: 1 คาร์บ = คาร์โบไฮเดรต 15 กรัม (เทียบเท่าข้าวสวย 1 ทัพพี)`;
         }
 
-        // ✅ ป้องกันไม่ให้ AI แอบส่งข้อความเปล่าๆ กลับมาเซฟลง Cache
         if (finalText && finalText.trim().length > 10) {
             await redis.set(cacheKey, finalText, { ex: 604800 });
         }
