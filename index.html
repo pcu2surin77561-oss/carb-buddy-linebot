@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ลงทะเบียนนักเรียน - โรงเรียนเบาหวาน</title>
+    <title>โรงเรียนเบาหวาน - Carb Buddy</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
@@ -11,6 +11,32 @@
         
         .container { background: white; width: 90%; max-width: 400px; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); overflow: hidden; position: relative; transition: .35s ease; }
         
+        /* 📊 Dashboard Styles */
+        .dashboard-wrapper { display: none; width: 95%; max-width: 1000px; margin: 0 auto; padding: 20px; box-sizing: border-box; background: transparent; }
+        .dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;}
+        .dashboard-header h2 { color: #00897B; margin: 0; }
+        
+        .dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .dash-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.04); text-align: center; border-top: 4px solid #00897B; }
+        .dash-card h3 { margin: 0 0 5px 0; font-size: 13px; color: #777; font-weight: normal; }
+        .dash-card p { margin: 0; font-size: 26px; font-weight: bold; color: #00897B; }
+        
+        .dash-section { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.04); margin-bottom: 20px; }
+        .dash-section h3 { margin-top: 0; color: #333; font-size: 18px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        
+        .alert-list { list-style: none; padding: 0; margin: 0; max-height: 300px; overflow-y: auto; }
+        .alert-item { padding: 12px; display: flex; justify-content: space-between; background: #ffebee; color: #c62828; border-radius: 8px; margin-bottom: 8px; font-size: 14px; }
+        
+        .table-responsive { overflow-x: auto; max-height: 400px; }
+        .dash-table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 500px; }
+        .dash-table th, .dash-table td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
+        .dash-table th { background: #f9f9f9; color: #555; position: sticky; top: 0; }
+        .dash-table tbody tr:hover { background-color: #f5f5f5; }
+        
+        .btn-refresh { background-color: #00897B; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-family: 'Kanit'; box-shadow: 0 4px 10px rgba(0,137,123,0.2); transition: 0.2s; }
+        .btn-refresh:active { transform: scale(0.95); }
+
+        /* Form Styles เดิม */
         .header { text-align: center; margin-bottom: 10px; }
         .header img { width: 80px; margin-bottom: 10px; }
         .header h2 { color: #00897B; margin: 0; font-size: 22px; }
@@ -20,15 +46,8 @@
         .dot { width: 10px; height: 10px; border-radius: 50%; background: #ccc; transition: .3s; }
         .dot.active { background: #00897B; transform: scale(1.2); }
         
-        #initLoading {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #f0f4f3; z-index: 9999; display: flex;
-            justify-content: center; align-items: center; flex-direction: column;
-        }
+        #initLoading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f0f4f3; z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
-
-        .skeleton { height: 45px; background: linear-gradient(90deg, #eee 25%, #f5f5f5 50%, #eee 75%); background-size: 200% 100%; border-radius: 10px; animation: shimmer 1.4s infinite linear; margin-bottom: 20px; }
-        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
         #updateNotice { display: none; background-color: #e3f2fd; color: #00695c; padding: 10px; border-radius: 8px; font-size: 13px; text-align: center; margin-bottom: 20px; border: 1px solid #b2dfdb; }
 
@@ -43,36 +62,66 @@
         .btn-primary:disabled { background-color: #cccccc; cursor: not-allowed; box-shadow: none; }
         
         .btn-secondary { width: 100%; padding: 12px; background-color: #f0f4f3; color: #555; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.3s; margin-top: 10px; }
-        
         .footer-text { text-align: center; font-size: 11px; color: #aaa; margin-top: 20px; }
         
         .step { display: none; animation: slideIn .35s ease; }
         .step.active { display: block; }
         @keyframes slideIn { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
 
-        #loadingOverlay {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255, 255, 255, 0.85); z-index: 9999; justify-content: center;
-            align-items: center; flex-direction: column; font-size: 18px; color: #00897B; font-weight: bold;
-        }
-
+        #loadingOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.85); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; font-size: 18px; color: #00897B; font-weight: bold; }
         .toast { position: fixed; bottom: -50px; left: 50%; transform: translateX(-50%); background: rgba(51, 51, 51, 0.95); color: #fff; padding: 12px 24px; border-radius: 30px; font-size: 14px; opacity: 0; transition: 0.3s ease-in-out; z-index: 9999; pointer-events: none; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
         .toast.show { bottom: 40px; opacity: 1; }
     </style>
 </head>
 <body>
 
-<div id="loadingOverlay">
-    <span style="font-size: 30px; margin-bottom: 10px;">⏳</span>
-    กำลังบันทึกข้อมูล...
-</div>
-
+<div id="loadingOverlay"><span style="font-size: 30px; margin-bottom: 10px;">⏳</span>กำลังโหลด...</div>
 <div id="toast" class="toast"></div>
 
 <div id="initLoading">
     <img src="https://cdn-icons-png.flaticon.com/512/3063/3063176.png" style="width: 80px; margin-bottom: 20px; animation: pulse 1.5s infinite;">
-    <h3 style="color: #00897B; margin: 0;">กำลังตรวจสอบบัญชี...</h3>
-    <p style="color: #666; font-size: 14px; margin-top: 5px;">กรุณารอสักครู่</p>
+    <h3 style="color: #00897B; margin: 0;">กำลังตรวจสอบระบบ...</h3>
+</div>
+
+<div class="dashboard-wrapper" id="dashboardWrapper">
+    <div class="dashboard-header">
+        <h2>📊 Carb Buddy Dashboard</h2>
+        <button class="btn-refresh" id="btnRefresh" onclick="loadDashboardData()">🔄 รีเฟรชข้อมูล</button>
+    </div>
+
+    <div class="dash-grid">
+        <div class="dash-card"><h3>รวมผู้ป่วย (คน)</h3><p id="d-totalUsers">-</p></div>
+        <div class="dash-card"><h3>Active วันนี้</h3><p id="d-todayUsers">-</p></div>
+        <div class="dash-card"><h3>บันทึกทั้งหมด (มื้อ)</h3><p id="d-totalLogs">-</p></div>
+        <div class="dash-card"><h3>คาร์บรวมวันนี้</h3><p id="d-totalCarb">-</p></div>
+        <div class="dash-card"><h3>คาร์บเฉลี่ย/มื้อ</h3><p id="d-avgCarb">-</p></div>
+    </div>
+
+    <div class="dash-section">
+        <h3 style="color: #c62828;">🚨 การแจ้งเตือน (ผู้ป่วยกินคาร์บ > 20 ส่วน ในวันนี้)</h3>
+        <ul id="d-alertsList" class="alert-list">
+            <li style="padding:10px; color:#555;">กำลังโหลด...</li>
+        </ul>
+    </div>
+
+    <div class="dash-section">
+        <h3>👥 รายชื่อผู้ป่วยในระบบ (ล่าสุด 100 คน)</h3>
+        <div class="table-responsive">
+            <table class="dash-table">
+                <thead>
+                    <tr>
+                        <th>รหัสผู้ใช้ (UserID)</th>
+                        <th>น้ำหนัก (กก.)</th>
+                        <th>ส่วนสูง (ซม.)</th>
+                        <th>โควตาคาร์บ/มื้อ</th>
+                    </tr>
+                </thead>
+                <tbody id="d-usersTableBody">
+                    <tr><td colspan="4" style="text-align: center;">กำลังโหลด...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
 <div class="container" id="mainContainer" style="display: none;">
@@ -144,14 +193,8 @@
         <div class="form-group" style="font-size:13px; background:#f9f9f9; padding:15px; border-radius:10px; border: 1px solid #eee;">
             <label style="display:flex;align-items:flex-start;gap:8px; cursor:pointer; margin:0;">
                 <input type="checkbox" id="pdpaConsent" style="width:20px; height:20px; margin-top:2px;">
-                <span style="color:#555;">
-                    ฉันยินยอมให้ระบบโรงเรียนเบาหวานเก็บและใช้ข้อมูลส่วนบุคคล เพื่อวิเคราะห์สุขภาพและให้คำแนะนำด้านโภชนาการ
-                </span>
+                <span style="color:#555;">ฉันยินยอมให้ระบบโรงเรียนเบาหวานเก็บและใช้ข้อมูลส่วนบุคคล เพื่อวิเคราะห์สุขภาพและให้คำแนะนำด้านโภชนาการ</span>
             </label>
-            <div style="font-size:12px;margin-top:6px; text-align:right;">
-                อ่านนโยบาย
-                <a href="https://pdpa.moph.go.th/" target="_blank" style="color:#00897B; text-decoration:underline;">คุ้มครองข้อมูลส่วนบุคคล</a>
-            </div>
         </div>
         
         <button class="btn-primary" onclick="submitRegistration()" id="submitBtn">บันทึกข้อมูลและคำนวณคาร์บ</button>
@@ -163,14 +206,13 @@
 
 <div id="successPage" style="display:none; text-align:center; padding:40px; margin-top: 50px;">
     <h2 style="color:#00897B; font-size: 28px;">✅ สำเร็จ!</h2>
-    <p style="color:#555; font-size: 16px;" id="successText">ระบบได้บันทึกข้อมูลโภชนาการของคุณเรียบร้อยแล้ว</p>
+    <p style="color:#555; font-size: 16px;" id="successText">ระบบได้บันทึกข้อมูลของคุณเรียบร้อยแล้ว</p>
     <p style="color:#888; font-size: 14px; margin-top: 20px;">กำลังกลับไปหน้า LINE...</p>
 </div>
 
 <script>
     const MY_LIFF_ID = '2009419837-irqrUiU1'; 
-    // 🚨 ระบุรหัส API_SECRET ของคุณที่นี่ให้ตรงกับฝั่งเซิร์ฟเวอร์ (Render)
-    const API_SECRET = 'my_super_secret_key_2026';
+    const API_SECRET = 'my_super_secret_key_2026'; // ต้องตรงกับฝั่ง server.js
 
     let toastTimeout;
     function showToast(msg) {
@@ -178,36 +220,156 @@
         t.innerText = msg;
         t.classList.add("show");
         clearTimeout(toastTimeout);
-        toastTimeout = setTimeout(() => {
-            t.classList.remove("show");
-        }, 2500);
+        toastTimeout = setTimeout(() => { t.classList.remove("show"); }, 2500);
+    }
+
+    // ==========================================
+    // ⚙️ ROUTING LOGIC
+    // ==========================================
+    window.onload = function () {
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        // ถ้าเข้าด้วย URL ?dashboard=true จะเข้าสู่หน้า Dashboard ของแอดมิน
+        if (urlParams.get('dashboard') === 'true') {
+            loadDashboardData();
+        } else {
+            // โหมดปกติผู้ป่วย
+            initializeLiff();
+            setupFormFormatters();
+        }
+    };
+
+    // ==========================================
+    // 📊 DASHBOARD LOGIC (Vanilla JS ป้องกัน XSS 100%)
+    // ==========================================
+    async function fetchWithAuth(url) {
+        const response = await fetch(url, { headers: { 'Authorization': `Bearer ${API_SECRET}` } });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+    }
+
+    async function loadDashboardData() {
+        document.getElementById('initLoading').style.display = 'none';
+        document.getElementById('mainContainer').style.display = 'none';
+        document.getElementById('dashboardWrapper').style.display = 'block';
+        
+        const btn = document.getElementById('btnRefresh');
+        btn.textContent = '⏳ กำลังโหลด...';
+        btn.disabled = true;
+
+        try {
+            await Promise.all([ fetchSummary(), fetchAlerts(), fetchUsers() ]);
+        } catch (error) {
+            showToast("⚠️ ไม่สามารถโหลดข้อมูล Dashboard ได้");
+            console.error(error);
+        }
+
+        btn.textContent = '🔄 รีเฟรชข้อมูล';
+        btn.disabled = false;
+    }
+
+    async function fetchSummary() {
+        const data = await fetchWithAuth('/api/dashboard/summary');
+        document.getElementById('d-totalUsers').textContent = data.totalUsers.toLocaleString();
+        document.getElementById('d-todayUsers').textContent = data.todayUsers.toLocaleString();
+        document.getElementById('d-totalLogs').textContent = data.totalLogs.toLocaleString();
+        document.getElementById('d-totalCarb').textContent = data.totalCarb;
+        document.getElementById('d-avgCarb').textContent = data.avgCarb;
+    }
+
+    async function fetchAlerts() {
+        const ul = document.getElementById('d-alertsList');
+        ul.textContent = ''; // Clear node อย่างปลอดภัย
+        const data = await fetchWithAuth('/api/dashboard/alerts?threshold=20');
+        
+        if (data.length === 0) {
+            const li = document.createElement('li');
+            li.textContent = '✅ ไม่มีผู้ใช้ที่กินคาร์บเกินขีดจำกัดในวันนี้';
+            li.style.color = '#2e7d32'; li.style.padding = '10px';
+            ul.appendChild(li);
+            return;
+        }
+
+        data.forEach(alert => {
+            const li = document.createElement('li');
+            li.className = 'alert-item';
+            
+            const spanUser = document.createElement('span');
+            spanUser.textContent = `👤 ${alert.userId.substring(0, 10)}...`;
+            
+            const spanCarb = document.createElement('span');
+            spanCarb.textContent = `ทะลุโควตา: ${alert.totalCarb} คาร์บ`;
+            spanCarb.style.fontWeight = 'bold';
+            
+            li.appendChild(spanUser);
+            li.appendChild(spanCarb);
+            ul.appendChild(li);
+        });
+    }
+
+    async function fetchUsers() {
+        const tbody = document.getElementById('d-usersTableBody');
+        tbody.textContent = ''; 
+        const data = await fetchWithAuth('/api/dashboard/users');
+        
+        if (data.length === 0) {
+            const tr = document.createElement('tr');
+            const td = document.createElement('td');
+            td.colSpan = 4; td.textContent = 'ไม่มีข้อมูลผู้ใช้ในระบบ'; td.style.textAlign = 'center';
+            tr.appendChild(td); tbody.appendChild(tr);
+            return;
+        }
+
+        data.forEach(user => {
+            const tr = document.createElement('tr');
+            
+            const tdId = document.createElement('td');
+            tdId.textContent = user.userId ? user.userId.substring(0, 15) + '...' : '-';
+            
+            const tdWeight = document.createElement('td');
+            tdWeight.textContent = user.weight || '-';
+            
+            const tdHeight = document.createElement('td');
+            tdHeight.textContent = user.height || '-';
+            
+            const tdCarb = document.createElement('td');
+            tdCarb.textContent = user.carbPerMeal || '-';
+            
+            tr.appendChild(tdId); tr.appendChild(tdWeight); tr.appendChild(tdHeight); tr.appendChild(tdCarb);
+            tbody.appendChild(tr);
+        });
+    }
+
+    // ==========================================
+    // 📝 REGISTRATION LOGIC (ผู้ป่วย)
+    // ==========================================
+    function setupFormFormatters() {
+        const cidInput = document.getElementById("cid");
+        if (cidInput) {
+            cidInput.addEventListener("input", function () { this.value = formatCID(this.value); });
+            cidInput.addEventListener("paste", function(e) { setTimeout(() => { this.value = formatCID(this.value); }, 10); });
+        }
+        const birthdayInput = document.getElementById("birthday");
+        if (birthdayInput) {
+            birthdayInput.addEventListener("input", function () { this.value = formatBirthday(this.value); });
+            birthdayInput.addEventListener("paste", function(e) { setTimeout(() => { this.value = formatBirthday(this.value); }, 10); });
+        }
     }
 
     function formatCID(cid) {
         cid = cid.replace(/\D/g, '').slice(0,13);
         if(cid.length < 2) return cid;
-        let part1 = cid.slice(0,1);
-        let part2 = cid.slice(1,5);
-        let part3 = cid.slice(5,10);
-        let part4 = cid.slice(10,12);
-        let part5 = cid.slice(12,13);
-        let result = part1;
-        if(part2) result += "-" + part2;
-        if(part3) result += "-" + part3;
-        if(part4) result += "-" + part4;
-        if(part5) result += "-" + part5;
+        let p1 = cid.slice(0,1), p2 = cid.slice(1,5), p3 = cid.slice(5,10), p4 = cid.slice(10,12), p5 = cid.slice(12,13);
+        let result = p1;
+        if(p2) result += "-" + p2; if(p3) result += "-" + p3; if(p4) result += "-" + p4; if(p5) result += "-" + p5;
         return result;
     }
 
     function validateCID(cid) {
         cid = cid.replace(/-/g,'');
         if(cid.length !== 13) return false;
-        let sum = 0;
-        for(let i=0; i<12; i++){
-            sum += parseInt(cid[i]) * (13-i);
-        }
-        let mod = (11 - (sum % 11)) % 10;
-        return mod === parseInt(cid[12]);
+        let sum = 0; for(let i=0; i<12; i++) sum += parseInt(cid[i]) * (13-i);
+        return ((11 - (sum % 11)) % 10) === parseInt(cid[12]);
     }
 
     function formatBirthday(value){
@@ -217,30 +379,9 @@
         return value;
     }
 
-    window.onload = function () {
-        initializeLiff();
-
-        const cidInput = document.getElementById("cid");
-        if (cidInput) {
-            cidInput.addEventListener("input", function () { this.value = formatCID(this.value); });
-            cidInput.addEventListener("paste", function(e) {
-                setTimeout(() => { this.value = formatCID(this.value); }, 10);
-            });
-        }
-
-        const birthdayInput = document.getElementById("birthday");
-        if (birthdayInput) {
-            birthdayInput.addEventListener("input", function () { this.value = formatBirthday(this.value); });
-            birthdayInput.addEventListener("paste", function(e) {
-                setTimeout(() => { this.value = formatBirthday(this.value); }, 10);
-            });
-        }
-    };
-
     function showStep1() {
         document.getElementById('initLoading').style.display = 'none';
         document.getElementById('mainContainer').style.display = 'block';
-        
         document.getElementById('step1').classList.add('active');
         document.getElementById('step2').classList.remove('active');
         document.getElementById('stepIndicator').style.display = 'flex';
@@ -249,36 +390,17 @@
     async function initializeLiff() {
         try {
             await liff.init({ liffId: MY_LIFF_ID });
-            
-            if (!liff.isInClient()) {
-                console.warn("แนะนำให้เปิดระบบนี้ผ่านแอปพลิเคชัน LINE");
-            }
-
-            if (!liff.isInClient() && !liff.isLoggedIn()) {
-                liff.login();
-                return;
-            }
-
+            if (!liff.isInClient() && !liff.isLoggedIn()) { liff.login(); return; }
             if (liff.isLoggedIn()) {
                 const profile = await liff.getProfile();
                 await fetchExistingData(profile.userId);
-            } else {
-                showStep1();
-            }
-        } catch (error) {
-            console.error('LIFF Error:', error);
-            showStep1();
-        }
+            } else { showStep1(); }
+        } catch (error) { console.error('LIFF Error:', error); showStep1(); }
     }
 
     async function fetchExistingData(userId) {
         try {
-            const response = await fetch(`/api/getUser?userId=${userId}`, {
-                headers: {
-                    "Authorization": `Bearer ${API_SECRET}`
-                }
-            });
-            
+            const response = await fetch(`/api/getUser?userId=${userId}`, { headers: { "Authorization": `Bearer ${API_SECRET}` } });
             if (response.ok) {
                 const data = await response.json();
                 if (data && data.gender) {
@@ -303,20 +425,10 @@
 
                     document.getElementById('initLoading').style.display = 'none';
                     document.getElementById('mainContainer').style.display = 'block';
-
-                    setTimeout(() => {
-                        alert("💡 พบประวัติของคุณในระบบแล้ว!\n\nคุณสามารถแก้ไข 'น้ำหนัก ส่วนสูง ระดับกิจกรรม และเป้าหมาย' เพื่ออัปเดตโควตาคาร์บได้เลยครับ");
-                    }, 300);
                     return;
                 }
-            } else if (response.status === 401) {
-                showToast("⚠️ ไม่สามารถยืนยันตัวตนได้ (Unauthorized) กรุณาตรวจสอบ API_SECRET");
-            } else if (response.status !== 404) {
-                showToast("⚠️ ไม่สามารถเชื่อมต่อฐานข้อมูลได้ชั่วคราว");
-            }
-        } catch (error) {
-            console.error('Fetch error:', error);
-        }
+            } else if (response.status === 401) { showToast("⚠️ ไม่สามารถยืนยันตัวตนได้ กรุณาตรวจสอบ API_SECRET"); }
+        } catch (error) { console.error(error); }
         showStep1();
     }
 
@@ -324,21 +436,14 @@
         const rawCid = document.getElementById('cid').value.trim();
         const cleanCid = rawCid.replace(/-/g, '');
         const birthday = document.getElementById('birthday').value.trim();
-
-        // เช็คกรณีเป็นผู้ใช้เก่าที่อัปเดตข้อมูล (กรอบ CID จะว่าง) จะข้าม Validate ไปได้
         const isUpdating = document.getElementById('updateNotice').style.display === 'block';
 
         if (!isUpdating) {
             if (cleanCid.length !== 13) return showToast('กรุณากรอกเลขบัตรประชาชนให้ครบ 13 หลัก');
-            if(!validateCID(cleanCid)){
-                return showToast("เลขบัตรประชาชนไม่ถูกต้อง กรุณาตรวจสอบ");
-            }
+            if(!validateCID(cleanCid)) return showToast("เลขบัตรประชาชนไม่ถูกต้อง กรุณาตรวจสอบ");
         }
         
-        const datePattern = /^[0-9]{2}\/[0-9]{2}\/[0-9]{4}$/;
-        if (!datePattern.test(birthday)) {
-            return showToast('กรุณากรอกวันเดือนปีเกิดให้ถูกต้อง (เช่น 01/01/2500)');
-        }
+        if (!/^[0-9]{2}\/[0-9]{2}\/[0-9]{4}$/.test(birthday)) return showToast('กรุณากรอกวันเกิดให้ถูกต้อง (เช่น 01/01/2500)');
 
         document.getElementById("dot1").classList.remove("active");
         document.getElementById("dot2").classList.add("active");
@@ -353,7 +458,6 @@
     function prevStep() {
         document.getElementById("dot2").classList.remove("active");
         document.getElementById("dot1").classList.add("active");
-
         const step1 = document.getElementById("step1");
         const step2 = document.getElementById("step2");
         step2.classList.remove("active");
@@ -361,10 +465,8 @@
         document.getElementById('subtitle').innerText = 'ส่วนที่ 1: ข้อมูลประจำตัว';
     }
 
-    // ✅ โค้ดส่วนที่ต่อให้สมบูรณ์
     async function submitRegistration() {
         const submitBtn = document.getElementById('submitBtn');
-        
         if (submitBtn.disabled) return;
         
         const rawCid = document.getElementById('cid').value.trim();
@@ -376,81 +478,46 @@
         const activityMultiplier = parseFloat(document.getElementById('activity').value);
         const dietMultiplier = parseFloat(document.getElementById('dietType').value);
         const consent = document.getElementById('pdpaConsent').checked;
-        
         const loadingOverlay = document.getElementById('loadingOverlay');
 
         if (!gender) return showToast('กรุณาเลือกเพศครับ');
         if (!weight || weight <= 0) return showToast('กรุณากรอกน้ำหนักให้ถูกต้องครับ');
         if (!height || height <= 0) return showToast('กรุณากรอกส่วนสูงให้ถูกต้องครับ');
         if (!activityMultiplier) return showToast('กรุณาเลือกระดับกิจกรรมครับ');
-        if (!consent) return showToast('กรุณากดยินยอมการใช้ข้อมูลส่วนบุคคลก่อนบันทึกข้อมูลครับ');
+        if (!consent) return showToast('กรุณากดยินยอมข้อมูลส่วนบุคคลก่อนบันทึกครับ');
 
         submitBtn.disabled = true;
         submitBtn.innerText = 'กำลังประมวลผล...';
         loadingOverlay.style.display = 'flex';
 
         try {
-            // ดึง Profile จาก LIFF
             let userId = "unknown";
-            if (liff.isLoggedIn()) {
-                const profile = await liff.getProfile();
-                userId = profile.userId;
-            } else {
-                throw new Error("ไม่สามารถดึงข้อมูลบัญชี LINE ได้ กรุณาเปิดผ่านแอป LINE");
-            }
+            if (liff.isLoggedIn()) { userId = (await liff.getProfile()).userId; } 
+            else { throw new Error("ไม่สามารถดึงข้อมูลบัญชี LINE ได้ กรุณาเปิดผ่านแอป LINE"); }
 
-            const payload = {
-                userId: userId,
-                cid: cleanCid, 
-                birthday: birthday,
-                gender: gender,
-                weight: weight,
-                height: height,
-                activity: activityMultiplier,
-                dietType: dietMultiplier
-            };
+            const payload = { userId, cid: cleanCid, birthday, gender, weight, height, activity: activityMultiplier, dietType: dietMultiplier };
 
-            // ✅ ส่งข้อมูลไปที่ Backend พร้อม Auth Header ที่ถูกต้อง
             const response = await fetch('/api/register', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${API_SECRET}`
-                },
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API_SECRET}` },
                 body: JSON.stringify(payload)
             });
-
             const data = await response.json();
 
             if (response.ok) {
-                // เปลี่ยนหน้าจอเป็น Success
                 document.getElementById('mainContainer').style.display = 'none';
                 document.getElementById('successPage').style.display = 'block';
+                if (data.result === 'updated') document.getElementById('successText').innerText = "อัปเดตข้อมูลและคำนวณโควตาใหม่เรียบร้อยแล้ว";
                 
-                if (data.result === 'updated') {
-                    document.getElementById('successText').innerText = "ระบบได้อัปเดตข้อมูลและคำนวณโควตาใหม่เรียบร้อยแล้ว";
-                }
-                
-                // ✅ ป้องกัน Error ถ้ายูสเซอร์เปิดลิงก์ผ่านเบราว์เซอร์ปกติ ไม่ได้เปิดผ่าน LINE แชท
                 if (liff.isInClient()) {
-                    try {
-                        let msgText = (data.result === 'updated') ? 'อัปเดตข้อมูลสำเร็จ' : 'ลงทะเบียนสำเร็จ';
-                        await liff.sendMessages([{ type: 'text', text: msgText }]);
-                    } catch (sendMessageError) {
-                        console.error('Cannot send message:', sendMessageError);
-                        // ถ้าแชทส่งไม่ได้ (เช่นเปิดผ่าน URL ตรง) ก็ปล่อยผ่านให้ปิดหน้าต่างไปตามปกติ
-                    }
+                    try { await liff.sendMessages([{ type: 'text', text: data.result === 'updated' ? 'อัปเดตข้อมูลสำเร็จ' : 'ลงทะเบียนสำเร็จ' }]); } 
+                    catch (err) { console.error('Cannot send message:', err); }
                     setTimeout(() => { liff.closeWindow(); }, 2000);
                 } else {
-                    // ถ้าเปิดนอก LINE ก็ให้โชว์ไว้เฉยๆ ไม่ต้องพยายามปิดหน้าต่าง
                     document.querySelector('#successPage p:last-child').style.display = 'none';
                 }
-            } else {
-                throw new Error(data.error || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล');
-            }
-
+            } else { throw new Error(data.error || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล'); }
         } catch (error) {
-            console.error('Submit Error:', error);
             showToast("⚠️ " + error.message);
             submitBtn.disabled = false;
             submitBtn.innerText = 'บันทึกข้อมูลและคำนวณคาร์บ';
@@ -458,6 +525,5 @@
         }
     }
 </script>
-
 </body>
 </html>
