@@ -273,7 +273,6 @@
 
     async function fetchExistingData(userId) {
         try {
-            // ✅ แก้ไข Header ให้ตรงกับฝั่ง Backend
             const response = await fetch(`/api/getUser?userId=${userId}`, {
                 headers: {
                     "Authorization": `Bearer ${API_SECRET}`
@@ -362,7 +361,7 @@
         document.getElementById('subtitle').innerText = 'ส่วนที่ 1: ข้อมูลประจำตัว';
     }
 
-    // ✅ โค้ดส่วนที่ขาดหายไป นำมาต่อให้สมบูรณ์
+    // ✅ โค้ดส่วนที่ต่อให้สมบูรณ์
     async function submitRegistration() {
         const submitBtn = document.getElementById('submitBtn');
         
@@ -400,10 +399,9 @@
                 throw new Error("ไม่สามารถดึงข้อมูลบัญชี LINE ได้ กรุณาเปิดผ่านแอป LINE");
             }
 
-            // ✅ สร้าง Payload ส่งข้อมูลให้ตรงกับที่ Backend ต้องการ
             const payload = {
                 userId: userId,
-                cid: cleanCid, // กรณีอัปเดต อาจจะส่งไปเป็นค่าว่าง Backend จะจัดการให้
+                cid: cleanCid, 
                 birthday: birthday,
                 gender: gender,
                 weight: weight,
@@ -417,4 +415,49 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Au
+                    'Authorization': `Bearer ${API_SECRET}`
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                // เปลี่ยนหน้าจอเป็น Success
+                document.getElementById('mainContainer').style.display = 'none';
+                document.getElementById('successPage').style.display = 'block';
+                
+                if (data.result === 'updated') {
+                    document.getElementById('successText').innerText = "ระบบได้อัปเดตข้อมูลและคำนวณโควตาใหม่เรียบร้อยแล้ว";
+                }
+                
+                // ✅ ป้องกัน Error ถ้ายูสเซอร์เปิดลิงก์ผ่านเบราว์เซอร์ปกติ ไม่ได้เปิดผ่าน LINE แชท
+                if (liff.isInClient()) {
+                    try {
+                        let msgText = (data.result === 'updated') ? 'อัปเดตข้อมูลสำเร็จ' : 'ลงทะเบียนสำเร็จ';
+                        await liff.sendMessages([{ type: 'text', text: msgText }]);
+                    } catch (sendMessageError) {
+                        console.error('Cannot send message:', sendMessageError);
+                        // ถ้าแชทส่งไม่ได้ (เช่นเปิดผ่าน URL ตรง) ก็ปล่อยผ่านให้ปิดหน้าต่างไปตามปกติ
+                    }
+                    setTimeout(() => { liff.closeWindow(); }, 2000);
+                } else {
+                    // ถ้าเปิดนอก LINE ก็ให้โชว์ไว้เฉยๆ ไม่ต้องพยายามปิดหน้าต่าง
+                    document.querySelector('#successPage p:last-child').style.display = 'none';
+                }
+            } else {
+                throw new Error(data.error || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+            }
+
+        } catch (error) {
+            console.error('Submit Error:', error);
+            showToast("⚠️ " + error.message);
+            submitBtn.disabled = false;
+            submitBtn.innerText = 'บันทึกข้อมูลและคำนวณคาร์บ';
+            loadingOverlay.style.display = 'none';
+        }
+    }
+</script>
+
+</body>
+</html>
