@@ -17,7 +17,7 @@ const pino = require('pino');
 const logger = pino(); 
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
-// สมมติว่าใน dbHelper มีฟังก์ชันเหล่านี้ 
+// สมมติว่าใน dbHelper มีฟังก์ชันเหล่านี้
 const { 
     getPatientHealthReport, getRegisteredUser, registerNewUser, 
     saveFoodLog, getTodayCarbTotal, saveLog, getAllFoodLogs
@@ -48,7 +48,6 @@ const CID_SECRET = process.env.CID_SECRET;
 
 if (!API_SECRET) logger.warn("⚠️ API_SECRET is not set!");
 
-// ✅ บังคับให้เซิร์ฟเวอร์หยุดทำงานทันทีถ้าไม่ตั้งค่า CID_SECRET ป้องกันความปลอดภัยหลุด
 if (!CID_SECRET) {
     logger.fatal("🚨 CID_SECRET is not set! System cannot start securely.");
     process.exit(1);
@@ -424,7 +423,7 @@ function validateRegistrationInput({ userId, birthday, gender, weight, height })
 }
 
 // =====================================
-// 🌟 7. API ROUTES
+// 🌟 7. API ROUTES (เพิ่ม Dashboard)
 // =====================================
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.get('/ping', (req, res) => res.status(200).send("Carb Buddy LINE Bot is awake and running!"));
@@ -526,6 +525,94 @@ app.post('/api/register', authenticateAPI, async (req, res) => {
     }
 });
 
+// ✅ API สำหรับ Dashboard เจ้าหน้าที่
+const dashboardLimiter = rateLimit({ windowMs: 60 * 1000, max: 60, keyGenerator: (req) => req.ip });
+
+app.get('/api/dashboard/summary', dashboardLimiter, authenticateAPI, async (req, res) => {
+    try {
+        const cacheKey = 'dashboard:summary';
+        const cached = await redis.get(cacheKey);
+        if (cached) return res.json(typeof cached === 'string' ? JSON.parse(cached) : cached);
+
+        const db = mongoose.connection.db;
+        const todayStr = getTodayTH();
+
+        const [totalUsers, totalLogs, todayStats] = await Promise.all([
+            db.collection('users').countDocuments(),
+            db.collection('foodlogs').countDocuments(),
+            db.collection('foodlogs').aggregate([
+                { $match: { date: todayStr } },
+                { $group: {
+                    _id: null,
+                    uniqueUsers: { $addToSet: "$userId" },
+                    totalCarb: { $sum: "$actual_carb" },
+                    logCount: { $sum: 1 }
+                }}
+            ]).toArray()
+        ]);
+
+        const todayUsers = todayStats.length > 0 ? todayStats[0].uniqueUsers.length : 0;
+        const totalCarb = todayStats.length > 0 ? parseFloat((todayStats[0].totalCarb).toFixed(1)) : 0;
+        const avgCarb = todayStats.length > 0 && todayStats[0].logCount > 0 
+                      ? parseFloat((totalCarb / todayStats[0].logCount).toFixed(1)) : 0;
+
+        const result = { totalUsers, todayUsers, totalLogs, avgCarb, totalCarb };
+        await redis.set(cacheKey, JSON.stringify(result), { ex: 60 });
+        res.json(result);
+    } catch (error) {
+        logger.error({ err: error }, "❌ Dashboard Summary Error");
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
+
+app.get('/api/dashboard/alerts', dashboardLimiter, authenticateAPI, async (req, res) => {
+    try {
+        const threshold = parseFloat(req.query.threshold) || 20; 
+        const cacheKey = `dashboard:alerts:${threshold}`;
+        const cached = await redis.get(cacheKey);
+        if (cached) return res.json(typeof cached === 'string' ? JSON.parse(cached) : cached);
+
+        const db = mongoose.connection.db;
+        const todayStr = getTodayTH();
+
+        const alerts = await db.collection('foodlogs').aggregate([
+            { $match: { date: todayStr } },
+            { $group: { _id: "$userId", totalCarb: { $sum: "$actual_carb" } } },
+            { $match: { totalCarb: { $gt: threshold } } },
+            { $sort: { totalCarb: -1 } },
+            { $limit: 100 },
+            { $project: { userId: "$_id", totalCarb: 1, _id: 0 } }
+        ]).toArray();
+
+        await redis.set(cacheKey, JSON.stringify(alerts), { ex: 60 });
+        res.json(alerts);
+    } catch (error) {
+        logger.error({ err: error }, "❌ Dashboard Alerts Error");
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
+
+app.get('/api/dashboard/users', dashboardLimiter, authenticateAPI, async (req, res) => {
+    try {
+        const cacheKey = 'dashboard:users';
+        const cached = await redis.get(cacheKey);
+        if (cached) return res.json(typeof cached === 'string' ? JSON.parse(cached) : cached);
+
+        const db = mongoose.connection.db;
+        const users = await db.collection('users')
+            .find({}, { projection: { userId: 1, weight: 1, height: 1, carbPerMeal: 1, _id: 0 } })
+            .sort({ _id: -1 })
+            .limit(100)
+            .toArray();
+
+        await redis.set(cacheKey, JSON.stringify(users), { ex: 60 });
+        res.json(users);
+    } catch (error) {
+        logger.error({ err: error }, "❌ Dashboard Users Error");
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
+
 // =====================================
 // 🌟 8. LINE WEBHOOK & HANDLERS
 // =====================================
@@ -587,22 +674,14 @@ async function handlePostback(event) {
             
             if (portion === 0) return lineClient.replyMessage(event.replyToken, { type: 'text', text: `❌ ยกเลิกการบันทึกอาหารมื้อนี้ครับ` });
 
+            const previousCarb = await getCachedCarbTotal(userId);
+            const todayCarb = parseFloat((previousCarb + actualCarb).toFixed(1));
+
             try {
-                await saveFoodLog({ 
-                    timestamp: getNowISO(), 
-                    date: new Date().toLocaleDateString('th-TH', {timeZone: 'Asia/Bangkok'}), 
-                    time: new Date().toLocaleTimeString('th-TH', {timeZone: 'Asia/Bangkok'}), 
-                    userId: userId, cid: userInfo.cid, food: foodName, 
-                    carb: parseFloat(data.get('c')), portion: portion, actual_carb: actualCarb, 
-                    status: portion === 1 ? "กินหมด" : "กินบางส่วน", note: 'บันทึกผ่าน Quick Reply' 
-                });
-                
-                // ✅ เคลียร์แคชทุกครั้งที่บันทึกอาหารเพื่อให้คาร์บอัปเดตเป็นค่าล่าสุดจาก Database
-                await redis.del(`carb:total:${userId}:${getTodayTH()}`);
+                await saveFoodLogAndInvalidate({ createdAt: new Date(), timestamp: getNowISO(), date: new Date().toLocaleDateString('th-TH', {timeZone: 'Asia/Bangkok'}), time: new Date().toLocaleTimeString('th-TH', {timeZone: 'Asia/Bangkok'}), userId: userId, cid: userInfo.cid, food: foodName, carb: parseFloat(data.get('c')), portion: portion, actual_carb: actualCarb, status: portion === 1 ? "กินหมด" : "กินบางส่วน", note: 'บันทึกผ่าน Quick Reply' });
+                await redis.set(`carb:total:${userId}:${getTodayTH()}`, String(todayCarb), { ex: 90 });
             } catch (error) { logger.error({ err: error }, "Save Food Log Error"); }
 
-            // ✅ ดึงค่าจาก DB ใหม่ทันที
-            const todayCarb = await getCachedCarbTotal(userId);
             await logEvent(userId, "log_food", String(actualCarb) + " carb");
 
             const dailyLimit = calculateUserNutrition(userInfo).dailyCarbExchange; 
@@ -638,12 +717,9 @@ async function handleTextMessage(event) {
         if (text === COMMANDS.VIEW_CARB) {
             await logEvent(userId, "view_carb_today", "view");
             if (!userInfo) return lineClient.replyMessage(event.replyToken, { type: 'text', text: '🔒 กรุณาลงทะเบียนก่อนครับ' });
-            
-            // ✅ ดึงค่าจาก DB เพื่อแสดงผล (รองรับการคืนค่า 0 ถ้าไม่มีข้อมูล)
             const todayCarb = await getCachedCarbTotal(userId); 
             const dailyLimit = calculateUserNutrition(userInfo).dailyCarbExchange; 
             const remain = Math.max(0, parseFloat((dailyLimit - todayCarb).toFixed(1)));
-            
             try { return await lineClient.replyMessage(event.replyToken, buildCarbFlexMessage(todayCarb, dailyLimit, remain, todayCarb > dailyLimit)); } 
             catch (err) { return lineClient.replyMessage(event.replyToken, { type: 'text', text: `📊 สรุปคาร์บวันนี้\nกินไปแล้ว: ${todayCarb}/${dailyLimit} คาร์บ\n🟢 เหลือกินได้อีก: ${remain} คาร์บ` }); }
         }
@@ -671,7 +747,6 @@ async function handleTextMessage(event) {
         if (text === COMMANDS.KNOWLEDGE || text === COMMANDS.KNOWLEDGE_FULL) {
             await logEvent(userId, "view_menu", "คลังความรู้");
             
-            // ✅ แก้ไข: ลบ size: "micro" ออกทั้งหมด เพื่อไม่ให้ API LINE ตีกลับ
             const carouselMessage = {
                 type: "flex",
                 altText: "คลังความรู้เบาหวาน (6 บทเรียน)",
@@ -818,7 +893,7 @@ process.on("uncaughtException", (err) => logger.error({ err }, "UNCAUGHT EXCEPTI
 process.on("unhandledRejection", (err) => logger.error({ err }, "UNHANDLED PROMISE REJECTION"));
 
 // =====================================
-// 🌟 11. STARTUP & MONGODB INDEXES
+// 🌟 11. STARTUP & MONGODB INDEXES 
 // =====================================
 async function ensureIndexes() {
     try {
