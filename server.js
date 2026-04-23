@@ -287,12 +287,14 @@ let aiQueue = { add: async (fn) => fn() };
 let availableGeminiModels = [];
 async function discoverGeminiModels() {
     if (GEMINI_API_KEYS.length === 0) return;
-    // ✅ ถอด 2.0 ออก ใช้แค่ 1.5-flash-8b และ 1.5-flash เพื่อเลี่ยงปัญหา Quota
-    const SAFE_MODELS = ["gemini-1.5-flash-8b", "gemini-1.5-flash"];
+    // เผื่อฉุกเฉินดึง API ไม่ได้ ให้ใช้ลิสต์นี้
+    const SAFE_MODELS = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-flash-8b"];
     try {
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEYS[0]}`);
         const data = await res.json();
         if (!data.models) { availableGeminiModels = SAFE_MODELS; return; }
+        
+        // กรองเอาเฉพาะโมเดลที่บัญชีนี้ใช้งานได้จริงๆ
         const candidateModels = data.models.filter(m => m.supportedGenerationMethods?.includes("generateContent")).map(m => m.name.replace("models/", "")).filter(name => name.includes("gemini") && !name.includes("tts"));
         availableGeminiModels = candidateModels.length === 0 ? SAFE_MODELS : candidateModels;
         logger.info(`🚀 Active Models Loaded: ${availableGeminiModels.join(", ")}`);
@@ -315,17 +317,19 @@ async function callGeminiWithFallback(userId, prompt, imageParts = []) {
     const uCooldownMs = await redis.pttl(userCooldownKey);
     if (uCooldownMs > 0) throw new Error(`⚠️ คิวของคุณเต็ม กรุณารอ ${Math.ceil(uCooldownMs / 1000)} วินาที`);
 
-    // ✅ ใช้โมเดลตระกูล 1.5 เท่านั้น
-    let modelsToTry = availableGeminiModels.length > 0 ? [...availableGeminiModels] : ["gemini-1.5-flash-8b", "gemini-1.5-flash"]; 
+    // ✅ จุดที่ 1: ดึงรายชื่อโมเดล "ที่มีอยู่จริงใน API Key ของคุณ" มาใช้งาน (ไม่ Hardcode แล้ว)
+    let modelsToTry = availableGeminiModels.length > 0 ? [...availableGeminiModels] : ["gemini-2.0-flash"]; 
     
-    if (imageParts.length > 0) { 
-        modelsToTry = ["gemini-1.5-flash-8b", "gemini-1.5-flash"]; 
-    }
-
+    // ✅ จุดที่ 2: จัดเรียงลำดับความน่าใช้ (ตัวไหนเบาสุด/ใหม่สุด ให้ลองก่อน)
     modelsToTry.sort((a, b) => {
-        const p = ["gemini-1.5-flash-8b", "gemini-1.5-flash"];
-        let iA = p.findIndex(x => a.includes(x)), iB = p.findIndex(x => b.includes(x));
-        return (iA === -1 ? 99 : iA) - (iB === -1 ? 99 : iB);
+        const score = (m) => {
+            if (m.includes("8b")) return 1;          // เร็วสุด คิวว่างสุด
+            if (m.includes("2.0-flash")) return 2;   // ใหม่สุด
+            if (m.includes("1.5-flash")) return 3;   // เสถียรสุด
+            if (m.includes("pro")) return 4;         // หนักสุด (เก็บไว้ท้ายๆ)
+            return 99;
+        };
+        return score(a) - score(b);
     });
 
     let availableModels = [];
@@ -334,7 +338,8 @@ async function callGeminiWithFallback(userId, prompt, imageParts = []) {
         if (!inv && !cool) availableModels.push(m);
     }
     
-    if (availableModels.length === 0) availableModels = ["gemini-1.5-flash-8b", "gemini-1.5-flash"];
+    // ถ้าบังเอิญติด Cooldown หมดทุกตัว ให้ลองเสี่ยงลิสต์เดิมอีกรอบ
+    if (availableModels.length === 0) availableModels = modelsToTry.length > 0 ? modelsToTry : ["gemini-2.0-flash"];
 
     let lastError;
     for (const modelName of availableModels) {
@@ -382,7 +387,8 @@ async function callGeminiWithFallback(userId, prompt, imageParts = []) {
                         await p.exec(); 
                         break; 
                     }
-                } else if (err.status === 404) { 
+                } else if (err.status === 404 || errMsg.includes("not found")) { 
+                    // ถ้าระบบฟ้องว่าหาชื่อนี้ไม่เจอ ให้กาหัวทิ้งไว้ 1 ชั่วโมง จะได้ไม่เรียกซ้ำ
                     await redis.set(`m:inv:${modelName}`, "1", { ex: 3600 }); 
                     break; 
                 } else { 
