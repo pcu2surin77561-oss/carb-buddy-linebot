@@ -287,7 +287,8 @@ let aiQueue = { add: async (fn) => fn() };
 let availableGeminiModels = [];
 async function discoverGeminiModels() {
     if (GEMINI_API_KEYS.length === 0) return;
-    const SAFE_MODELS = ["gemini-2.5-flash", "gemini-3-flash", "gemini-3.1-flash-lite"];
+    // ✅ แก้ไขชื่อโมเดลให้ตรงกับเวอร์ชันปัจจุบันของ Google API
+    const SAFE_MODELS = ["gemini-1.5-flash", "gemini-1.5-flash-8b", "gemini-2.0-flash"];
     try {
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEYS[0]}`);
         const data = await res.json();
@@ -314,15 +315,16 @@ async function callGeminiWithFallback(userId, prompt, imageParts = []) {
     const uCooldownMs = await redis.pttl(userCooldownKey);
     if (uCooldownMs > 0) throw new Error(`⚠️ คิวของคุณเต็ม กรุณารอ ${Math.ceil(uCooldownMs / 1000)} วินาที`);
 
-    let modelsToTry = availableGeminiModels.length > 0 ? [...availableGeminiModels] : ["gemini-2.5-flash"]; 
+    // ✅ เปลี่ยนโมเดลพื้นฐานเป็นเวอร์ชันปัจจุบัน
+    let modelsToTry = availableGeminiModels.length > 0 ? [...availableGeminiModels] : ["gemini-1.5-flash"]; 
     
-    // ✅ จุดที่แก้ไข: อนุญาตให้ใช้หลายโมเดลสำหรับรูปภาพ + เรียง Flash-Lite ก่อน
+    // ✅ เลือกใช้โมเดลตัว 8b (เร็วสุด) เป็นด่านหน้าเมื่อมีรูปภาพ
     if (imageParts.length > 0) { 
-        modelsToTry = ["gemini-3.1-flash-lite", "gemini-2.5-flash", "gemini-3-flash"]; 
+        modelsToTry = ["gemini-1.5-flash-8b", "gemini-1.5-flash", "gemini-2.0-flash"]; 
     }
 
     modelsToTry.sort((a, b) => {
-        const p = ["gemini-3.1-flash-lite", "gemini-2.5-flash", "gemini-3-flash"];
+        const p = ["gemini-1.5-flash-8b", "gemini-1.5-flash", "gemini-2.0-flash"];
         let iA = p.findIndex(x => a.includes(x)), iB = p.findIndex(x => b.includes(x));
         return (iA === -1 ? 99 : iA) - (iB === -1 ? 99 : iB);
     });
@@ -332,7 +334,8 @@ async function callGeminiWithFallback(userId, prompt, imageParts = []) {
         const [inv, cool] = await Promise.all([redis.get(`m:inv:${m}`), redis.get(`m:cool:${m}`)]);
         if (!inv && !cool) availableModels.push(m);
     }
-    if (availableModels.length === 0) availableModels = ["gemini-3.1-flash-lite", "gemini-2.5-flash"];
+    // ✅ อัปเดตรายชื่อ fallback เมื่อล้มเหลว
+    if (availableModels.length === 0) availableModels = ["gemini-1.5-flash-8b", "gemini-1.5-flash"];
 
     let lastError;
     for (const modelName of availableModels) {
@@ -370,18 +373,16 @@ async function callGeminiWithFallback(userId, prompt, imageParts = []) {
                 
                 const errMsg = String(err.message || '').toLowerCase();
                 const isQuota = err.status === 429 || errMsg.includes("429") || errMsg.includes("quota");
-                // ✅ จุดที่แก้ไข: ดัก high demand ให้วน retry สลับ API Key แทนการเด้งหลุดทันที
                 const isOverload = errMsg.includes("high demand") || errMsg.includes("overloaded") || errMsg.includes("temporarily unavailable") || errMsg.includes("service unavailable");
 
                 if (isQuota || isOverload) {
                     if (attempts >= 2) {
                         const p = redis.pipeline();
-                        p.set(`m:cool:${modelName}`, "1", { ex: 60 }); // cooldown โมเดลนี้ 60 วิ
+                        p.set(`m:cool:${modelName}`, "1", { ex: 60 }); 
                         p.set(`cooldown:user:${userId}`, "1", { px: 3000 });
                         await p.exec(); 
-                        break; // ออกจาก while เพื่อไปลองโมเดลตัวถัดไปใน availableModels
+                        break; 
                     }
-                    // ถ้ายังวน attempts ไม่ครบ 2 ให้ลอง while ต่อ (ซึ่งจะดึง getNextApiKey ตัวต่อไปมาใช้)
                 } else if (err.status === 404) { 
                     await redis.set(`m:inv:${modelName}`, "1", { ex: 3600 }); 
                     break; 
