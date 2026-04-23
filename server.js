@@ -315,10 +315,14 @@ async function callGeminiWithFallback(userId, prompt, imageParts = []) {
     if (uCooldownMs > 0) throw new Error(`⚠️ คิวของคุณเต็ม กรุณารอ ${Math.ceil(uCooldownMs / 1000)} วินาที`);
 
     let modelsToTry = availableGeminiModels.length > 0 ? [...availableGeminiModels] : ["gemini-2.5-flash"]; 
-    if (imageParts.length > 0) { modelsToTry = ["gemini-2.5-flash"]; }
+    
+    // ✅ จุดที่แก้ไข: อนุญาตให้ใช้หลายโมเดลสำหรับรูปภาพ + เรียง Flash-Lite ก่อน
+    if (imageParts.length > 0) { 
+        modelsToTry = ["gemini-3.1-flash-lite", "gemini-2.5-flash", "gemini-3-flash"]; 
+    }
 
     modelsToTry.sort((a, b) => {
-        const p = ["gemini-2.5-flash", "gemini-3-flash", "gemini-3.1-flash-lite"];
+        const p = ["gemini-3.1-flash-lite", "gemini-2.5-flash", "gemini-3-flash"];
         let iA = p.findIndex(x => a.includes(x)), iB = p.findIndex(x => b.includes(x));
         return (iA === -1 ? 99 : iA) - (iB === -1 ? 99 : iB);
     });
@@ -328,7 +332,7 @@ async function callGeminiWithFallback(userId, prompt, imageParts = []) {
         const [inv, cool] = await Promise.all([redis.get(`m:inv:${m}`), redis.get(`m:cool:${m}`)]);
         if (!inv && !cool) availableModels.push(m);
     }
-    if (availableModels.length === 0) availableModels = ["gemini-2.5-flash"];
+    if (availableModels.length === 0) availableModels = ["gemini-3.1-flash-lite", "gemini-2.5-flash"];
 
     let lastError;
     for (const modelName of availableModels) {
@@ -364,14 +368,26 @@ async function callGeminiWithFallback(userId, prompt, imageParts = []) {
                 lastError = err;
                 if (err.name === 'AbortError') throw new Error("AI request timeout — ระบบตอบสนองช้าเกินไป");
                 
-                if (err.status === 429 || String(err.message).includes("429") || String(err.message).toLowerCase().includes("quota")) {
+                const errMsg = String(err.message || '').toLowerCase();
+                const isQuota = err.status === 429 || errMsg.includes("429") || errMsg.includes("quota");
+                // ✅ จุดที่แก้ไข: ดัก high demand ให้วน retry สลับ API Key แทนการเด้งหลุดทันที
+                const isOverload = errMsg.includes("high demand") || errMsg.includes("overloaded") || errMsg.includes("temporarily unavailable") || errMsg.includes("service unavailable");
+
+                if (isQuota || isOverload) {
                     if (attempts >= 2) {
                         const p = redis.pipeline();
-                        p.set(`m:cool:${modelName}`, "1", { ex: 30 }); p.set(`cooldown:user:${userId}`, "1", { px: 3000 });
-                        await p.exec(); break; 
+                        p.set(`m:cool:${modelName}`, "1", { ex: 60 }); // cooldown โมเดลนี้ 60 วิ
+                        p.set(`cooldown:user:${userId}`, "1", { px: 3000 });
+                        await p.exec(); 
+                        break; // ออกจาก while เพื่อไปลองโมเดลตัวถัดไปใน availableModels
                     }
-                } else if (err.status === 404) { await redis.set(`m:inv:${modelName}`, "1", { ex: 3600 }); break; } 
-                else { break; }
+                    // ถ้ายังวน attempts ไม่ครบ 2 ให้ลอง while ต่อ (ซึ่งจะดึง getNextApiKey ตัวต่อไปมาใช้)
+                } else if (err.status === 404) { 
+                    await redis.set(`m:inv:${modelName}`, "1", { ex: 3600 }); 
+                    break; 
+                } else { 
+                    break; 
+                }
             }
         }
     }
