@@ -7,9 +7,7 @@ const crypto = require("crypto");
 // =====================================
 // 🟢 ส่วนที่ 1: ตั้งค่า MongoDB (สำหรับ User, Food, Log)
 // =====================================
-mongoose.connect(process.env.MONGODB_URI)
-    .then(() => console.log('✅ เชื่อมต่อ MongoDB สำเร็จ!'))
-    .catch(err => console.error('❌ MongoDB Connection Error:', err));
+// ✅ ลบ mongoose.connect() ออกแล้ว → ให้ server.js จัดการแทน
 
 const userSchema = new mongoose.Schema({
     userId: { type: String, required: true, unique: true, index: true },
