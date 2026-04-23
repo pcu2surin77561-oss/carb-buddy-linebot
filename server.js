@@ -17,7 +17,6 @@ const pino = require('pino');
 const logger = pino(); 
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
-// สมมติว่าใน dbHelper มีฟังก์ชันเหล่านี้
 const { 
     getPatientHealthReport, getRegisteredUser, registerNewUser, 
     saveFoodLog, getTodayCarbTotal, saveLog, getAllFoodLogs
@@ -893,7 +892,7 @@ process.on("uncaughtException", (err) => logger.error({ err }, "UNCAUGHT EXCEPTI
 process.on("unhandledRejection", (err) => logger.error({ err }, "UNHANDLED PROMISE REJECTION"));
 
 // =====================================
-// 🌟 11. STARTUP & MONGODB INDEXES 
+// 🌟 11. STARTUP & MONGODB INDEXES
 // =====================================
 async function ensureIndexes() {
     try {
@@ -907,20 +906,46 @@ async function ensureIndexes() {
 }
 
 const port = process.env.PORT || 3000;
+
+// =====================================
+// ✅ ส่วนที่แก้ไข: startApp() พร้อม Connection Pool + Event Listeners
+// =====================================
 async function startApp() {
-    if (GEMINI_API_KEYS.length > 0) { await discoverGeminiModelsIfLeader().catch(err => logger.error({ err }, "Initial Discovery Error")); }
+    if (GEMINI_API_KEYS.length > 0) {
+        await discoverGeminiModelsIfLeader().catch(err => logger.error({ err }, "Initial Discovery Error"));
+    }
 
     try {
         if (process.env.MONGODB_URI) {
-            await mongoose.connect(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 5000 });
+            await mongoose.connect(process.env.MONGODB_URI, {
+                serverSelectionTimeoutMS: 15000,  // รอ server สูงสุด 15 วิ (เดิม 5 วิ สั้นเกินไป)
+                socketTimeoutMS: 45000,            // รอ query สูงสุด 45 วิ
+                maxPoolSize: 10,                   // connection pool สูงสุด 10 ตัว
+                minPoolSize: 2,                    // รักษา connection ไว้อย่างน้อย 2 ตัวเสมอ
+                family: 4                          // บังคับใช้ IPv4 (ป้องกันปัญหา DNS บน Render/Railway)
+            });
             logger.info("✅ Connected to MongoDB successfully!");
-            await ensureIndexes(); 
+            await ensureIndexes();
+
+            // ✅ ดักจับ Event เมื่อ connection หลุด/กลับมา
+            mongoose.connection.on('disconnected', () => {
+                logger.warn("⚠️ MongoDB Disconnected! Mongoose will attempt to reconnect...");
+            });
+            mongoose.connection.on('reconnected', () => {
+                logger.info("🔄 MongoDB Reconnected successfully!");
+            });
+            mongoose.connection.on('error', (err) => {
+                logger.error({ err }, "🚨 MongoDB Connection Error Event");
+            });
         }
-    } catch (err) { logger.error({ err }, "❌ MongoDB Connection Error!"); }
+    } catch (err) {
+        logger.error({ err }, "❌ MongoDB Connection Error!");
+    }
 
     app.listen(port, () => {
-        setInterval(discoverGeminiModelsIfLeader, 15 * 60 * 1000); 
+        setInterval(discoverGeminiModelsIfLeader, 15 * 60 * 1000);
         logger.info(`🚀 Webhook server listening on port ${port}`);
     });
 }
+
 startApp();
