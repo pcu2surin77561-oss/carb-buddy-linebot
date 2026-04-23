@@ -287,8 +287,8 @@ let aiQueue = { add: async (fn) => fn() };
 let availableGeminiModels = [];
 async function discoverGeminiModels() {
     if (GEMINI_API_KEYS.length === 0) return;
-    // ✅ แก้ไขชื่อโมเดลให้ตรงกับเวอร์ชันปัจจุบันของ Google API
-    const SAFE_MODELS = ["gemini-1.5-flash", "gemini-1.5-flash-8b", "gemini-2.0-flash"];
+    // ✅ ถอด 2.0 ออก ใช้แค่ 1.5-flash-8b และ 1.5-flash เพื่อเลี่ยงปัญหา Quota
+    const SAFE_MODELS = ["gemini-1.5-flash-8b", "gemini-1.5-flash"];
     try {
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEYS[0]}`);
         const data = await res.json();
@@ -315,16 +315,15 @@ async function callGeminiWithFallback(userId, prompt, imageParts = []) {
     const uCooldownMs = await redis.pttl(userCooldownKey);
     if (uCooldownMs > 0) throw new Error(`⚠️ คิวของคุณเต็ม กรุณารอ ${Math.ceil(uCooldownMs / 1000)} วินาที`);
 
-    // ✅ เปลี่ยนโมเดลพื้นฐานเป็นเวอร์ชันปัจจุบัน
-    let modelsToTry = availableGeminiModels.length > 0 ? [...availableGeminiModels] : ["gemini-1.5-flash"]; 
+    // ✅ ใช้โมเดลตระกูล 1.5 เท่านั้น
+    let modelsToTry = availableGeminiModels.length > 0 ? [...availableGeminiModels] : ["gemini-1.5-flash-8b", "gemini-1.5-flash"]; 
     
-    // ✅ เลือกใช้โมเดลตัว 8b (เร็วสุด) เป็นด่านหน้าเมื่อมีรูปภาพ
     if (imageParts.length > 0) { 
-        modelsToTry = ["gemini-1.5-flash-8b", "gemini-1.5-flash", "gemini-2.0-flash"]; 
+        modelsToTry = ["gemini-1.5-flash-8b", "gemini-1.5-flash"]; 
     }
 
     modelsToTry.sort((a, b) => {
-        const p = ["gemini-1.5-flash-8b", "gemini-1.5-flash", "gemini-2.0-flash"];
+        const p = ["gemini-1.5-flash-8b", "gemini-1.5-flash"];
         let iA = p.findIndex(x => a.includes(x)), iB = p.findIndex(x => b.includes(x));
         return (iA === -1 ? 99 : iA) - (iB === -1 ? 99 : iB);
     });
@@ -334,7 +333,7 @@ async function callGeminiWithFallback(userId, prompt, imageParts = []) {
         const [inv, cool] = await Promise.all([redis.get(`m:inv:${m}`), redis.get(`m:cool:${m}`)]);
         if (!inv && !cool) availableModels.push(m);
     }
-    // ✅ อัปเดตรายชื่อ fallback เมื่อล้มเหลว
+    
     if (availableModels.length === 0) availableModels = ["gemini-1.5-flash-8b", "gemini-1.5-flash"];
 
     let lastError;
