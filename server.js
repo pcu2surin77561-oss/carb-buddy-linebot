@@ -442,6 +442,7 @@ function validateRegistrationInput({ userId, birthday, gender, weight, height })
 // 🌟 7. API ROUTES (เพิ่ม Dashboard)
 // =====================================
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'dashboard.html'))); // ✅ เพิ่ม Route สำหรับหน้า Dashboard ตามที่แยกไฟล์
 app.get('/ping', (req, res) => res.status(200).send("Carb Buddy LINE Bot is awake and running!"));
 
 app.post('/api/setup-foods', authenticateAPI, async (req, res) => {
