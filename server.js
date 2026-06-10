@@ -35,7 +35,7 @@ const COMMANDS = Object.freeze({
     REGISTER: 'ลงทะเบียน', REGISTER_SUCCESS: 'ลงทะเบียนสำเร็จ', UPDATE_SUCCESS: 'อัปเดตข้อมูลสำเร็จ',
     VIEW_CARB: 'ดูคาร์บวันนี้', VIEW_HEALTH: 'ดูสมุดพก', READ_LAB: 'อ่านผลสุขภาพ / ผลแลป',
     SCAN_FOOD: 'สแกนอาหารด้วย AI', KNOWLEDGE: 'คลังความรู้', KNOWLEDGE_FULL: 'คลังความรู้เบาหวาน',
-    DASHBOARD: 'แดชบอร์ด' // ✅ เพิ่มคำสั่งเรียกดู Dashboard
+    DASHBOARD: 'แดชบอร์ด'
 });
 
 const config = {
@@ -90,7 +90,7 @@ function safeCompare(a, b) {
 }
 
 function getNowISO() { return new Date().toISOString(); }
-function getTodayTH() { return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" }); }
+function getTodayTH() { return new Date().toLocaleDateString("th-TH", { timeZone: "Asia/Bangkok" }); }
 
 async function logEvent(userId, action, data) {
     const timeString = new Date().toLocaleString('th-TH', {timeZone: 'Asia/Bangkok'});
@@ -541,7 +541,6 @@ app.post('/api/register', authenticateAPI, async (req, res) => {
     }
 });
 
-// ✅ API สำหรับ Dashboard เจ้าหน้าที่
 const dashboardLimiter = rateLimit({ windowMs: 60 * 1000, max: 60, keyGenerator: (req) => req.ip });
 
 app.get('/api/dashboard/summary', dashboardLimiter, authenticateAPI, async (req, res) => {
@@ -653,7 +652,6 @@ async function handleEvent(event) {
     return null;
 }
 
-// ✅ เพิ่มฟังก์ชันสร้าง Flex Message สำหรับ Dashboard
 function buildDashboardFlexMessage(scanCount, avgCarb, activeUsers, overCarbCount, noLabCount) {
     return {
         type: "flex",
@@ -946,7 +944,19 @@ async function handlePostback(event) {
             const todayCarb = parseFloat((previousCarb + actualCarb).toFixed(1));
 
             try {
-                await saveFoodLogAndInvalidate({ createdAt: new Date(), timestamp: getNowISO(), date: new Date().toLocaleDateString('th-TH', {timeZone: 'Asia/Bangkok'}), time: new Date().toLocaleTimeString('th-TH', {timeZone: 'Asia/Bangkok'}), userId: userId, cid: userInfo.cid, food: foodName, carb: parseFloat(data.get('c')), portion: portion, actual_carb: actualCarb, status: portion === 1 ? "กินหมด" : "กินบางส่วน", note: 'บันทึกผ่าน Quick Reply' });
+                await saveFoodLog({ 
+                    timestamp: getNowISO(), 
+                    date: new Date().toLocaleDateString('th-TH', {timeZone: 'Asia/Bangkok'}), 
+                    time: new Date().toLocaleTimeString('th-TH', {timeZone: 'Asia/Bangkok'}), 
+                    userId: userId, 
+                    cid: userInfo.cid, 
+                    food: foodName, 
+                    carb: parseFloat(data.get('c')), 
+                    portion: portion, 
+                    actual_carb: actualCarb, 
+                    status: portion === 1 ? "กินหมด" : "กินบางส่วน", 
+                    note: 'บันทึกผ่าน Quick Reply' 
+                });
                 await redis.set(`carb:total:${userId}:${getTodayTH()}`, String(todayCarb), { ex: 90 });
             } catch (error) { logger.error({ err: error }, "Save Food Log Error"); }
 
@@ -968,14 +978,12 @@ async function handleTextMessage(event) {
         const text = event.message.text.trim();
         const userInfo = await getCachedUser(userId);
 
-        // ✅ เพิ่มเงื่อนไขเช็คคำสั่ง DASHBOARD
         if (text === COMMANDS.DASHBOARD) {
             await logEvent(userId, "view_dashboard", "flex");
             try {
                 const db = mongoose.connection.db;
                 const todayStr = getTodayTH();
 
-                // 1. ประมวลผลจำนวนคนใช้งาน และปริมาณคาร์บรวม
                 const todayStats = await db.collection('foodlogs').aggregate([
                     { $match: { date: todayStr } },
                     { $group: {
@@ -991,7 +999,6 @@ async function handleTextMessage(event) {
                 const activeUsers = todayStats.length > 0 ? todayStats[0].uniqueUsers.length : 0;
                 const avgCarb = activeUsers > 0 ? parseFloat((totalCarb / activeUsers).toFixed(1)) : 0;
 
-                // 2. ค้นหาผู้ป่วยที่มีความเสี่ยง (คาร์บ > 20)
                 const alerts = await db.collection('foodlogs').aggregate([
                     { $match: { date: todayStr } },
                     { $group: { _id: "$userId", totalCarb: { $sum: "$actual_carb" } } },
@@ -1000,9 +1007,8 @@ async function handleTextMessage(event) {
                 ]).toArray();
                 const overCarbCount = alerts.length > 0 ? alerts[0].overCarbCount : 0;
 
-                // 3. จำลองสถิติคนที่ยังไม่มีผลแลป 
                 const totalUsers = await db.collection('users').countDocuments();
-                const noLabCount = Math.max(0, totalUsers - activeUsers); // ให้เป็นตัวเลขประเมินเบื้องต้น
+                const noLabCount = Math.max(0, totalUsers - activeUsers);
 
                 const flexMsg = buildDashboardFlexMessage(scanCount, avgCarb, activeUsers, overCarbCount, noLabCount);
                 return lineClient.replyMessage(event.replyToken, flexMsg);
@@ -1231,16 +1237,15 @@ async function startApp() {
     try {
         if (process.env.MONGODB_URI) {
             await mongoose.connect(process.env.MONGODB_URI, {
-                serverSelectionTimeoutMS: 15000,  // รอ server สูงสุด 15 วิ (เดิม 5 วิ สั้นเกินไป)
-                socketTimeoutMS: 45000,            // รอ query สูงสุด 45 วิ
-                maxPoolSize: 10,                   // connection pool สูงสุด 10 ตัว
-                minPoolSize: 2,                    // รักษา connection ไว้อย่างน้อย 2 ตัวเสมอ
-                family: 4                          // บังคับใช้ IPv4 (ป้องกันปัญหา DNS บน Render/Railway)
+                serverSelectionTimeoutMS: 15000,  
+                socketTimeoutMS: 45000,            
+                maxPoolSize: 10,                   
+                minPoolSize: 2,                    
+                family: 4                          
             });
             logger.info("✅ Connected to MongoDB successfully!");
             await ensureIndexes();
 
-            // ✅ ดักจับ Event เมื่อ connection หลุด/กลับมา
             mongoose.connection.on('disconnected', () => {
                 logger.warn("⚠️ MongoDB Disconnected! Mongoose will attempt to reconnect...");
             });
