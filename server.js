@@ -894,7 +894,7 @@ function buildDashboardFlexMessage(scanCount, avgCarb, activeUsers, overCarbCoun
                         "action": {
                             "type": "uri",
                             "label": "เปิดหน้า Dashboard เต็ม",
-                            "uri": "https://liff.line.me/YOUR_LIFF_ID"
+                            "uri": "https://carb-buddy-linebot.onrender.com/dashboard"
                         }
                     },
                     {
