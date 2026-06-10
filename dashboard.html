@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Community Diabetes AI Intelligence Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Kanit', sans-serif; background-color: #F4F7FE; overflow-x: hidden; }
+        /* ปรับแต่ง Scrollbar ให้ดูทันสมัย */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .card-shadow { box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
+        .gradient-text { background: linear-gradient(90deg, #00897B, #2E86C1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden text-gray-700">
+
+    <div class="w-64 bg-[#111C44] text-white flex flex-col justify-between flex-shrink-0 h-full overflow-y-auto">
+        <div>
+            <div class="flex items-center space-x-3 p-5 border-b border-gray-700/50 mb-4">
+                <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center">
+                    <img src="https://cdn-icons-png.flaticon.com/512/3063/3063176.png" class="w-8 h-8" alt="logo">
+                </div>
+                <div>
+                    <h1 class="text-sm font-bold tracking-wide">Carb-Buddy AI</h1>
+                    <p class="text-[9px] text-gray-400">ระบบสมาร์ทเฮลท์แคร์ชุมชน</p>
+                </div>
+            </div>
+            
+            <nav class="space-y-1.5 px-3">
+                <a href="#" class="flex items-center space-x-3 px-4 py-3 bg-[#00897B] rounded-xl font-medium text-sm text-white shadow-lg shadow-teal-900/20">
+                    <span class="text-lg">🏠</span> <span>ภาพรวม</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 px-4 py-3 text-gray-400 hover:bg-white/10 hover:text-white rounded-xl text-sm transition-colors">
+                    <span class="text-lg">👥</span> <span>ผู้ป่วย</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 px-4 py-3 text-gray-400 hover:bg-white/10 hover:text-white rounded-xl text-sm transition-colors">
+                    <span class="text-lg">📸</span> <span>การสแกนอาหาร</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 px-4 py-3 text-gray-400 hover:bg-white/10 hover:text-white rounded-xl text-sm transition-colors">
+                    <span class="text-lg">🔬</span> <span>ผลแลป</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 px-4 py-3 text-gray-400 hover:bg-white/10 hover:text-white rounded-xl text-sm transition-colors">
+                    <span class="text-lg">🔔</span> <span>การแจ้งเตือน</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 px-4 py-3 text-gray-400 hover:bg-white/10 hover:text-white rounded-xl text-sm transition-colors">
+                    <span class="text-lg">📍</span> <span>แผนที่ชุมชน</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 px-4 py-3 text-gray-400 hover:bg-white/10 hover:text-white rounded-xl text-sm transition-colors">
+                    <span class="text-lg">📈</span> <span>รายงาน AI</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 px-4 py-3 text-gray-400 hover:bg-white/10 hover:text-white rounded-xl text-sm transition-colors">
+                    <span class="text-lg">📚</span> <span>คลังความรู้</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 px-4 py-3 text-gray-400 hover:bg-white/10 hover:text-white rounded-xl text-sm transition-colors">
+                    <span class="text-lg">⚙️</span> <span>ตั้งค่า</span>
+                </a>
+            </nav>
+        </div>
+        
+        <div class="p-4 mt-6">
+            <div class="bg-gradient-to-tr from-[#00897B] to-[#2E86C1] p-4 rounded-xl text-center relative overflow-hidden">
+                <div class="absolute -right-4 -bottom-4 opacity-20 text-6xl">🏥</div>
+                <p class="text-xs font-bold text-white relative z-10">LINE OA: โรงเรียนเบาหวาน</p>
+                <p class="text-[9px] text-teal-100 relative z-10 mt-1">Powered by AI & Community</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex-1 overflow-y-auto h-full p-6">
+        
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h2 class="text-2xl font-bold text-[#1B2559]">Community Diabetes AI Intelligence Dashboard</h2>
+                <p class="text-sm text-gray-500 mt-1">ระบบเฝ้าระวังและติดตามผู้ป่วยเบาหวานในชุมชนด้วย AI</p>
+            </div>
+            <div class="flex items-center space-x-3">
+                <div class="bg-white border rounded-lg px-4 py-2 text-sm text-gray-600 flex items-center space-x-2 card-shadow">
+                    <span>📅</span> <span id="currentDate">วันที่ 24 พฤษภาคม 2567</span>
+                </div>
+                <div class="bg-white border rounded-lg px-4 py-2 text-sm text-gray-600 flex items-center space-x-2 card-shadow cursor-pointer">
+                    <span>ช่วงเวลา: วันนี้</span> <span>⌄</span>
+                </div>
+                <div class="bg-white border rounded-lg px-4 py-2 text-sm font-bold text-[#1B2559] flex items-center space-x-2 card-shadow">
+                    <div class="w-6 h-6 bg-[#111C44] rounded-full flex items-center justify-center text-white text-xs">🏥</div>
+                    <span>รพ.สต. บ้านสุขใจ</span> <span>⌄</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+            <div class="bg-white p-4 rounded-2xl border card-shadow">
+                <div class="flex items-center space-x-3 mb-2">
+                    <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xl">👥</div>
+                    <p class="text-xs text-gray-500 font-medium leading-tight">ผู้ลงทะเบียน<br>ทั้งหมด</p>
+                </div>
+                <h3 id="d-totalUsers" class="text-2xl font-bold text-[#1B2559]">1,245 <span class="text-sm font-normal text-gray-500">คน</span></h3>
+                <p class="text-[10px] text-emerald-500 mt-1">▲ เพิ่มขึ้น +32 คน (สัปดาห์นี้)</p>
+            </div>
+            
+            <div class="bg-white p-4 rounded-2xl border card-shadow">
+                <div class="flex items-center space-x-3 mb-2">
+                    <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl">📸</div>
+                    <p class="text-xs text-gray-500 font-medium leading-tight">สแกนอาหาร<br>วันนี้</p>
+                </div>
+                <h3 id="d-totalLogs" class="text-2xl font-bold text-[#1B2559]">387 <span class="text-sm font-normal text-gray-500">ครั้ง</span></h3>
+                <p class="text-[10px] text-emerald-500 mt-1">▲ เพิ่มขึ้น +18%</p>
+            </div>
+
+            <div class="bg-white p-4 rounded-2xl border card-shadow border-orange-200">
+                <div class="flex items-center space-x-3 mb-2">
+                    <div class="w-10 h-10 rounded-full bg-orange-100 text-orange-500 flex items-center justify-center text-xl">🥣</div>
+                    <p class="text-xs text-gray-500 font-medium leading-tight">คาร์บเฉลี่ย<br>ต่อวัน</p>
+                </div>
+                <h3 id="d-avgCarb" class="text-2xl font-bold text-orange-500">11.2 <span class="text-sm font-normal text-gray-500">Carb</span></h3>
+                <p class="text-[10px] text-orange-500 mt-1">เป้าหมาย ≤ 12 Carb</p>
+            </div>
+
+            <div class="bg-white p-4 rounded-2xl border card-shadow border-red-200">
+                <div class="flex items-center space-x-3 mb-2">
+                    <div class="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-xl">⚠️</div>
+                    <p class="text-xs text-gray-500 font-medium leading-tight">กลุ่มเสี่ยง<br>สูง</p>
+                </div>
+                <h3 id="d-riskCount" class="text-2xl font-bold text-red-600">132 <span class="text-sm font-normal text-gray-500">คน</span></h3>
+                <p class="text-[10px] text-gray-400 mt-1">คิดเป็น 10.6% ของผู้ป่วย</p>
+            </div>
+
+            <div class="bg-white p-4 rounded-2xl border card-shadow">
+                <div class="flex items-center space-x-3 mb-2">
+                    <div class="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-xl">🩸</div>
+                    <p class="text-xs text-gray-500 font-medium leading-tight">HbA1c<br>เฉลี่ย</p>
+                </div>
+                <h3 class="text-2xl font-bold text-purple-600">7.4 <span class="text-sm font-normal text-gray-500">%</span></h3>
+                <p class="text-[10px] text-gray-400 mt-1">จากผู้มีผลแลปล่าสุด</p>
+            </div>
+
+            <div class="bg-white p-4 rounded-2xl border card-shadow bg-gradient-to-br from-blue-50 to-white">
+                <div class="flex items-center space-x-3 mb-2">
+                    <div class="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center text-xl">🤖</div>
+                    <p class="text-xs text-blue-800 font-medium leading-tight">AI วิเคราะห์<br>แล้วสะสม</p>
+                </div>
+                <h3 class="text-2xl font-bold text-[#1B2559]">2,412 <span class="text-sm font-normal text-gray-500">ครั้ง</span></h3>
+                <p class="text-[10px] text-blue-600 mt-1 font-medium">✨ ความแม่นยำ 94%</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
+            
+            <div class="bg-white p-5 rounded-2xl border card-shadow lg:col-span-3 flex flex-col">
+                <h3 class="text-sm font-bold text-[#1B2559] mb-4">ระดับความเสี่ยงเบาหวาน</h3>
+                <div class="relative flex-1 flex justify-center items-center min-h-[200px]">
+                    <canvas id="riskChart"></canvas>
+                    <div class="absolute flex flex-col items-center justify-center pointer-events-none">
+                        <span class="text-3xl font-bold text-[#1B2559]">62%</span>
+                        <span class="text-[10px] text-gray-500">ควบคุมได้ดี</span>
+                    </div>
+                </div>
+                <div class="mt-4 space-y-2 text-xs">
+                    <div class="flex justify-between items-center"><div class="flex items-center"><span class="w-3 h-3 rounded-full bg-emerald-500 mr-2"></span><span class="text-gray-600">ควบคุมได้ดี</span></div><span class="font-bold">774 คน</span></div>
+                    <div class="flex justify-between items-center"><div class="flex items-center"><span class="w-3 h-3 rounded-full bg-yellow-400 mr-2"></span><span class="text-gray-600">เริ่มเสี่ยง</span></div><span class="font-bold">311 คน</span></div>
+                    <div class="flex justify-between items-center"><div class="flex items-center"><span class="w-3 h-3 rounded-full bg-red-500 mr-2"></span><span class="text-gray-600">เสี่ยงสูง</span></div><span class="font-bold text-red-500">160 คน</span></div>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border card-shadow lg:col-span-4 flex flex-col">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-sm font-bold text-[#1B2559]">แนวโน้มค่า HbA1c เฉลี่ย</h3>
+                    <select class="text-xs border rounded-lg px-2 py-1 outline-none text-gray-500"><option>6 เดือนล่าสุด</option></select>
+                </div>
+                <div class="flex-1 w-full min-h-[160px]">
+                    <canvas id="trendChart"></canvas>
+                </div>
+                <div class="mt-4 bg-blue-50 border border-blue-100 p-3 rounded-xl flex items-start space-x-3">
+                    <div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center flex-shrink-0 text-xs font-bold shadow-md">AI</div>
+                    <div>
+                        <p class="text-xs text-blue-900 leading-relaxed">
+                            <span class="font-bold">AI Insight:</span> ค่า HbA1c เฉลี่ยเพิ่มขึ้น 0.9% จาก 6 เดือนที่ผ่านมา <br>
+                            <span class="text-blue-700">แนะนำ: เน้นติดตามกลุ่มเสี่ยง และควบคุมอาหาร/เพิ่มกิจกรรม</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border card-shadow lg:col-span-2">
+                <h3 class="text-sm font-bold text-[#1B2559] mb-4">อาหารยอดนิยม <span class="font-normal text-gray-400">(จากการสแกน)</span></h3>
+                <div class="space-y-4 text-xs font-medium text-gray-700">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2"><span class="text-lg">🍡</span><span>1. ข้าวเหนียวหมูปิ้ง</span></div>
+                        <span class="text-gray-500">24.5%</span>
+                    </div>
+                    <div class="w-full bg-gray-100 rounded-full h-1.5 mb-2"><div class="bg-blue-500 h-1.5 rounded-full" style="width: 80%"></div></div>
+
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2"><span class="text-lg">🍜</span><span>2. ก๋วยเตี๋ยว</span></div>
+                        <span class="text-gray-500">18.7%</span>
+                    </div>
+                    <div class="w-full bg-gray-100 rounded-full h-1.5 mb-2"><div class="bg-blue-400 h-1.5 rounded-full" style="width: 60%"></div></div>
+
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2"><span class="text-lg">🍛</span><span>3. ข้าวกะเพรา</span></div>
+                        <span class="text-gray-500">12.9%</span>
+                    </div>
+                    <div class="w-full bg-gray-100 rounded-full h-1.5 mb-2"><div class="bg-blue-300 h-1.5 rounded-full" style="width: 45%"></div></div>
+
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2"><span class="text-lg">🥩</span><span>4. ลาบ/น้ำตก</span></div>
+                        <span class="text-gray-500">8.3%</span>
+                    </div>
+                    <div class="w-full bg-gray-100 rounded-full h-1.5 mb-2"><div class="bg-gray-300 h-1.5 rounded-full" style="width: 25%"></div></div>
+
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2"><span class="text-lg">🥗</span><span>5. ส้มตำ</span></div>
+                        <span class="text-gray-500">7.6%</span>
+                    </div>
+                    <div class="w-full bg-gray-100 rounded-full h-1.5"><div class="bg-gray-300 h-1.5 rounded-full" style="width: 20%"></div></div>
+                </div>
+                <button class="w-full mt-4 py-2 border border-blue-100 text-blue-600 rounded-lg text-xs font-medium hover:bg-blue-50 transition">ดูทั้งหมด</button>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border card-shadow lg:col-span-3 flex flex-col">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-sm font-bold text-[#1B2559]">แผนที่ความเสี่ยงในชุมชน</h3>
+                    <select class="text-xs border rounded-lg px-2 py-1 outline-none text-gray-500"><option>หมู่บ้าน</option></select>
+                </div>
+                <div class="flex-1 bg-blue-50/50 rounded-xl border flex items-center justify-center relative overflow-hidden">
+                    <div class="text-center">
+                        <span class="text-4xl">🗺️</span>
+                        <p class="text-xs text-gray-400 mt-2">พื้นที่ Heatmap ชุมชน</p>
+                    </div>
+                    <div class="absolute bottom-2 left-2 bg-white/90 p-2 rounded text-[9px] space-y-1 shadow">
+                        <div class="flex items-center"><span class="w-2 h-2 rounded bg-red-500 mr-1"></span> ความเสี่ยงสูง</div>
+                        <div class="flex items-center"><span class="w-2 h-2 rounded bg-yellow-400 mr-1"></span> ปานกลาง</div>
+                        <div class="flex items-center"><span class="w-2 h-2 rounded bg-emerald-400 mr-1"></span> ต่ำ</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            
+            <div class="bg-white p-5 rounded-2xl border card-shadow">
+                <h3 class="text-sm font-bold text-[#1B2559] mb-4">AI วิเคราะห์พฤติกรรมการกิน</h3>
+                <div class="space-y-5">
+                    <div class="flex items-start space-x-3">
+                        <div class="text-2xl mt-1">🥤</div>
+                        <div>
+                            <p class="text-sm font-bold text-gray-700">48% ของผู้ป่วยได้รับคาร์บ<br>จากเครื่องดื่มหวานมากกว่าข้าว</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-3">
+                        <div class="text-2xl mt-1">🕒</div>
+                        <div>
+                            <p class="text-sm font-bold text-blue-600">ช่วงเวลาที่กินคาร์บสูงสุด</p>
+                            <p class="text-sm font-bold text-gray-700">18:00 - 20:00 น.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-3 bg-red-50 p-3 rounded-xl border border-red-100">
+                        <div class="text-2xl mt-1">⚠️</div>
+                        <div>
+                            <p class="text-sm font-bold text-red-600">ผู้ป่วย 32 คน กินคาร์บเกินเป้า</p>
+                            <p class="text-sm font-medium text-red-500">ต่อเนื่อง 3 วันขึ้นไป</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border card-shadow">
+                <h3 class="text-sm font-bold text-[#1B2559] mb-4">กลุ่มเสี่ยงที่ต้องติดตาม <span class="font-normal text-gray-400 text-xs">(ดึงข้อมูล Real-time)</span></h3>
+                <div class="space-y-3" id="dynamic-alerts-list">
+                    <div class="text-center text-xs text-gray-400 py-4">กำลังประมวลผลข้อมูล...</div>
+                </div>
+                <button class="w-full mt-4 py-2 border border-gray-200 text-gray-600 rounded-lg text-xs font-medium hover:bg-gray-50 transition">ดูรายชื่อทั้งหมด</button>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border card-shadow">
+                <h3 class="text-sm font-bold text-[#1B2559] mb-4 flex items-center space-x-2"><span>🔔</span> <span>การแจ้งเตือนอัตโนมัติ (วันนี้)</span></h3>
+                <div class="space-y-4 text-sm font-medium text-gray-600">
+                    <div class="flex justify-between items-center border-b pb-2">
+                        <div class="flex items-center space-x-2"><span class="text-red-500">❤️</span> <span>ผู้ป่วยคาร์บเกินเป้า</span></div>
+                        <span class="font-bold text-gray-800" id="alert-over">0 คน</span>
+                    </div>
+                    <div class="flex justify-between items-center border-b pb-2">
+                        <div class="flex items-center space-x-2"><span class="text-red-500">❤️</span> <span>กินคาร์บเกิน 3 วันต่อเนื่อง</span></div>
+                        <span class="font-bold text-gray-800">32 คน</span>
+                    </div>
+                    <div class="flex justify-between items-center border-b pb-2">
+                        <div class="flex items-center space-x-2"><span class="text-yellow-500">💛</span> <span>ยังไม่มีผลแลปล่าสุด > 3 เดือน</span></div>
+                        <span class="font-bold text-gray-800">78 คน</span>
+                    </div>
+                    <div class="flex justify-between items-center pb-2">
+                        <div class="flex items-center space-x-2"><span class="text-emerald-500">🏥</span> <span>นัดติดตามสัปดาห์นี้</span></div>
+                        <span class="font-bold text-gray-800">26 คน</span>
+                    </div>
+                </div>
+                <button class="w-full mt-2 py-2 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold hover:bg-blue-100 transition">ดูการแจ้งเตือนทั้งหมด</button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <div class="bg-white p-5 rounded-2xl border card-shadow lg:col-span-3 flex justify-between items-center px-10">
+                <div class="text-center">
+                    <p class="text-xs text-gray-400 font-bold mb-1">หมู่บ้านทั้งหมด</p>
+                    <h3 class="text-2xl font-bold text-[#1B2559]">12 <span class="text-xs font-normal">หมู่บ้าน</span></h3>
+                </div>
+                <div class="w-px h-10 bg-gray-200"></div>
+                <div class="text-center">
+                    <p class="text-xs text-gray-400 font-bold mb-1">ประชากรในระบบ</p>
+                    <h3 class="text-2xl font-bold text-[#1B2559]">2,350 <span class="text-xs font-normal">คน</span></h3>
+                </div>
+                <div class="w-px h-10 bg-gray-200"></div>
+                <div class="text-center">
+                    <p class="text-xs text-gray-400 font-bold mb-1">ครอบคลุมการคัดกรอง</p>
+                    <h3 class="text-2xl font-bold text-[#1B2559]">68% <span class="text-xs font-normal">ของประชากร</span></h3>
+                </div>
+                <div class="w-px h-10 bg-gray-200"></div>
+                <div class="text-center">
+                    <p class="text-xs text-gray-400 font-bold mb-1">เป้าหมายปีนี้</p>
+                    <h3 class="text-2xl font-bold text-emerald-500">75% <span class="text-xs font-normal">การคัดกรอง</span></h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center text-xs text-gray-400 mt-8 mb-4">
+            <p>ระบบ LINE OA โรงเรียนเบาหวาน | พัฒนาเพื่อสุขภาพชุมชนไทย</p>
+            <p class="mt-1 font-medium">ออกแบบและพัฒนาโดย: นายจตุพงศ์ ประยงค์หอม ผู้ช่วยเจ้าหน้าที่สาธารณสุข</p>
+        </div>
+    </div>
+
+    <script>
+        const API_SECRET = 'my_super_secret_key_2026';
+
+        window.onload = function() {
+            // เซ็ตวันที่ปัจจุบัน
+            const today = new Date();
+            const thMonths = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+            document.getElementById('currentDate').innerText = `วันที่ ${today.getDate()} ${thMonths[today.getMonth()]} ${today.getFullYear() + 543}`;
+            
+            // โหลดข้อมูล
+            loadDashboardData();
+            initCharts();
+        };
+
+        async function fetchWithAuth(url) {
+            const response = await fetch(url, { headers: { 'Authorization': `Bearer ${API_SECRET}` } });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return response.json();
+        }
+
+        async function loadDashboardData() {
+            try {
+                // 1. ดึง KPI
+                const summary = await fetchWithAuth('/api/dashboard/summary');
+                document.getElementById('d-totalUsers').innerHTML = `${(summary.totalUsers || 0).toLocaleString()} <span class="text-sm font-normal text-gray-500">คน</span>`;
+                document.getElementById('d-todayUsers').innerHTML = `${(summary.todayUsers || 0).toLocaleString()} <span class="text-sm font-normal text-gray-500">คน</span>`;
+                document.getElementById('d-totalLogs').innerHTML = `${(summary.totalLogs || 0).toLocaleString()} <span class="text-sm font-normal text-gray-500">ครั้ง</span>`;
+                document.getElementById('d-avgCarb').innerHTML = `${(summary.avgCarb || 0)} <span class="text-sm font-normal text-gray-500">Carb</span>`;
+
+                // 2. ดึง Alerts เพื่อมาใส่ในรายการ "กลุ่มเสี่ยงที่ต้องติดตาม"
+                const alerts = await fetchWithAuth('/api/dashboard/alerts?threshold=20');
+                document.getElementById('d-riskCount').innerHTML = `${alerts.length} <span class="text-sm font-normal text-gray-500">คน</span>`;
+                document.getElementById('alert-over').innerText = `${alerts.length} คน`;
+
+                const alertsContainer = document.getElementById('dynamic-alerts-list');
+                alertsContainer.innerHTML = ''; // Clear
+
+                if(alerts.length === 0){
+                    alertsContainer.innerHTML = `<div class="text-center text-xs text-emerald-500 font-bold py-4">✅ ไม่มีกลุ่มเสี่ยงกินเกินเป้าในวันนี้</div>`;
+                } else {
+                    // ดึงมาโชว์ 3 อันดับแรกให้เหมือนในภาพ
+                    alerts.slice(0,3).forEach((a, index) => {
+                        // สุ่มรูป Avatar ปลอมๆ ให้ดูเหมือนภาพ Mockup
+                        const avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${a.userId}`;
+                        alertsContainer.innerHTML += `
+                            <div class="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg border border-transparent hover:border-gray-100 transition">
+                                <div class="flex items-center space-x-3">
+                                    <img src="${avatarUrl}" class="w-8 h-8 rounded-full bg-gray-100">
+                                    <div>
+                                        <p class="text-xs font-bold text-gray-800">คาร์บเกิน > ${a.totalCarb} กรัม/วัน</p>
+                                        <p class="text-[9px] text-gray-400">USR-${a.userId.substring(0,6).toUpperCase()}</p>
+                                    </div>
+                                </div>
+                                <span class="text-xs font-bold text-red-500">ติดตาม</span>
+                            </div>
+                        `;
+                    });
+                }
+            } catch (error) {
+                console.error("Error fetching data:", error);
+            }
+        }
+
+        function initCharts() {
+            // 1. กราฟโดนัท (Risk)
+            const ctxRisk = document.getElementById('riskChart').getContext('2d');
+            new Chart(ctxRisk, {
+                type: 'doughnut',
+                data: {
+                    labels: ['ควบคุมได้ดี', 'เริ่มเสี่ยง', 'เสี่ยงสูง'],
+                    datasets: [{
+                        data: [62, 25, 13],
+                        backgroundColor: ['#10B981', '#FBBF24', '#EF4444'],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    cutout: '75%',
+                    plugins: { legend: { display: false }, tooltip: { bodyFont: { family: 'Kanit' } } } 
+                }
+            });
+
+            // 2. กราฟเส้น (HbA1c Trend)
+            const ctxTrend = document.getElementById('trendChart').getContext('2d');
+            
+            // สร้าง Gradient พื้นหลังกราฟ
+            let gradient = ctxTrend.createLinearGradient(0, 0, 0, 200);
+            gradient.addColorStop(0, 'rgba(0, 137, 123, 0.2)');
+            gradient.addColorStop(1, 'rgba(0, 137, 123, 0)');
+
+            new Chart(ctxTrend, {
+                type: 'line',
+                data: {
+                    labels: ['ธ.ค. 66', 'ม.ค. 67', 'ก.พ. 67', 'มี.ค. 67', 'เม.ย. 67', 'พ.ค. 67'],
+                    datasets: [{
+                        label: 'HbA1c เฉลี่ย (%)',
+                        data: [6.5, 6.8, 7.0, 7.3, 7.2, 7.4],
+                        borderColor: '#2E86C1',
+                        backgroundColor: gradient,
+                        fill: true,
+                        tension: 0.4, // ทำให้เส้นโค้งสวยงามเหมือนในภาพ
+                        pointBackgroundColor: ['#2E86C1','#2E86C1','#2E86C1','#2E86C1','#2E86C1','#E74C3C'], // จุดสุดท้ายสีแดง
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 5,
+                        pointHoverRadius: 7
+                    }]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { legend: { display: false }, tooltip: { bodyFont: { family: 'Kanit' } } },
+                    scales: {
+                        y: { min: 5, max: 9, grid: { borderDash: [5, 5], color: '#f1f5f9' }, ticks: { font: { family: 'Kanit', size: 10 } } },
+                        x: { grid: { display: false }, ticks: { font: { family: 'Kanit', size: 10 } } }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
