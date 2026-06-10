@@ -34,7 +34,8 @@ const redis = new Redis({
 const COMMANDS = Object.freeze({
     REGISTER: 'ลงทะเบียน', REGISTER_SUCCESS: 'ลงทะเบียนสำเร็จ', UPDATE_SUCCESS: 'อัปเดตข้อมูลสำเร็จ',
     VIEW_CARB: 'ดูคาร์บวันนี้', VIEW_HEALTH: 'ดูสมุดพก', READ_LAB: 'อ่านผลสุขภาพ / ผลแลป',
-    SCAN_FOOD: 'สแกนอาหารด้วย AI', KNOWLEDGE: 'คลังความรู้', KNOWLEDGE_FULL: 'คลังความรู้เบาหวาน'
+    SCAN_FOOD: 'สแกนอาหารด้วย AI', KNOWLEDGE: 'คลังความรู้', KNOWLEDGE_FULL: 'คลังความรู้เบาหวาน',
+    DASHBOARD: 'แดชบอร์ด' // ✅ เพิ่มคำสั่งเรียกดู Dashboard
 });
 
 const config = {
@@ -287,14 +288,12 @@ let aiQueue = { add: async (fn) => fn() };
 let availableGeminiModels = [];
 async function discoverGeminiModels() {
     if (GEMINI_API_KEYS.length === 0) return;
-    // เผื่อฉุกเฉินดึง API ไม่ได้ ให้ใช้ลิสต์นี้
     const SAFE_MODELS = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-flash-8b"];
     try {
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEYS[0]}`);
         const data = await res.json();
         if (!data.models) { availableGeminiModels = SAFE_MODELS; return; }
         
-        // กรองเอาเฉพาะโมเดลที่บัญชีนี้ใช้งานได้จริงๆ
         const candidateModels = data.models.filter(m => m.supportedGenerationMethods?.includes("generateContent")).map(m => m.name.replace("models/", "")).filter(name => name.includes("gemini") && !name.includes("tts"));
         availableGeminiModels = candidateModels.length === 0 ? SAFE_MODELS : candidateModels;
         logger.info(`🚀 Active Models Loaded: ${availableGeminiModels.join(", ")}`);
@@ -317,16 +316,14 @@ async function callGeminiWithFallback(userId, prompt, imageParts = []) {
     const uCooldownMs = await redis.pttl(userCooldownKey);
     if (uCooldownMs > 0) throw new Error(`⚠️ คิวของคุณเต็ม กรุณารอ ${Math.ceil(uCooldownMs / 1000)} วินาที`);
 
-    // ✅ จุดที่ 1: ดึงรายชื่อโมเดล "ที่มีอยู่จริงใน API Key ของคุณ" มาใช้งาน (ไม่ Hardcode แล้ว)
     let modelsToTry = availableGeminiModels.length > 0 ? [...availableGeminiModels] : ["gemini-2.0-flash"]; 
     
-    // ✅ จุดที่ 2: จัดเรียงลำดับความน่าใช้ (ตัวไหนเบาสุด/ใหม่สุด ให้ลองก่อน)
     modelsToTry.sort((a, b) => {
         const score = (m) => {
-            if (m.includes("8b")) return 1;          // เร็วสุด คิวว่างสุด
-            if (m.includes("2.0-flash")) return 2;   // ใหม่สุด
-            if (m.includes("1.5-flash")) return 3;   // เสถียรสุด
-            if (m.includes("pro")) return 4;         // หนักสุด (เก็บไว้ท้ายๆ)
+            if (m.includes("8b")) return 1;
+            if (m.includes("2.0-flash")) return 2;
+            if (m.includes("1.5-flash")) return 3;
+            if (m.includes("pro")) return 4;
             return 99;
         };
         return score(a) - score(b);
@@ -338,7 +335,6 @@ async function callGeminiWithFallback(userId, prompt, imageParts = []) {
         if (!inv && !cool) availableModels.push(m);
     }
     
-    // ถ้าบังเอิญติด Cooldown หมดทุกตัว ให้ลองเสี่ยงลิสต์เดิมอีกรอบ
     if (availableModels.length === 0) availableModels = modelsToTry.length > 0 ? modelsToTry : ["gemini-2.0-flash"];
 
     let lastError;
@@ -388,7 +384,6 @@ async function callGeminiWithFallback(userId, prompt, imageParts = []) {
                         break; 
                     }
                 } else if (err.status === 404 || errMsg.includes("not found")) { 
-                    // ถ้าระบบฟ้องว่าหาชื่อนี้ไม่เจอ ให้กาหัวทิ้งไว้ 1 ชั่วโมง จะได้ไม่เรียกซ้ำ
                     await redis.set(`m:inv:${modelName}`, "1", { ex: 3600 }); 
                     break; 
                 } else { 
@@ -658,6 +653,258 @@ async function handleEvent(event) {
     return null;
 }
 
+// ✅ เพิ่มฟังก์ชันสร้าง Flex Message สำหรับ Dashboard
+function buildDashboardFlexMessage(scanCount, avgCarb, activeUsers, overCarbCount, noLabCount) {
+    return {
+        type: "flex",
+        altText: "Carb-Buddy AI Dashboard",
+        contents: {
+            "type": "bubble",
+            "size": "giga",
+            "header": {
+                "type": "box",
+                "layout": "vertical",
+                "contents": [
+                    {
+                        "type": "box",
+                        "layout": "horizontal",
+                        "contents": [
+                            {
+                                "type": "text",
+                                "text": "📊 Carb-Buddy AI Dashboard",
+                                "weight": "bold",
+                                "size": "lg",
+                                "color": "#FFFFFF"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "text",
+                        "text": "ข้อมูลอัปเดตแบบ Real-time",
+                        "color": "#E0F2F1",
+                        "size": "xs",
+                        "margin": "sm"
+                    }
+                ],
+                "backgroundColor": "#00897B",
+                "paddingAll": "lg"
+            },
+            "body": {
+                "type": "box",
+                "layout": "vertical",
+                "contents": [
+                    {
+                        "type": "text",
+                        "text": "ภาพรวมการบริโภคของชุมชนวันนี้",
+                        "weight": "bold",
+                        "size": "sm",
+                        "color": "#555555"
+                    },
+                    {
+                        "type": "separator",
+                        "margin": "md"
+                    },
+                    {
+                        "type": "box",
+                        "layout": "horizontal",
+                        "margin": "md",
+                        "contents": [
+                            {
+                                "type": "box",
+                                "layout": "vertical",
+                                "contents": [
+                                    {
+                                        "type": "text",
+                                        "text": "สแกนอาหาร",
+                                        "size": "xs",
+                                        "color": "#888888",
+                                        "align": "center"
+                                    },
+                                    {
+                                        "type": "text",
+                                        "text": String(scanCount),
+                                        "size": "xl",
+                                        "color": "#27AE60",
+                                        "weight": "bold",
+                                        "align": "center"
+                                    },
+                                    {
+                                        "type": "text",
+                                        "text": "ครั้ง",
+                                        "size": "xxs",
+                                        "color": "#888888",
+                                        "align": "center"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "box",
+                                "layout": "vertical",
+                                "contents": [
+                                    {
+                                        "type": "text",
+                                        "text": "คาร์บเฉลี่ย",
+                                        "size": "xs",
+                                        "color": "#888888",
+                                        "align": "center"
+                                    },
+                                    {
+                                        "type": "text",
+                                        "text": String(avgCarb),
+                                        "size": "xl",
+                                        "color": "#D35400",
+                                        "weight": "bold",
+                                        "align": "center"
+                                    },
+                                    {
+                                        "type": "text",
+                                        "text": "คาร์บ/คน",
+                                        "size": "xxs",
+                                        "color": "#888888",
+                                        "align": "center"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "box",
+                                "layout": "vertical",
+                                "contents": [
+                                    {
+                                        "type": "text",
+                                        "text": "ใช้งานวันนี้",
+                                        "size": "xs",
+                                        "color": "#888888",
+                                        "align": "center"
+                                    },
+                                    {
+                                        "type": "text",
+                                        "text": String(activeUsers),
+                                        "size": "xl",
+                                        "color": "#2980B9",
+                                        "weight": "bold",
+                                        "align": "center"
+                                    },
+                                    {
+                                        "type": "text",
+                                        "text": "คน",
+                                        "size": "xxs",
+                                        "color": "#888888",
+                                        "align": "center"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "type": "separator",
+                        "margin": "lg"
+                    },
+                    {
+                        "type": "box",
+                        "layout": "vertical",
+                        "margin": "lg",
+                        "spacing": "sm",
+                        "contents": [
+                            {
+                                "type": "text",
+                                "text": "🚨 การแจ้งเตือนความเสี่ยง (AI Alerts)",
+                                "weight": "bold",
+                                "size": "sm",
+                                "color": "#C0392B"
+                            },
+                            {
+                                "type": "box",
+                                "layout": "baseline",
+                                "contents": [
+                                    {
+                                        "type": "text",
+                                        "text": "🔴",
+                                        "size": "xs",
+                                        "flex": 1
+                                    },
+                                    {
+                                        "type": "text",
+                                        "text": "ผู้ป่วยคาร์บเกินเป้า (> 20 กรัม)",
+                                        "size": "xs",
+                                        "color": "#333333",
+                                        "flex": 8
+                                    },
+                                    {
+                                        "type": "text",
+                                        "text": `${overCarbCount} คน`,
+                                        "size": "xs",
+                                        "color": "#C0392B",
+                                        "weight": "bold",
+                                        "align": "end",
+                                        "flex": 3
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "box",
+                                "layout": "baseline",
+                                "contents": [
+                                    {
+                                        "type": "text",
+                                        "text": "🟡",
+                                        "size": "xs",
+                                        "flex": 1
+                                    },
+                                    {
+                                        "type": "text",
+                                        "text": "ยังไม่มีผลแลปเกิน 3 เดือน",
+                                        "size": "xs",
+                                        "color": "#333333",
+                                        "flex": 8
+                                    },
+                                    {
+                                        "type": "text",
+                                        "text": `${noLabCount} คน`,
+                                        "size": "xs",
+                                        "color": "#F39C12",
+                                        "weight": "bold",
+                                        "align": "end",
+                                        "flex": 3
+                                    }
+                                ]
+                            }
+                        ],
+                        "backgroundColor": "#FDEDEC",
+                        "paddingAll": "md",
+                        "cornerRadius": "md"
+                    }
+                ],
+                "paddingAll": "lg"
+            },
+            "footer": {
+                "type": "box",
+                "layout": "vertical",
+                "spacing": "sm",
+                "contents": [
+                    {
+                        "type": "button",
+                        "style": "primary",
+                        "color": "#00897B",
+                        "action": {
+                            "type": "uri",
+                            "label": "เปิดหน้า Dashboard เต็ม",
+                            "uri": "https://liff.line.me/YOUR_LIFF_ID"
+                        }
+                    },
+                    {
+                        "type": "text",
+                        "text": "พัฒนาระบบโดย นายจตุพงศ์ ประยงค์หอม ผู้ช่วยเจ้าหน้าที่สาธารณสุข",
+                        "size": "xxs",
+                        "color": "#AAAAAA",
+                        "align": "center",
+                        "margin": "md"
+                    }
+                ]
+            }
+        }
+    };
+}
+
 function buildCarbFlexMessage(todayCarb, dailyLimit, remain, isWarning = false) {
     const percent = Math.min(100, Math.round((todayCarb / dailyLimit) * 100));
     const barColor = isWarning ? "#E74C3C" : (percent > 80 ? "#F39C12" : "#2ECC71");
@@ -720,6 +967,50 @@ async function handleTextMessage(event) {
     try {
         const text = event.message.text.trim();
         const userInfo = await getCachedUser(userId);
+
+        // ✅ เพิ่มเงื่อนไขเช็คคำสั่ง DASHBOARD
+        if (text === COMMANDS.DASHBOARD) {
+            await logEvent(userId, "view_dashboard", "flex");
+            try {
+                const db = mongoose.connection.db;
+                const todayStr = getTodayTH();
+
+                // 1. ประมวลผลจำนวนคนใช้งาน และปริมาณคาร์บรวม
+                const todayStats = await db.collection('foodlogs').aggregate([
+                    { $match: { date: todayStr } },
+                    { $group: {
+                        _id: null,
+                        uniqueUsers: { $addToSet: "$userId" },
+                        totalCarb: { $sum: "$actual_carb" },
+                        logCount: { $sum: 1 }
+                    }}
+                ]).toArray();
+
+                const scanCount = todayStats.length > 0 ? todayStats[0].logCount : 0;
+                const totalCarb = todayStats.length > 0 ? parseFloat(todayStats[0].totalCarb) : 0;
+                const activeUsers = todayStats.length > 0 ? todayStats[0].uniqueUsers.length : 0;
+                const avgCarb = activeUsers > 0 ? parseFloat((totalCarb / activeUsers).toFixed(1)) : 0;
+
+                // 2. ค้นหาผู้ป่วยที่มีความเสี่ยง (คาร์บ > 20)
+                const alerts = await db.collection('foodlogs').aggregate([
+                    { $match: { date: todayStr } },
+                    { $group: { _id: "$userId", totalCarb: { $sum: "$actual_carb" } } },
+                    { $match: { totalCarb: { $gt: 20 } } },
+                    { $count: "overCarbCount" }
+                ]).toArray();
+                const overCarbCount = alerts.length > 0 ? alerts[0].overCarbCount : 0;
+
+                // 3. จำลองสถิติคนที่ยังไม่มีผลแลป 
+                const totalUsers = await db.collection('users').countDocuments();
+                const noLabCount = Math.max(0, totalUsers - activeUsers); // ให้เป็นตัวเลขประเมินเบื้องต้น
+
+                const flexMsg = buildDashboardFlexMessage(scanCount, avgCarb, activeUsers, overCarbCount, noLabCount);
+                return lineClient.replyMessage(event.replyToken, flexMsg);
+            } catch (err) {
+                logger.error({ err }, "Dashboard Flex Error");
+                return lineClient.replyMessage(event.replyToken, { type: 'text', text: 'ขออภัย ไม่สามารถดึงข้อมูลแดชบอร์ดได้ชั่วคราวครับ' });
+            }
+        }
 
         if (text === COMMANDS.REGISTER_SUCCESS || text === COMMANDS.UPDATE_SUCCESS) {
             if (!userInfo) return lineClient.replyMessage(event.replyToken, { type: 'text', text: '⚠️ ระบบกำลังอัปเดตข้อมูล กรุณาทำรายการใหม่อีกครั้งครับ' });
