@@ -405,12 +405,19 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'", "https://*.line.me"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "https://*.line-scdn.net"],
+            // ✅ เพิ่ม 'https://cdn.tailwindcss.com' และ 'https://cdn.jsdelivr.net' เข้าไปในรายการอนุญาต
+            scriptSrc: [
+                "'self'", 
+                "'unsafe-inline'", 
+                "https://*.line-scdn.net", 
+                "https://cdn.tailwindcss.com", 
+                "https://cdn.jsdelivr.net"
+            ],
             scriptSrcAttr: ["'unsafe-inline'"], 
             imgSrc: ["'self'", "data:", "https://cdn-icons-png.flaticon.com", "https://*.line-scdn.net", "https://*.line.me"],
             styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-            fontSrc: ["'self'", "https://fonts.gstatic.com"],
-            connectSrc: ["'self'", "https://*.line.me", "https://*.line-scdn.net", "https://*.line-apps.com"],
+            fontSrc: ["'self'", "https://fonts.gstatic.com", "https://fonts.googleapis.com"],
+            connectSrc: ["'self'", "https://*.line.me", "https://*.line-scdn.net", "https://*.line-apps.com", "https://cdn.jsdelivr.net"],
             frameSrc: ["'self'", "https://*.line.me", "https://*.line-apps.com"]
         }
     }
