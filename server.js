@@ -35,7 +35,7 @@ const COMMANDS = Object.freeze({
     REGISTER: 'ลงทะเบียน', REGISTER_SUCCESS: 'ลงทะเบียนสำเร็จ', UPDATE_SUCCESS: 'อัปเดตข้อมูลสำเร็จ',
     VIEW_CARB: 'ดูคาร์บวันนี้', VIEW_HEALTH: 'ดูสมุดพก', READ_LAB: 'อ่านผลสุขภาพ / ผลแลป',
     SCAN_FOOD: 'สแกนอาหารด้วย AI', KNOWLEDGE: 'คลังความรู้', KNOWLEDGE_FULL: 'คลังความรู้เบาหวาน',
-    DASHBOARD: 'แดชบอร์ด' // ✅ คำสั่งเรียกดู Dashboard
+    DASHBOARD: 'แดชบอร์ด' // ✅ เพิ่มคำสั่งเรียกดู Dashboard
 });
 
 const config = {
@@ -90,8 +90,7 @@ function safeCompare(a, b) {
 }
 
 function getNowISO() { return new Date().toISOString(); }
-// ✅ แก้ไข Date Format ให้ตรงกับ dbHelper.js (th-TH) เพื่อให้หาข้อมูลใน MongoDB เจอ
-function getTodayTH() { return new Date().toLocaleDateString("th-TH", { timeZone: "Asia/Bangkok" }); }
+function getTodayTH() { return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" }); }
 
 async function logEvent(userId, action, data) {
     const timeString = new Date().toLocaleString('th-TH', {timeZone: 'Asia/Bangkok'});
@@ -929,7 +928,6 @@ function buildCarbFlexMessage(todayCarb, dailyLimit, remain, isWarning = false) 
     };
 }
 
-// ✅ แก้ไขการเรียกชื่อฟังก์ชันบันทึกข้อมูลเป็น saveFoodLog ให้ตรงกับ dbHelper
 async function handlePostback(event) {
     const userId = event.source?.userId;
     try {
@@ -948,20 +946,7 @@ async function handlePostback(event) {
             const todayCarb = parseFloat((previousCarb + actualCarb).toFixed(1));
 
             try {
-                // ✅ แก้ไขตรงส่วนนี้
-                await saveFoodLog({ 
-                    timestamp: getNowISO(), 
-                    date: new Date().toLocaleDateString('th-TH', {timeZone: 'Asia/Bangkok'}), 
-                    time: new Date().toLocaleTimeString('th-TH', {timeZone: 'Asia/Bangkok'}), 
-                    userId: userId, 
-                    cid: userInfo.cid, 
-                    food: foodName, 
-                    carb: parseFloat(data.get('c')), 
-                    portion: portion, 
-                    actual_carb: actualCarb, 
-                    status: portion === 1 ? "กินหมด" : "กินบางส่วน", 
-                    note: 'บันทึกผ่าน Quick Reply' 
-                });
+                await saveFoodLogAndInvalidate({ createdAt: new Date(), timestamp: getNowISO(), date: new Date().toLocaleDateString('th-TH', {timeZone: 'Asia/Bangkok'}), time: new Date().toLocaleTimeString('th-TH', {timeZone: 'Asia/Bangkok'}), userId: userId, cid: userInfo.cid, food: foodName, carb: parseFloat(data.get('c')), portion: portion, actual_carb: actualCarb, status: portion === 1 ? "กินหมด" : "กินบางส่วน", note: 'บันทึกผ่าน Quick Reply' });
                 await redis.set(`carb:total:${userId}:${getTodayTH()}`, String(todayCarb), { ex: 90 });
             } catch (error) { logger.error({ err: error }, "Save Food Log Error"); }
 
