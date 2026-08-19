@@ -294,7 +294,17 @@ async function discoverGeminiModels() {
         const data = await res.json();
         if (!data.models) { availableGeminiModels = SAFE_MODELS; return; }
         
-        const candidateModels = data.models.filter(m => m.supportedGenerationMethods?.includes("generateContent")).map(m => m.name.replace("models/", "")).filter(name => name.includes("gemini") && !name.includes("tts"));
+        // 🚨 กรองพวกรุ่นทดลอง (preview, robotics) ออกไป ป้องกันความหน่วง/error
+        const candidateModels = data.models
+            .filter(m => m.supportedGenerationMethods?.includes("generateContent"))
+            .map(m => m.name.replace("models/", ""))
+            .filter(name => 
+                name.includes("gemini") && 
+                !name.includes("tts") && 
+                !name.includes("preview") &&
+                !name.includes("robotics") &&
+                !name.includes("computer-use")
+            );
         availableGeminiModels = candidateModels.length === 0 ? SAFE_MODELS : candidateModels;
         logger.info(`🚀 Active Models Loaded: ${availableGeminiModels.join(", ")}`);
     } catch (err) { availableGeminiModels = SAFE_MODELS; }
@@ -312,18 +322,21 @@ async function discoverGeminiModelsIfLeader() {
 }
 
 async function callGeminiWithFallback(userId, prompt, imageParts = []) {
+    // 🚨 เพิ่มตัวแปรสำหรับ Instrumentation Log
+    const requestStart = Date.now();
+
     const userCooldownKey = `cooldown:user:${userId}`;
     const uCooldownMs = await redis.pttl(userCooldownKey);
     if (uCooldownMs > 0) throw new Error(`⚠️ คิวของคุณเต็ม กรุณารอ ${Math.ceil(uCooldownMs / 1000)} วินาที`);
 
     let modelsToTry = availableGeminiModels.length > 0 ? [...availableGeminiModels] : ["gemini-2.0-flash"]; 
     
+    // 🚨 ปรับลำดับ: ให้ความสำคัญกับตระกูล Flash ก่อน Pro เสมอ
     modelsToTry.sort((a, b) => {
         const score = (m) => {
-            if (m.includes("8b")) return 1;
-            if (m.includes("2.0-flash")) return 2;
-            if (m.includes("1.5-flash")) return 3;
-            if (m.includes("pro")) return 4;
+            if (m.includes("flash-lite") || m.includes("8b")) return 1;
+            if (m.includes("flash")) return 2;
+            if (m.includes("pro")) return 3;
             return 99;
         };
         return score(a) - score(b);
@@ -346,9 +359,14 @@ async function callGeminiWithFallback(userId, prompt, imageParts = []) {
             
             try {
                 return await aiQueue.add(async () => {
+                    // 🚨 เก็บเวลาว่ารอใน queue นานแค่ไหน
+                    const queueWaitMs = Date.now() - requestStart;
+                    logger.info({ modelName, queueWaitMs, hasImage: imageParts.length > 0 }, "🎯 เริ่มยิง Gemini");
+
                     const controller = new AbortController();
-                    // 🚨 [แก้ไข] ขยาย Timeout จาก 25000 เป็น 45000 วินาที 
-                    const timeoutId = setTimeout(() => controller.abort(), 45000); 
+                    // 🚨 ปรับ Timeout เป็น 35 วินาที เพื่อให้ตอบ Fallback ทันก่อน LINE ตัดจบ
+                    const timeoutId = setTimeout(() => controller.abort(), 35000); 
+                    const fetchStart = Date.now();
 
                     try {
                         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${currentApiKey}`, {
@@ -359,12 +377,19 @@ async function callGeminiWithFallback(userId, prompt, imageParts = []) {
                             }),
                             signal: controller.signal
                         });
+                        
                         clearTimeout(timeoutId);
+                        
+                        // 🚨 เก็บเวลาว่า Fetch นานแค่ไหน
+                        logger.info({ modelName, fetchMs: Date.now() - fetchStart }, "✅ Gemini ตอบกลับ");
+
                         const data = await res.json();
                         if (!res.ok) { const err = new Error(data.error?.message); err.status = res.status; throw err; }
                         return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
                     } catch (fetchErr) {
                         clearTimeout(timeoutId);
+                        // 🚨 เก็บ Log หากเกิด Error ตอน Fetch
+                        logger.warn({ modelName, fetchMs: Date.now() - fetchStart, err: fetchErr.message }, "❌ Gemini fetch ล้มเหลว");
                         throw fetchErr;
                     }
                 });
@@ -449,7 +474,7 @@ function validateRegistrationInput({ userId, birthday, gender, weight, height })
 // 🌟 7. API ROUTES (เพิ่ม Dashboard)
 // =====================================
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
-app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'dashboard.html'))); // ✅ เพิ่ม Route สำหรับหน้า Dashboard ตามที่แยกไฟล์
+app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'dashboard.html'))); 
 app.get('/ping', (req, res) => res.status(200).send("Carb Buddy LINE Bot is awake and running!"));
 
 app.post('/api/setup-foods', authenticateAPI, async (req, res) => {
@@ -652,7 +677,7 @@ app.post('/webhook', middleware(config), (req, res) => {
     });
 });
 
-// 🚨 [แก้ไข] เพิ่มฟังก์ชันสำหรับเรียก Loading Animation ของ LINE 
+// 🚨 ฟังก์ชันแสดงจุดไข่ปลา Loading
 async function showLineLoading(userId) {
     if (!userId) return;
     try {
@@ -1072,8 +1097,6 @@ async function handleTextMessage(event) {
 
         if (text === COMMANDS.VIEW_HEALTH) {
             await logEvent(userId, "view_health", "report");
-            
-            // 🚨 [แก้ไข] เรียกใช้ Loading Animation เมื่อมีการอ่านข้อมูลแลป (เพราะต้องใช้เวลาจาก AI)
             await showLineLoading(userId);
             
             try { await checkAndRecordUsage(userId, false, GEMINI_API_KEYS.length); } catch (e) { return lineClient.replyMessage(event.replyToken, { type: 'text', text: e.message }); }
@@ -1164,7 +1187,6 @@ async function downloadWithTimeout(stream, maxBytes = 8 * 1024 * 1024, timeoutMs
 async function handleImageMessage(event) {
     const userId = event.source?.userId;
     try {
-        // 🚨 [แก้ไข] เรียกใช้ Loading Animation เมื่อมีการอัปโหลดรูปภาพ 
         await showLineLoading(userId);
         
         try { await checkAndRecordUsage(userId, true, GEMINI_API_KEYS.length); } catch (e) { return lineClient.replyMessage(event.replyToken, { type: 'text', text: e.message }); }
