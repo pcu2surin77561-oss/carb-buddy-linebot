@@ -347,7 +347,8 @@ async function callGeminiWithFallback(userId, prompt, imageParts = []) {
             try {
                 return await aiQueue.add(async () => {
                     const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 25000); 
+                    // 🚨 [แก้ไข] ขยาย Timeout จาก 25000 เป็น 45000 วินาที 
+                    const timeoutId = setTimeout(() => controller.abort(), 45000); 
 
                     try {
                         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${currentApiKey}`, {
@@ -405,7 +406,6 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'", "https://*.line.me"],
-            // ✅ เพิ่ม 'https://cdn.tailwindcss.com' และ 'https://cdn.jsdelivr.net' เข้าไปในรายการอนุญาต
             scriptSrc: [
                 "'self'", 
                 "'unsafe-inline'", 
@@ -651,6 +651,23 @@ app.post('/webhook', middleware(config), (req, res) => {
         });
     });
 });
+
+// 🚨 [แก้ไข] เพิ่มฟังก์ชันสำหรับเรียก Loading Animation ของ LINE 
+async function showLineLoading(userId) {
+    if (!userId) return;
+    try {
+        await fetch('https://api.line.me/v2/bot/chat/loading/start', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${config.channelAccessToken}`
+            },
+            body: JSON.stringify({ chatId: userId, loadingSeconds: 45 })
+        });
+    } catch (err) {
+        logger.error({ err }, "ไม่สามารถแสดง Loading Animation ได้");
+    }
+}
 
 async function handleEvent(event) {
     if (event.type !== 'message' && event.type !== 'postback') return null;
@@ -1055,6 +1072,10 @@ async function handleTextMessage(event) {
 
         if (text === COMMANDS.VIEW_HEALTH) {
             await logEvent(userId, "view_health", "report");
+            
+            // 🚨 [แก้ไข] เรียกใช้ Loading Animation เมื่อมีการอ่านข้อมูลแลป (เพราะต้องใช้เวลาจาก AI)
+            await showLineLoading(userId);
+            
             try { await checkAndRecordUsage(userId, false, GEMINI_API_KEYS.length); } catch (e) { return lineClient.replyMessage(event.replyToken, { type: 'text', text: e.message }); }
             if (!userInfo) return lineClient.replyMessage(event.replyToken, { type: 'text', text: '🔒 คุณยังไม่ได้ลงทะเบียนครับ กรุณากดปุ่ม "ลงทะเบียน" จากเมนูด้านล่างก่อนนะครับ' });
 
@@ -1143,6 +1164,9 @@ async function downloadWithTimeout(stream, maxBytes = 8 * 1024 * 1024, timeoutMs
 async function handleImageMessage(event) {
     const userId = event.source?.userId;
     try {
+        // 🚨 [แก้ไข] เรียกใช้ Loading Animation เมื่อมีการอัปโหลดรูปภาพ 
+        await showLineLoading(userId);
+        
         try { await checkAndRecordUsage(userId, true, GEMINI_API_KEYS.length); } catch (e) { return lineClient.replyMessage(event.replyToken, { type: 'text', text: e.message }); }
         
         const userInfo = await getCachedUser(userId);
